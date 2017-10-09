@@ -1,0 +1,26 @@
+{
+  "name": "elm-logo",
+  "version": "0.0.1",
+  "description": "A Logo interpreter, written in Elm",
+  "main": "brunch-config.js",
+  "scripts": {
+    "postinstall": "elm package install -y",
+    "start": "brunch watch --server",
+    "prod": "brunch build --production",
+    "test": "./node_modules/elm-test/bin/elm-test"
+  },
+  "keywords": [
+    "elm",
+    "brunch"
+  ],
+  "author": "Christoph Rüßler <christoph.ruessler@mailbox.org>",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "auto-reload-brunch": "^2.7.1",
+    "brunch": "^2.8.2",
+    "elm-brunch": "^0.7.0",
+    "elm-test": "^0.18.9",
+    "hmr-brunch": "^0.1.1"
+  }
+}
