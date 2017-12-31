@@ -5,13 +5,18 @@ import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Vm.Primitive as P
+import Vm.Scope as Scope
 import Vm.Type as T
 import Vm.Vm exposing (..)
 
 
 emptyVm : Vm
 emptyVm =
-    { instructions = Array.empty, programCounter = 0, stack = [] }
+    { instructions = Array.empty
+    , programCounter = 0
+    , stack = []
+    , scopes = Scope.empty
+    }
 
 
 {-| Run a `Vm`. In case an error occurs, it is swallowed and an empty `Vm` is
@@ -51,3 +56,22 @@ vmWithTwoInstructions =
                 \_ ->
                     Expect.equal vm.stack [ T.Word "w" ]
             ]
+
+
+vmWithVariables : Test
+vmWithVariables =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ PushValue <| T.Word "word"
+                    , StoreVariable "a"
+                    , PushVariable "a"
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+        test "setting and getting a variable" <|
+            \_ ->
+                Expect.equal vm.stack [ T.Word "word" ]

@@ -6,6 +6,7 @@ machine.
 
 import Array exposing (Array)
 import Vm.Primitive as P
+import Vm.Scope as Scope exposing (Scope, Binding(..))
 import Vm.Type exposing (Value(..))
 
 
@@ -13,6 +14,8 @@ import Vm.Type exposing (Value(..))
 -}
 type Instruction
     = PushValue Value
+    | PushVariable String
+    | StoreVariable String
     | Eval1 P.Primitive1
 
 
@@ -22,6 +25,7 @@ type alias Vm =
     { instructions : Array Instruction
     , programCounter : Int
     , stack : List Value
+    , scopes : List Scope
     }
 
 
@@ -50,6 +54,33 @@ eval1 primitive vm =
             Err <| "Not enough inputs to " ++ primitive.name
 
 
+pushVariable : String -> Vm -> Result String Vm
+pushVariable name vm =
+    case Scope.thing name vm.scopes of
+        Just (Defined value) ->
+            Ok
+                ({ vm | stack = value :: vm.stack } |> incrementProgramCounter)
+
+        _ ->
+            Err <| name ++ " has no value"
+
+
+storeVariable : String -> Vm -> Result String Vm
+storeVariable name vm =
+    case vm.stack of
+        first :: rest ->
+            Ok
+                ({ vm
+                    | stack = rest
+                    , scopes = Scope.make name first vm.scopes
+                 }
+                    |> incrementProgramCounter
+                )
+
+        _ ->
+            Err <| "The stack is empty"
+
+
 {-| Execute a single instruction.
 -}
 execute : Instruction -> Vm -> Result String Vm
@@ -58,6 +89,12 @@ execute instruction vm =
         PushValue value ->
             Ok
                 ({ vm | stack = value :: vm.stack } |> incrementProgramCounter)
+
+        PushVariable name ->
+            pushVariable name vm
+
+        StoreVariable name ->
+            storeVariable name vm
 
         Eval1 primitive ->
             eval1 primitive vm
