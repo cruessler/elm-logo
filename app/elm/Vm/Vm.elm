@@ -5,8 +5,8 @@ machine.
 -}
 
 import Array exposing (Array)
-import Vm.Primitives as P
-import Vm.Types exposing (Value(..))
+import Vm.Primitive as P
+import Vm.Type exposing (Value(..))
 
 
 {-| Represent instructions a `Vm` can execute.

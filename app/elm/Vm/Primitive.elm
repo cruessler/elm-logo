@@ -1,4 +1,4 @@
-module Vm.Primitives
+module Vm.Primitive
     exposing
         ( Primitive1
         , Primitive2
@@ -10,7 +10,7 @@ module Vm.Primitives
 {-| This module contains types and functions related to Logo’s builtin functions.
 -}
 
-import Vm.Types exposing (Value(..))
+import Vm.Type exposing (Value(..))
 import Dict exposing (Dict)
 
 

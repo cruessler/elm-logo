@@ -1,10 +1,10 @@
-module Primitives exposing (..)
+module Primitive exposing (..)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
-import Vm.Primitives as P
-import Vm.Types as T
+import Vm.Primitive as P
+import Vm.Type as T
 
 
 primitives : Test

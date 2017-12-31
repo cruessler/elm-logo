@@ -1,4 +1,4 @@
-module Vm.Types exposing (Value(..))
+module Vm.Type exposing (Value(..))
 
 {-| This module contains types and functions related to Logo types.
 -}
