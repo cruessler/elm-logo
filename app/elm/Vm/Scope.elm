@@ -5,6 +5,8 @@ module Vm.Scope
         , empty
         , make
         , thing
+        , pushLocalScope
+        , local
         )
 
 {-| This module contains types and functions related to Logo’s handling of
@@ -101,6 +103,9 @@ one such variable the innermost local value is chosen.
 Return `Just (Defined _)` if the variable has been created and has a value
 associated with it.
 
+Return `Just Undefined` if the variable has been created using `local`, but
+has no value associated with it.
+
 Return `Nothing` when there is no value associated with `name`.
 
 -}
@@ -115,3 +120,28 @@ thing name scopes =
 
         [] ->
             Nothing
+
+
+{-| Create a new local scope.
+-}
+pushLocalScope : List Scope -> List Scope
+pushLocalScope scopes =
+    Local { variables = Dict.empty } :: scopes
+
+
+{-| Create a variable with local scope. Variables with local scope are visible
+to the current function as well as to every function invoked by the current
+function.
+
+Overwrites any existing binding with `Undefined`.
+
+-}
+local : String -> List Scope -> List Scope
+local name scopes =
+    case scopes of
+        (Local { variables }) :: rest ->
+            Local { variables = (Dict.insert name Undefined variables) }
+                :: rest
+
+        _ ->
+            scopes

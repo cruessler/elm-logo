@@ -26,4 +26,17 @@ scopes =
                             |> Scope.thing "x"
                             |> Expect.equal (Just <| Defined <| Word "word")
             ]
+        , describe "local"
+            [ test "sets variable in local scope" <|
+                \_ ->
+                    let
+                        scope =
+                            Scope.empty
+                                |> Scope.pushLocalScope
+                                |> Scope.local "x"
+                    in
+                        scope
+                            |> Scope.thing "x"
+                            |> Expect.equal (Just Undefined)
+            ]
         ]
