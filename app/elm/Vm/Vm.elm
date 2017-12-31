@@ -12,7 +12,7 @@ import Vm.Type exposing (Value(..))
 {-| Represent instructions a `Vm` can execute.
 -}
 type Instruction
-    = PutValue Value
+    = PushValue Value
     | Eval1 P.Primitive1
 
 
@@ -55,7 +55,7 @@ eval1 primitive vm =
 execute : Instruction -> Vm -> Result String Vm
 execute instruction vm =
     case instruction of
-        PutValue value ->
+        PushValue value ->
             Ok
                 ({ vm | stack = value :: vm.stack } |> incrementProgramCounter)
 

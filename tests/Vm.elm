@@ -36,7 +36,7 @@ vmWithTwoInstructions =
         vm =
             { emptyVm
                 | instructions =
-                    [ PutValue <| T.Word "word"
+                    [ PushValue <| T.Word "word"
                     , Eval1 { name = "first", f = P.first }
                     ]
                         |> Array.fromList
