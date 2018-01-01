@@ -7,6 +7,9 @@ module Vm.Scope
         , thing
         , pushLocalScope
         , local
+        , pushLoopScope
+        , popLoopScope
+        , enterLoopScope
         , repcount
         )
 
@@ -156,6 +159,37 @@ local name scopes =
 
         _ ->
             scopes
+
+
+{-| Create a new loop scope which is used to implement `repeat`.
+-}
+pushLoopScope : List Scope -> List Scope
+pushLoopScope scopes =
+    (Loop 0) :: scopes
+
+
+{-| Remove the topmost scope if it is a loop scope.
+-}
+popLoopScope : List Scope -> Result String (List Scope)
+popLoopScope scopes =
+    case scopes of
+        (Loop _) :: rest ->
+            Ok rest
+
+        _ ->
+            Err "The topmost scope is not a loop scope"
+
+
+{-| Increment the loop counter if the topmost scope is a loop scope.
+-}
+enterLoopScope : List Scope -> Result String (List Scope)
+enterLoopScope scopes =
+    case scopes of
+        (Loop count) :: rest ->
+            Ok <| Loop (count + 1) :: rest
+
+        _ ->
+            Err "The topmost scope is not a loop scope"
 
 
 repcount : List Scope -> Int

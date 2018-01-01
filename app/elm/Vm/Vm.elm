@@ -19,6 +19,9 @@ type Instruction
     | StoreVariable String
     | Introspect0 (I.Introspect0 Vm)
     | Eval1 P.Primitive1
+    | PushLoopScope
+    | EnterLoopScope
+    | PopLoopScope
 
 
 {-| Represent a stack based virtual machine.
@@ -95,6 +98,34 @@ storeVariable name vm =
             Err <| "The stack is empty"
 
 
+pushLoop : Vm -> Vm
+pushLoop vm =
+    { vm | scopes = Scope.pushLoopScope vm.scopes }
+        |> incrementProgramCounter
+
+
+popLoopScope : Vm -> Result String Vm
+popLoopScope vm =
+    vm.scopes
+        |> Scope.popLoopScope
+        |> Result.map
+            (\scopes ->
+                { vm | scopes = scopes }
+                    |> incrementProgramCounter
+            )
+
+
+enterLoopScope : Vm -> Result String Vm
+enterLoopScope vm =
+    vm.scopes
+        |> Scope.enterLoopScope
+        |> Result.map
+            (\scopes ->
+                { vm | scopes = scopes }
+                    |> incrementProgramCounter
+            )
+
+
 {-| Execute a single instruction.
 -}
 execute : Instruction -> Vm -> Result String Vm
@@ -115,6 +146,15 @@ execute instruction vm =
 
         Eval1 primitive ->
             eval1 primitive vm
+
+        PushLoopScope ->
+            Ok (pushLoopScope vm)
+
+        PopLoopScope ->
+            popLoopScope vm
+
+        EnterLoopScope ->
+            enterLoopScope vm
 
 
 {-| Execute a single instruction, returning an error when the program counter
