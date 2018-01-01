@@ -1,4 +1,4 @@
-module Vm.Type exposing (Value(..))
+module Vm.Type exposing (Value(..), toInt)
 
 {-| This module contains types and functions related to Logo types.
 -}
@@ -23,3 +23,15 @@ toString value =
             list
                 |> List.map toString
                 |> String.join ", "
+
+
+{-| Parse `Value` as an integer.
+-}
+toInt : Value -> Result String Int
+toInt value =
+    case value of
+        Word word ->
+            String.toInt word
+
+        _ ->
+            Err <| "I don’t know how to convert " ++ (toString value) ++ " to an integer"

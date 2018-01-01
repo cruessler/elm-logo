@@ -5,12 +5,13 @@ module Vm.Primitive
         , first
         , butfirst
         , count
+        , lessThan
         )
 
 {-| This module contains types and functions related to Logo’s builtin functions.
 -}
 
-import Vm.Type exposing (Value(..))
+import Vm.Type as T exposing (Value(..))
 import Dict exposing (Dict)
 
 
@@ -99,3 +100,27 @@ count value =
                     List.length list
     in
         length |> toString |> Word |> Ok
+
+
+{-| Convert two values to numbers and compare whether the first one is less
+than the second one.
+
+    lessThan (Word "0") (Word "1") == Ok (Word "true")
+    lessThan (Word "1") (Word "1") == Ok (Word "false")
+    lessThan (Word "a") (Word "1") == Err _
+
+-}
+lessThan : Value -> Value -> Result String Value
+lessThan value1 value2 =
+    T.toInt value1
+        |> Result.andThen
+            (\int1 ->
+                T.toInt value2
+                    |> Result.andThen
+                        (\int2 ->
+                            if int1 < int2 then
+                                Ok (Word "true")
+                            else
+                                Ok (Word "false")
+                        )
+            )
