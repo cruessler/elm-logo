@@ -4,6 +4,7 @@ import Array
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
+import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope
 import Vm.Type as T
@@ -75,3 +76,19 @@ vmWithVariables =
         test "setting and getting a variable" <|
             \_ ->
                 Expect.equal vm.stack [ T.Word "word" ]
+
+
+vmWithIntrospection : Test
+vmWithIntrospection =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ Introspect0 { name = "repcount", f = I.repcount } ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+        test "calling repcount outside a loop" <|
+            \_ ->
+                Expect.equal vm.stack [ T.Word "-1" ]

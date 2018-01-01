@@ -1,10 +1,11 @@
 module Vm.Vm exposing (..)
 
 {-| This module provides types and data structures for representing a virtual
-machine.
+machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
+import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Scope, Binding(..))
 import Vm.Type exposing (Value(..))
@@ -16,6 +17,7 @@ type Instruction
     = PushValue Value
     | PushVariable String
     | StoreVariable String
+    | Introspect0 (I.Introspect0 Vm)
     | Eval1 P.Primitive1
 
 
@@ -52,6 +54,18 @@ eval1 primitive vm =
 
         _ ->
             Err <| "Not enough inputs to " ++ primitive.name
+
+
+{-| Put a value representing some internal state of a `Vm` on the stack.
+-}
+introspect0 : I.Introspect0 Vm -> Vm -> Result String Vm
+introspect0 primitive vm =
+    primitive.f vm
+        |> Result.map
+            (\value ->
+                { vm | stack = value :: vm.stack }
+                    |> incrementProgramCounter
+            )
 
 
 pushVariable : String -> Vm -> Result String Vm
@@ -95,6 +109,9 @@ execute instruction vm =
 
         StoreVariable name ->
             storeVariable name vm
+
+        Introspect0 primitive ->
+            introspect0 primitive vm
 
         Eval1 primitive ->
             eval1 primitive vm

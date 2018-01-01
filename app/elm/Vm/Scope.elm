@@ -7,6 +7,7 @@ module Vm.Scope
         , thing
         , pushLocalScope
         , local
+        , repcount
         )
 
 {-| This module contains types and functions related to Logo’s handling of
@@ -39,6 +40,7 @@ type alias Variables =
 type Scope
     = Root Variables
     | Local Variables
+    | Loop Int
 
 
 empty : List Scope
@@ -55,6 +57,9 @@ member name scope =
         Local { variables } ->
             Dict.member name variables
 
+        _ ->
+            False
+
 
 get : String -> Scope -> Maybe Binding
 get name scope =
@@ -65,6 +70,9 @@ get name scope =
         Local { variables } ->
             Dict.get name variables
 
+        _ ->
+            Nothing
+
 
 set : String -> Value -> Scope -> Scope
 set name value scope =
@@ -74,6 +82,9 @@ set name value scope =
 
         Local { variables } ->
             Local { variables = Dict.insert name (Defined value) variables }
+
+        _ ->
+            scope
 
 
 {-| Set the value of the variable named `name` to `value`.
@@ -145,3 +156,13 @@ local name scopes =
 
         _ ->
             scopes
+
+
+repcount : List Scope -> Int
+repcount scopes =
+    case scopes of
+        (Loop count) :: rest ->
+            count
+
+        _ ->
+            -1
