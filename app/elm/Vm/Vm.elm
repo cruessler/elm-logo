@@ -27,6 +27,8 @@ type Instruction
     | PushLoopScope
     | EnterLoopScope
     | PopLoopScope
+    | JumpIfFalse Int
+    | Jump Int
 
 
 {-| Represent a stack based virtual machine.
@@ -184,6 +186,41 @@ enterLoopScope vm =
             )
 
 
+toBoolean : Value -> Result String Bool
+toBoolean value =
+    case value of
+        Word word ->
+            if String.toLower word == "true" then
+                Ok True
+            else if String.toLower word == "false" then
+                Ok False
+            else
+                Err <| "A conditional doesn’t like " ++ (toString value) ++ " as input"
+
+        _ ->
+            Err <| "A conditional doesn’t like " ++ (toString value) ++ " as input"
+
+
+jumpIfFalse : Int -> Vm -> Result String Vm
+jumpIfFalse by vm =
+    case vm.stack of
+        first :: rest ->
+            toBoolean first
+                |> Result.map
+                    (\bool ->
+                        if not bool then
+                            { vm
+                                | stack = rest
+                                , programCounter = vm.programCounter + by
+                            }
+                        else
+                            { vm | stack = rest } |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err "There is nothing in the stack to be evaluated to true or false"
+
+
 {-| Execute a single instruction.
 -}
 execute : Instruction -> Vm -> Result String Vm
@@ -222,6 +259,12 @@ execute instruction vm =
 
         EnterLoopScope ->
             enterLoopScope vm
+
+        JumpIfFalse by ->
+            jumpIfFalse by vm
+
+        Jump by ->
+            Ok { vm | programCounter = vm.programCounter + by }
 
 
 {-| Execute a single instruction, returning an error when the program counter
