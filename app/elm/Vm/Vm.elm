@@ -5,6 +5,8 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
+import Environment exposing (Environment)
+import Vm.Command as C
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Scope, Binding(..))
@@ -19,6 +21,8 @@ type Instruction
     | StoreVariable String
     | Introspect0 (I.Introspect0 Vm)
     | Eval1 P.Primitive1
+    | Command1 C.Command1
+    | Command2 C.Command2
     | PushLoopScope
     | EnterLoopScope
     | PopLoopScope
@@ -31,6 +35,7 @@ type alias Vm =
     , programCounter : Int
     , stack : List Value
     , scopes : List Scope
+    , environment : Environment
     }
 
 
@@ -57,6 +62,40 @@ eval1 primitive vm =
 
         _ ->
             Err <| "Not enough inputs to " ++ primitive.name
+
+
+{-| Run a command that takes one argument.
+-}
+command1 : C.Command1 -> Vm -> Result String Vm
+command1 command vm =
+    case vm.stack of
+        first :: rest ->
+            command.f first vm.environment
+                |> Result.map
+                    (\environment ->
+                        { vm | stack = rest, environment = environment }
+                            |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err <| "Not enough inputs to " ++ command.name
+
+
+{-| Run a command that takes two arguments.
+-}
+command2 : C.Command2 -> Vm -> Result String Vm
+command2 command vm =
+    case vm.stack of
+        first :: second :: rest ->
+            command.f first second vm.environment
+                |> Result.map
+                    (\environment ->
+                        { vm | stack = rest, environment = environment }
+                            |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err <| "Not enough inputs to " ++ command.name
 
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
@@ -146,6 +185,12 @@ execute instruction vm =
 
         Eval1 primitive ->
             eval1 primitive vm
+
+        Command1 command ->
+            command1 command vm
+
+        Command2 command ->
+            command2 command vm
 
         PushLoopScope ->
             Ok (pushLoopScope vm)
