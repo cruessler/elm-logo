@@ -11,6 +11,10 @@ module Vm.Scope
         , popLoopScope
         , enterLoopScope
         , repcount
+        , pushTemplateScope
+        , popTemplateScope
+        , enterTemplateScope
+        , templateVariable
         )
 
 {-| This module contains types and functions related to Logo’s handling of
@@ -28,7 +32,8 @@ The current implementation is not optimized for speed, but for simplicity.
 -}
 
 import Dict exposing (Dict)
-import Vm.Type exposing (Value)
+import Vm.Iterator as Iterator exposing (Iterator)
+import Vm.Type as Type exposing (Value(..))
 
 
 type Binding
@@ -43,6 +48,7 @@ type alias Variables =
 type Scope
     = Root Variables
     | Local Variables
+    | Template Iterator
     | Loop Int
 
 
@@ -200,3 +206,60 @@ repcount scopes =
 
         _ ->
             -1
+
+
+{-| Create a new template scope which is used to implement `foreach`.
+-}
+pushTemplateScope : Value -> List Scope -> List Scope
+pushTemplateScope value scopes =
+    (Template <| Iterator.initialize value) :: scopes
+
+
+{-| Remove the topmost scope if it is a template scope.
+-}
+popTemplateScope : List Scope -> Result String (List Scope)
+popTemplateScope scopes =
+    case scopes of
+        (Template _) :: rest ->
+            Ok rest
+
+        _ ->
+            Err "The topmost scope is not a template scope"
+
+
+{-| Advance the iterator if the topmost scope is a template scope.
+-}
+enterTemplateScope : List Scope -> Result String (List Scope)
+enterTemplateScope scopes =
+    case scopes of
+        (Template iter) :: rest ->
+            let
+                newIter =
+                    Iterator.step iter
+            in
+                Ok <| Template newIter :: rest
+
+        _ ->
+            Err "The topmost scope is not a loop scope"
+
+
+{-| Get a template variable if the topmost scope is a template scope.
+-}
+templateVariable : Value -> List Scope -> Result String Value
+templateVariable value scopes =
+    case scopes of
+        (Template iter) :: _ ->
+            case value of
+                Word "rest" ->
+                    Ok iter.rest
+
+                _ ->
+                    iter.current
+                        |> Result.fromMaybe
+                            ("? doesn't like "
+                                ++ (Type.toString value)
+                                ++ " as input"
+                            )
+
+        _ ->
+            Err "The topmost scope is not a template scope"

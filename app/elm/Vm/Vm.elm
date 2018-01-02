@@ -20,6 +20,7 @@ type Instruction
     | PushVariable String
     | StoreVariable String
     | Introspect0 (I.Introspect0 Vm)
+    | Introspect1 (I.Introspect1 Vm)
     | Eval1 P.Primitive1
     | Eval2 P.Primitive2
     | Command1 C.Command1
@@ -27,7 +28,11 @@ type Instruction
     | PushLoopScope
     | EnterLoopScope
     | PopLoopScope
+    | PushTemplateScope
+    | EnterTemplateScope
+    | PopTemplateScope
     | JumpIfFalse Int
+    | JumpIfTrue Int
     | Jump Int
 
 
@@ -131,6 +136,23 @@ introspect0 primitive vm =
             )
 
 
+{-| Put a value representing some internal state of a `Vm` on the stack.
+-}
+introspect1 : I.Introspect1 Vm -> Vm -> Result String Vm
+introspect1 primitive vm =
+    case vm.stack of
+        first :: rest ->
+            primitive.f first vm
+                |> Result.map
+                    (\value ->
+                        { vm | stack = value :: rest }
+                            |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err <| "Not enough inputs to " ++ primitive.name
+
+
 pushVariable : String -> Vm -> Result String Vm
 pushVariable name vm =
     case Scope.thing name vm.scopes of
@@ -158,8 +180,8 @@ storeVariable name vm =
             Err <| "The stack is empty"
 
 
-pushLoop : Vm -> Vm
-pushLoop vm =
+pushLoopScope : Vm -> Vm
+pushLoopScope vm =
     { vm | scopes = Scope.pushLoopScope vm.scopes }
         |> incrementProgramCounter
 
@@ -179,6 +201,44 @@ enterLoopScope : Vm -> Result String Vm
 enterLoopScope vm =
     vm.scopes
         |> Scope.enterLoopScope
+        |> Result.map
+            (\scopes ->
+                { vm | scopes = scopes }
+                    |> incrementProgramCounter
+            )
+
+
+pushTemplateScope : Vm -> Result String Vm
+pushTemplateScope vm =
+    case vm.stack of
+        first :: rest ->
+            Ok
+                ({ vm
+                    | scopes = Scope.pushTemplateScope first vm.scopes
+                    , stack = rest
+                 }
+                    |> incrementProgramCounter
+                )
+
+        _ ->
+            Err "There is nothing on the stack to be used as an iterator"
+
+
+popTemplateScope : Vm -> Result String Vm
+popTemplateScope vm =
+    vm.scopes
+        |> Scope.popTemplateScope
+        |> Result.map
+            (\scopes ->
+                { vm | scopes = scopes }
+                    |> incrementProgramCounter
+            )
+
+
+enterTemplateScope : Vm -> Result String Vm
+enterTemplateScope vm =
+    vm.scopes
+        |> Scope.enterTemplateScope
         |> Result.map
             (\scopes ->
                 { vm | scopes = scopes }
@@ -218,7 +278,27 @@ jumpIfFalse by vm =
                     )
 
         _ ->
-            Err "There is nothing in the stack to be evaluated to true or false"
+            Err "There is nothing on the stack to be evaluated to true or false"
+
+
+jumpIfTrue : Int -> Vm -> Result String Vm
+jumpIfTrue by vm =
+    case vm.stack of
+        first :: rest ->
+            toBoolean first
+                |> Result.map
+                    (\bool ->
+                        if bool then
+                            { vm
+                                | stack = rest
+                                , programCounter = vm.programCounter + by
+                            }
+                        else
+                            { vm | stack = rest } |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err "There is nothing on the stack to be evaluated to true or false"
 
 
 {-| Execute a single instruction.
@@ -238,6 +318,9 @@ execute instruction vm =
 
         Introspect0 primitive ->
             introspect0 primitive vm
+
+        Introspect1 primitive ->
+            introspect1 primitive vm
 
         Eval1 primitive ->
             eval1 primitive vm
@@ -260,8 +343,20 @@ execute instruction vm =
         EnterLoopScope ->
             enterLoopScope vm
 
+        PushTemplateScope ->
+            pushTemplateScope vm
+
+        PopTemplateScope ->
+            popTemplateScope vm
+
+        EnterTemplateScope ->
+            enterTemplateScope vm
+
         JumpIfFalse by ->
             jumpIfFalse by vm
+
+        JumpIfTrue by ->
+            jumpIfTrue by vm
 
         Jump by ->
             Ok { vm | programCounter = vm.programCounter + by }

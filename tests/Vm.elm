@@ -157,3 +157,32 @@ vmWithPrintLoop =
             , test "environment contains printed lines" <|
                 \_ -> Expect.equal vm.environment.lines (Array.repeat 10 "word")
             ]
+
+
+vmWithTemplateLoop : Test
+vmWithTemplateLoop =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ PushValue (T.Word "word")
+                    , PushTemplateScope
+                    , PushValue (T.Word "rest")
+                    , Introspect1 { name = "?", f = I.templateVariable }
+                    , Eval1 { name = "emptyp", f = P.emptyp }
+                    , JumpIfTrue 6
+                    , EnterTemplateScope
+                    , PushValue (T.Word "1")
+                    , Introspect1 { name = "?", f = I.templateVariable }
+                    , Command1 { name = "print", f = C.print }
+                    , Jump -8
+                    , PopTemplateScope
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+        describe "with print in a template loop" <|
+            [ test "environment contains printed lines" <|
+                \_ -> Expect.equal vm.environment.lines (Array.fromList [ "w", "o", "r", "d" ])
+            ]
