@@ -21,6 +21,7 @@ type Instruction
     | StoreVariable String
     | Introspect0 (I.Introspect0 Vm)
     | Eval1 P.Primitive1
+    | Eval2 P.Primitive2
     | Command1 C.Command1
     | Command2 C.Command2
     | PushLoopScope
@@ -54,6 +55,24 @@ eval1 primitive vm =
     case vm.stack of
         first :: rest ->
             primitive.f first
+                |> Result.map
+                    (\value ->
+                        { vm | stack = (value :: rest) }
+                            |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err <| "Not enough inputs to " ++ primitive.name
+
+
+{-| Evaluate a primitive that takes 2 arguments and put the result on top of
+the stack.
+-}
+eval2 : P.Primitive2 -> Vm -> Result String Vm
+eval2 primitive vm =
+    case vm.stack of
+        first :: second :: rest ->
+            primitive.f first second
                 |> Result.map
                     (\value ->
                         { vm | stack = (value :: rest) }
@@ -185,6 +204,9 @@ execute instruction vm =
 
         Eval1 primitive ->
             eval1 primitive vm
+
+        Eval2 primitive ->
+            eval2 primitive vm
 
         Command1 command ->
             command1 command vm
