@@ -6,6 +6,7 @@ module Vm.Primitive
         , butfirst
         , count
         , lessThan
+        , emptyp
         )
 
 {-| This module contains types and functions related to Logo’s builtin functions.
@@ -124,3 +125,23 @@ lessThan value1 value2 =
                                 Ok (Word "false")
                         )
             )
+
+
+{-| Check whether a given `Value` is empty. Only the empty `Word` and the empty
+`List` are considered empty.
+
+    emptyp (Word "") == Word "true"
+    emptyp (Word "word") == Word "false"
+
+-}
+emptyp : Value -> Result String Value
+emptyp value =
+    case value of
+        Word "" ->
+            Ok (Word "true")
+
+        List [] ->
+            Ok (Word "true")
+
+        _ ->
+            Ok (Word "false")
