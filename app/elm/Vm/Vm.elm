@@ -10,13 +10,13 @@ import Vm.Command as C
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Scope, Binding(..))
-import Vm.Type exposing (Value(..))
+import Vm.Type as Type
 
 
 {-| Represent instructions a `Vm` can execute.
 -}
 type Instruction
-    = PushValue Value
+    = PushValue Type.Value
     | PushVariable String
     | StoreVariable String
     | Introspect0 (I.Introspect0 Vm)
@@ -41,7 +41,7 @@ type Instruction
 type alias Vm =
     { instructions : Array Instruction
     , programCounter : Int
-    , stack : List Value
+    , stack : List Type.Value
     , scopes : List Scope
     , environment : Environment
     }
@@ -246,10 +246,10 @@ enterTemplateScope vm =
             )
 
 
-toBoolean : Value -> Result String Bool
+toBoolean : Type.Value -> Result String Bool
 toBoolean value =
     case value of
-        Word word ->
+        Type.Word word ->
             if String.toLower word == "true" then
                 Ok True
             else if String.toLower word == "false" then

@@ -9,7 +9,7 @@ import Vm.Command as C
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope
-import Vm.Type as T
+import Vm.Type as Type
 import Vm.Vm exposing (..)
 
 
@@ -45,7 +45,7 @@ vmWithTwoInstructions =
         vm =
             { emptyVm
                 | instructions =
-                    [ PushValue <| T.Word "word"
+                    [ PushValue <| Type.Word "word"
                     , Eval1 { name = "first", f = P.first }
                     ]
                         |> Array.fromList
@@ -58,7 +58,7 @@ vmWithTwoInstructions =
                     Expect.equal vm.programCounter 2
             , test "stack gets changed" <|
                 \_ ->
-                    Expect.equal vm.stack [ T.Word "w" ]
+                    Expect.equal vm.stack [ Type.Word "w" ]
             ]
 
 
@@ -68,7 +68,7 @@ vmWithVariables =
         vm =
             { emptyVm
                 | instructions =
-                    [ PushValue <| T.Word "word"
+                    [ PushValue <| Type.Word "word"
                     , StoreVariable "a"
                     , PushVariable "a"
                     ]
@@ -78,7 +78,7 @@ vmWithVariables =
     in
         test "setting and getting a variable" <|
             \_ ->
-                Expect.equal vm.stack [ T.Word "word" ]
+                Expect.equal vm.stack [ Type.Word "word" ]
 
 
 vmWithIntrospection : Test
@@ -94,7 +94,7 @@ vmWithIntrospection =
     in
         test "calling repcount outside a loop" <|
             \_ ->
-                Expect.equal vm.stack [ T.Word "-1" ]
+                Expect.equal vm.stack [ Type.Word "-1" ]
 
 
 vmWithConditionalPrint : Test
@@ -103,12 +103,12 @@ vmWithConditionalPrint =
         vm =
             { emptyVm
                 | instructions =
-                    [ PushValue <| T.Word "true"
+                    [ PushValue <| Type.Word "true"
                     , JumpIfFalse 4
-                    , PushValue <| T.Word "first"
+                    , PushValue <| Type.Word "first"
                     , Command1 { name = "print", f = C.print }
                     , Jump 3
-                    , PushValue <| T.Word "second"
+                    , PushValue <| Type.Word "second"
                     , Command1 { name = "print", f = C.print }
                     ]
                         |> Array.fromList
@@ -135,12 +135,12 @@ vmWithPrintLoop =
             { emptyVm
                 | instructions =
                     [ PushLoopScope
-                    , PushValue (T.Word "10")
+                    , PushValue (Type.Word "10")
                     , Introspect0 { name = "repcount", f = I.repcount }
                     , Eval2 { name = "lessThan", f = P.lessThan }
                     , JumpIfFalse 5
                     , EnterLoopScope
-                    , PushValue (T.Word "word")
+                    , PushValue (Type.Word "word")
                     , Command1 { name = "print", f = C.print }
                     , Jump -7
                     , PopLoopScope
@@ -165,14 +165,14 @@ vmWithTemplateLoop =
         vm =
             { emptyVm
                 | instructions =
-                    [ PushValue (T.Word "word")
+                    [ PushValue (Type.Word "word")
                     , PushTemplateScope
-                    , PushValue (T.Word "rest")
+                    , PushValue (Type.Word "rest")
                     , Introspect1 { name = "?", f = I.templateVariable }
                     , Eval1 { name = "emptyp", f = P.emptyp }
                     , JumpIfTrue 6
                     , EnterTemplateScope
-                    , PushValue (T.Word "1")
+                    , PushValue (Type.Word "1")
                     , Introspect1 { name = "?", f = I.templateVariable }
                     , Command1 { name = "print", f = C.print }
                     , Jump -8

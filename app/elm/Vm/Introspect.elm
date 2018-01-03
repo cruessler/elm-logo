@@ -17,26 +17,26 @@ Thus, all types are parametrized.
 -}
 
 import Vm.Scope as Scope exposing (Scope)
-import Vm.Type exposing (Value(..))
+import Vm.Type as Type
 
 
 type alias Introspect0 a =
     { name : String
-    , f : a -> Result String Value
+    , f : a -> Result String Type.Value
     }
 
 
 type alias Introspect1 a =
     { name : String
-    , f : Value -> a -> Result String Value
+    , f : Type.Value -> a -> Result String Type.Value
     }
 
 
-repcount : { a | scopes : List Scope } -> Result String Value
+repcount : { a | scopes : List Scope } -> Result String Type.Value
 repcount vm =
-    Ok <| Word (Scope.repcount vm.scopes |> toString)
+    Ok <| Type.Word (Scope.repcount vm.scopes |> toString)
 
 
-templateVariable : Value -> { a | scopes : List Scope } -> Result String Value
+templateVariable : Type.Value -> { a | scopes : List Scope } -> Result String Type.Value
 templateVariable value vm =
     Scope.templateVariable value vm.scopes

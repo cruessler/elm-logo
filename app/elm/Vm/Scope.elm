@@ -33,12 +33,12 @@ The current implementation is not optimized for speed, but for simplicity.
 
 import Dict exposing (Dict)
 import Vm.Iterator as Iterator exposing (Iterator)
-import Vm.Type as Type exposing (Value(..))
+import Vm.Type as Type
 
 
 type Binding
     = Undefined
-    | Defined Value
+    | Defined Type.Value
 
 
 type alias Variables =
@@ -83,7 +83,7 @@ get name scope =
             Nothing
 
 
-set : String -> Value -> Scope -> Scope
+set : String -> Type.Value -> Scope -> Scope
 set name value scope =
     case scope of
         Root { variables } ->
@@ -101,7 +101,7 @@ set name value scope =
 If no variable named `name` exists a new one is created at the root scope.
 
 -}
-make : String -> Value -> List Scope -> List Scope
+make : String -> Type.Value -> List Scope -> List Scope
 make name value scopes =
     case scopes of
         [ (Root _) as root ] ->
@@ -210,7 +210,7 @@ repcount scopes =
 
 {-| Create a new template scope which is used to implement `foreach`.
 -}
-pushTemplateScope : Value -> List Scope -> List Scope
+pushTemplateScope : Type.Value -> List Scope -> List Scope
 pushTemplateScope value scopes =
     (Template <| Iterator.initialize value) :: scopes
 
@@ -245,12 +245,12 @@ enterTemplateScope scopes =
 
 {-| Get a template variable if the topmost scope is a template scope.
 -}
-templateVariable : Value -> List Scope -> Result String Value
+templateVariable : Type.Value -> List Scope -> Result String Type.Value
 templateVariable value scopes =
     case scopes of
         (Template iter) :: _ ->
             case value of
-                Word "rest" ->
+                Type.Word "rest" ->
                     Ok iter.rest
 
                 _ ->

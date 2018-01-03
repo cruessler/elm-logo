@@ -12,7 +12,7 @@ module Vm.Primitive
 {-| This module contains types and functions related to Logo’s builtin functions.
 -}
 
-import Vm.Type as T exposing (Value(..))
+import Vm.Type as Type
 import Dict exposing (Dict)
 
 
@@ -21,7 +21,7 @@ import Dict exposing (Dict)
 type alias Primitive1 =
     { name : String
     , f :
-        Value -> Result String Value
+        Type.Value -> Result String Type.Value
     }
 
 
@@ -30,7 +30,7 @@ type alias Primitive1 =
 type alias Primitive2 =
     { name : String
     , f :
-        Value -> Value -> Result String Value
+        Type.Value -> Type.Value -> Result String Type.Value
     }
 
 
@@ -42,19 +42,19 @@ type alias Primitive2 =
 Return `Err ...` for empty inputs.
 
 -}
-first : Value -> Result String Value
+first : Type.Value -> Result String Type.Value
 first value =
     case value of
-        Word "" ->
+        Type.Word "" ->
             Err "first doesn’t like an empty word as input"
 
-        Word str ->
-            Ok <| Word <| String.left 1 str
+        Type.Word str ->
+            Ok <| Type.Word <| String.left 1 str
 
-        List (first :: rest) ->
+        Type.List (first :: rest) ->
             Ok first
 
-        List [] ->
+        Type.List [] ->
             Err "first doesn’t like [] as input"
 
 
@@ -66,19 +66,19 @@ first value =
 Return `Err ...` for empty inputs.
 
 -}
-butfirst : Value -> Result String Value
+butfirst : Type.Value -> Result String Type.Value
 butfirst value =
     case value of
-        Word "" ->
+        Type.Word "" ->
             Err "butfirst doesn’t like an empty word as input"
 
-        Word str ->
-            Ok <| Word <| String.dropLeft 1 str
+        Type.Word str ->
+            Ok <| Type.Word <| String.dropLeft 1 str
 
-        List (first :: rest) ->
-            Ok <| List rest
+        Type.List (first :: rest) ->
+            Ok <| Type.List rest
 
-        List [] ->
+        Type.List [] ->
             Err "first doesn’t like [] as input"
 
 
@@ -89,18 +89,18 @@ butfirst value =
     count (List [ Word "word" ]) == Ok (Word "1")
 
 -}
-count : Value -> Result String Value
+count : Type.Value -> Result String Type.Value
 count value =
     let
         length =
             case value of
-                Word word ->
+                Type.Word word ->
                     String.length word
 
-                List list ->
+                Type.List list ->
                     List.length list
     in
-        length |> toString |> Word |> Ok
+        length |> toString |> Type.Word |> Ok
 
 
 {-| Convert two values to numbers and compare whether the first one is less
@@ -111,18 +111,18 @@ than the second one.
     lessThan (Word "a") (Word "1") == Err _
 
 -}
-lessThan : Value -> Value -> Result String Value
+lessThan : Type.Value -> Type.Value -> Result String Type.Value
 lessThan value1 value2 =
-    T.toInt value1
+    Type.toInt value1
         |> Result.andThen
             (\int1 ->
-                T.toInt value2
+                Type.toInt value2
                     |> Result.andThen
                         (\int2 ->
                             if int1 < int2 then
-                                Ok (Word "true")
+                                Ok (Type.Word "true")
                             else
-                                Ok (Word "false")
+                                Ok (Type.Word "false")
                         )
             )
 
@@ -134,14 +134,14 @@ lessThan value1 value2 =
     emptyp (Word "word") == Word "false"
 
 -}
-emptyp : Value -> Result String Value
+emptyp : Type.Value -> Result String Type.Value
 emptyp value =
     case value of
-        Word "" ->
-            Ok (Word "true")
+        Type.Word "" ->
+            Ok (Type.Word "true")
 
-        List [] ->
-            Ok (Word "true")
+        Type.List [] ->
+            Ok (Type.Word "true")
 
         _ ->
-            Ok (Word "false")
+            Ok (Type.Word "false")

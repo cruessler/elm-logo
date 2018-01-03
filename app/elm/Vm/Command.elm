@@ -10,7 +10,7 @@ commands. A command can take arguments and returns no value.
 -}
 
 import Environment as E exposing (Environment)
-import Vm.Type as T exposing (Value(..))
+import Vm.Type as Type
 
 
 {-| Represent a builtin command that takes one argument.
@@ -18,7 +18,7 @@ import Vm.Type as T exposing (Value(..))
 type alias Command1 =
     { name : String
     , f :
-        Value -> Environment -> Result String Environment
+        Type.Value -> Environment -> Result String Environment
     }
 
 
@@ -27,21 +27,21 @@ type alias Command1 =
 type alias Command2 =
     { name : String
     , f :
-        Value -> Value -> Environment -> Result String Environment
+        Type.Value -> Type.Value -> Environment -> Result String Environment
     }
 
 
 {-| Print a value to the console.
 -}
-print : Value -> Environment -> Result String Environment
+print : Type.Value -> Environment -> Result String Environment
 print value env =
     let
         toString value =
             case value of
-                Word string ->
+                Type.Word string ->
                     string
 
-                List list ->
+                Type.List list ->
                     List.map toString list |> String.join ", "
     in
-        Ok <| E.print (T.toString value) env
+        Ok <| E.print (Type.toString value) env

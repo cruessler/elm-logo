@@ -6,7 +6,7 @@ import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Vm.Command as C
-import Vm.Type exposing (Value(..))
+import Vm.Type as Type
 
 
 commands : Test
@@ -18,7 +18,7 @@ commands =
                     let
                         result =
                             Environment.empty
-                                |> C.print (Word string)
+                                |> C.print (Type.Word string)
                     in
                         Expect.equal result
                             (Ok

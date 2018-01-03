@@ -8,16 +8,16 @@ module Vm.Iterator
 {-| This module contains types and functions used in template-based iteration.
 -}
 
-import Vm.Type exposing (Value(..))
+import Vm.Type as Type
 
 
 type alias Iterator =
-    { current : Maybe Value
-    , rest : Value
+    { current : Maybe Type.Value
+    , rest : Type.Value
     }
 
 
-initialize : Value -> Iterator
+initialize : Type.Value -> Iterator
 initialize value =
     { current = Nothing
     , rest = value
@@ -27,22 +27,22 @@ initialize value =
 step : Iterator -> Iterator
 step iter =
     case iter.rest of
-        Word "" ->
+        Type.Word "" ->
             { current = Nothing
-            , rest = Word ""
+            , rest = Type.Word ""
             }
 
-        Word word ->
-            { current = Just <| Word <| String.left 1 word
-            , rest = Word <| String.dropLeft 1 word
+        Type.Word word ->
+            { current = Just <| Type.Word <| String.left 1 word
+            , rest = Type.Word <| String.dropLeft 1 word
             }
 
-        List (first :: rest) ->
+        Type.List (first :: rest) ->
             { current = Just first
-            , rest = List rest
+            , rest = Type.List rest
             }
 
-        List [] ->
+        Type.List [] ->
             { current = Nothing
-            , rest = List []
+            , rest = Type.List []
             }

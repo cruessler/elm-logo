@@ -10,7 +10,6 @@ environment: the state of the turtle, console output etc.
 -}
 
 import Array exposing (Array)
-import Vm.Type exposing (Value(..))
 import Vm.Scope exposing (Scope)
 
 

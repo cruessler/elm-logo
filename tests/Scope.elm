@@ -8,7 +8,7 @@ import Vm.Scope as Scope
         ( Scope
         , Binding(..)
         )
-import Vm.Type exposing (Value(..))
+import Vm.Type as Type
 
 
 scopes : Test
@@ -20,11 +20,11 @@ scopes =
                     let
                         scope =
                             Scope.empty
-                                |> Scope.make "x" (Word "word")
+                                |> Scope.make "x" (Type.Word "word")
                     in
                         scope
                             |> Scope.thing "x"
-                            |> Expect.equal (Just <| Defined <| Word "word")
+                            |> Expect.equal (Just <| Defined <| Type.Word "word")
             ]
         , describe "local"
             [ test "sets variable in local scope" <|
