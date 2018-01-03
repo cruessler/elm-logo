@@ -51,6 +51,9 @@ first value =
         Type.Word str ->
             Ok <| Type.Word <| String.left 1 str
 
+        Type.Int int ->
+            Ok <| Type.Word <| String.left 1 <| toString int
+
         Type.List (first :: rest) ->
             Ok first
 
@@ -75,6 +78,9 @@ butfirst value =
         Type.Word str ->
             Ok <| Type.Word <| String.dropLeft 1 str
 
+        Type.Int int ->
+            Ok <| Type.Word <| String.dropLeft 1 <| toString int
+
         Type.List (first :: rest) ->
             Ok <| Type.List rest
 
@@ -96,6 +102,9 @@ count value =
             case value of
                 Type.Word word ->
                     String.length word
+
+                Type.Int int ->
+                    int |> toString |> String.length
 
                 Type.List list ->
                     List.length list

@@ -37,6 +37,15 @@ step iter =
             , rest = Type.Word <| String.dropLeft 1 word
             }
 
+        Type.Int int ->
+            let
+                word =
+                    toString int
+            in
+                { current = Just <| Type.Word <| String.left 1 word
+                , rest = Type.Word <| String.dropLeft 1 word
+                }
+
         Type.List (first :: rest) ->
             { current = Just first
             , rest = Type.List rest
