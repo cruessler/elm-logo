@@ -7,9 +7,17 @@ module Vm.Primitive
         , count
         , lessThan
         , emptyp
+        , sentence
         )
 
-{-| This module contains types and functions related to Logo’s builtin functions.
+{-| This module contains types and functions related to Logo’s builtin
+functions.
+
+Citations in this file’s comments are taken from [UCB Logo’s
+manual][ucb-manual].
+
+[ucb-manual]: https://people.eecs.berkeley.edu/~bh/usermanual
+
 -}
 
 import Vm.Type as Type
@@ -154,3 +162,33 @@ emptyp value =
 
         _ ->
             Ok (Type.Word "false")
+
+
+{-| Join two values into a list. One level of nesting will be flattened.
+
+    sentence (Word "a") (Word "b) == List [ Word "a", Word "b" ]
+    sentence (Word "a") (List [ Word "b" ]) == List [ Word "a", Word "b" ]
+
+-}
+sentence : Type.Value -> Type.Value -> Result String Type.Value
+sentence value1 value2 =
+    let
+        toList : Type.Value -> List Type.Value
+        toList value =
+            case value of
+                Type.Word _ ->
+                    [ value ]
+
+                Type.Int _ ->
+                    [ value ]
+
+                Type.List list ->
+                    list
+
+        list1 =
+            toList value1
+
+        list2 =
+            toList value2
+    in
+        Ok <| Type.List <| List.append list1 list2
