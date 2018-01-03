@@ -19,6 +19,7 @@ type Instruction
     = PushValue Type.Value
     | PushVariable String
     | StoreVariable String
+    | LocalVariable String
     | Introspect0 (I.Introspect0 Vm)
     | Introspect1 (I.Introspect1 Vm)
     | Eval1 P.Primitive1
@@ -31,6 +32,8 @@ type Instruction
     | PushTemplateScope
     | EnterTemplateScope
     | PopTemplateScope
+    | PushLocalScope
+    | PopLocalScope
     | JumpIfFalse Int
     | JumpIfTrue Int
     | Jump Int
@@ -180,6 +183,14 @@ storeVariable name vm =
             Err <| "The stack is empty"
 
 
+localVariable : String -> Vm -> Result String Vm
+localVariable name vm =
+    Ok
+        ({ vm | scopes = Scope.local name vm.scopes }
+            |> incrementProgramCounter
+        )
+
+
 pushLoopScope : Vm -> Vm
 pushLoopScope vm =
     { vm | scopes = Scope.pushLoopScope vm.scopes }
@@ -242,6 +253,36 @@ enterTemplateScope vm =
         |> Result.map
             (\scopes ->
                 { vm | scopes = scopes }
+                    |> incrementProgramCounter
+            )
+
+
+pushLocalScope : Vm -> Result String Vm
+pushLocalScope vm =
+    case vm.stack of
+        (Type.Int returnAddress) :: rest ->
+            Ok
+                ({ vm
+                    | scopes = Scope.pushLocalScope returnAddress vm.scopes
+                    , stack = rest
+                 }
+                    |> incrementProgramCounter
+                )
+
+        _ ->
+            Err "There is no return address on the stack"
+
+
+popLocalScope : Vm -> Result String Vm
+popLocalScope vm =
+    vm.scopes
+        |> Scope.popLocalScope
+        |> Result.map
+            (\( returnAddress, scopes ) ->
+                { vm
+                    | scopes = scopes
+                    , stack = (Type.Int returnAddress) :: vm.stack
+                }
                     |> incrementProgramCounter
             )
 
@@ -316,6 +357,9 @@ execute instruction vm =
         StoreVariable name ->
             storeVariable name vm
 
+        LocalVariable name ->
+            localVariable name vm
+
         Introspect0 primitive ->
             introspect0 primitive vm
 
@@ -351,6 +395,12 @@ execute instruction vm =
 
         EnterTemplateScope ->
             enterTemplateScope vm
+
+        PushLocalScope ->
+            pushLocalScope vm
+
+        PopLocalScope ->
+            popLocalScope vm
 
         JumpIfFalse by ->
             jumpIfFalse by vm

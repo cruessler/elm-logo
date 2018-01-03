@@ -186,3 +186,28 @@ vmWithTemplateLoop =
             [ test "environment contains printed lines" <|
                 \_ -> Expect.equal vm.environment.lines (Array.fromList [ "w", "o", "r", "d" ])
             ]
+
+
+vmWithLocalScope : Test
+vmWithLocalScope =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ PushValue (Type.Int 0)
+                    , PushLocalScope
+                    , LocalVariable "arg"
+                    , PushValue (Type.Word "value")
+                    , StoreVariable "arg"
+                    , PushVariable "arg"
+                    , Command1 { name = "print", f = C.print }
+                    , PopLocalScope
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+        describe "with print in a local scope" <|
+            [ test "environment contains printed lines" <|
+                \_ -> Expect.equal vm.environment.lines (Array.fromList [ "value" ])
+            ]

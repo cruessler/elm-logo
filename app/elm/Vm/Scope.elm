@@ -6,6 +6,7 @@ module Vm.Scope
         , make
         , thing
         , pushLocalScope
+        , popLocalScope
         , local
         , pushLoopScope
         , popLoopScope
@@ -47,7 +48,7 @@ type alias Variables =
 
 type Scope
     = Root Variables
-    | Local Variables
+    | Local Int Variables
     | Template Iterator
     | Loop Int
 
@@ -63,7 +64,7 @@ member name scope =
         Root { variables } ->
             Dict.member name variables
 
-        Local { variables } ->
+        Local _ { variables } ->
             Dict.member name variables
 
         _ ->
@@ -76,7 +77,7 @@ get name scope =
         Root { variables } ->
             Dict.get name variables
 
-        Local { variables } ->
+        Local _ { variables } ->
             Dict.get name variables
 
         _ ->
@@ -89,8 +90,8 @@ set name value scope =
         Root { variables } ->
             Root { variables = Dict.insert name (Defined value) variables }
 
-        Local { variables } ->
-            Local { variables = Dict.insert name (Defined value) variables }
+        Local returnAddress { variables } ->
+            Local returnAddress { variables = Dict.insert name (Defined value) variables }
 
         _ ->
             scope
@@ -144,9 +145,19 @@ thing name scopes =
 
 {-| Create a new local scope.
 -}
-pushLocalScope : List Scope -> List Scope
-pushLocalScope scopes =
-    Local { variables = Dict.empty } :: scopes
+pushLocalScope : Int -> List Scope -> List Scope
+pushLocalScope returnAddress scopes =
+    Local returnAddress { variables = Dict.empty } :: scopes
+
+
+popLocalScope : List Scope -> Result String ( Int, List Scope )
+popLocalScope scopes =
+    case scopes of
+        (Local returnAddress _) :: rest ->
+            Ok ( returnAddress, rest )
+
+        _ ->
+            Err "The topmost scope is not a local scope"
 
 
 {-| Create a variable with local scope. Variables with local scope are visible
@@ -159,8 +170,8 @@ Overwrites any existing binding with `Undefined`.
 local : String -> List Scope -> List Scope
 local name scopes =
     case scopes of
-        (Local { variables }) :: rest ->
-            Local { variables = (Dict.insert name Undefined variables) }
+        (Local returnAddress { variables }) :: rest ->
+            Local returnAddress { variables = (Dict.insert name Undefined variables) }
                 :: rest
 
         _ ->

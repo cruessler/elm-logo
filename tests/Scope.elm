@@ -32,7 +32,7 @@ scopes =
                     let
                         scope =
                             Scope.empty
-                                |> Scope.pushLocalScope
+                                |> Scope.pushLocalScope 0
                                 |> Scope.local "x"
                     in
                         scope
