@@ -37,6 +37,8 @@ type Instruction
     | JumpIfFalse Int
     | JumpIfTrue Int
     | Jump Int
+    | Call Int
+    | Return
 
 
 {-| Represent a stack based virtual machine.
@@ -342,6 +344,20 @@ jumpIfTrue by vm =
             Err "There is nothing on the stack to be evaluated to true or false"
 
 
+return : Vm -> Result String Vm
+return vm =
+    case vm.stack of
+        (Type.Int returnAddress) :: rest ->
+            Ok
+                { vm
+                    | programCounter = returnAddress
+                    , stack = rest
+                }
+
+        _ ->
+            Err "There is no return address on the stack"
+
+
 {-| Execute a single instruction.
 -}
 execute : Instruction -> Vm -> Result String Vm
@@ -410,6 +426,16 @@ execute instruction vm =
 
         Jump by ->
             Ok { vm | programCounter = vm.programCounter + by }
+
+        Call address ->
+            Ok
+                { vm
+                    | stack = Type.Int (vm.programCounter + 1) :: vm.stack
+                    , programCounter = address
+                }
+
+        Return ->
+            return vm
 
 
 {-| Execute a single instruction, returning an error when the program counter

@@ -211,3 +211,147 @@ vmWithLocalScope =
             [ test "environment contains printed lines" <|
                 \_ -> Expect.equal vm.environment.lines (Array.fromList [ "value" ])
             ]
+
+
+vmWithSampleProgram : Test
+vmWithSampleProgram =
+    {- This test is a manual translation of the sample program given at
+       <https://people.eecs.berkeley.edu/~bh/logo-sample.html>.
+
+       > Here is a short but complete program in Berkeley Logo:
+       >
+       >   to choices :menu [:sofar []]
+       >     if emptyp :menu [print :sofar stop]
+       >     foreach first :menu [(choices butfirst :menu sentence :sofar ?)]
+       >   end
+       >
+       > And here's how you use it. You type
+       >
+       >   choices [[small medium large]
+       >       [vanilla [ultra chocolate] lychee [rum raisin] ginger]
+       >       [cone cup]]
+    -}
+    let
+        vm =
+            { emptyVm
+                | programCounter = 31
+                , instructions =
+                    [ PushLocalScope
+                    , LocalVariable "menu"
+                    , StoreVariable "menu"
+                    , LocalVariable "sofar"
+                    , StoreVariable "sofar"
+
+                    -- if emptyp :menu
+                    , PushVariable "menu"
+                    , Eval1 { name = "emptyp", f = P.emptyp }
+                    , JumpIfFalse 5
+
+                    -- print :sofar
+                    , PushVariable "sofar"
+                    , Command1 { name = "print", f = C.print }
+
+                    -- stop
+                    , PopLocalScope
+                    , Return
+
+                    -- first :menu
+                    , PushVariable "menu"
+                    , Eval1 { name = "first", f = P.first }
+
+                    -- foreach [ ...
+                    , PushTemplateScope
+                    , PushValue (Type.Word "rest")
+                    , Introspect1 { name = "?", f = I.templateVariable }
+                    , Eval1 { name = "emptyp", f = P.emptyp }
+                    , JumpIfTrue 10
+                    , EnterTemplateScope
+
+                    -- sentence :sofar ?
+                    , PushValue (Type.Word "1")
+                    , Introspect1 { name = "?", f = I.templateVariable }
+                    , PushVariable "sofar"
+                    , Eval2 { name = "sentence", f = P.sentence }
+
+                    -- butfirst :menu
+                    , PushVariable "menu"
+                    , Eval1 { name = "butfirst", f = P.butfirst }
+
+                    -- choices ...
+                    , Call 0
+                    , Jump -12
+                    , PopTemplateScope
+
+                    -- ... ]
+                    , PopLocalScope
+                    , Return
+                    , PushValue (Type.List [])
+                    , PushValue
+                        (Type.List
+                            [ Type.List
+                                [ Type.Word "small"
+                                , Type.Word "medium"
+                                , Type.Word "large"
+                                ]
+                            , Type.List
+                                [ Type.Word "vanilla"
+                                , Type.List [ Type.Word "ultra", Type.Word "chocolate" ]
+                                , Type.Word "lychee"
+                                , Type.List [ Type.Word "rum", Type.Word "raisin" ]
+                                , Type.Word "ginger"
+                                ]
+                            , Type.List
+                                [ Type.Word "cone"
+                                , Type.Word "cup"
+                                ]
+                            ]
+                        )
+
+                    -- choices ...
+                    , Call 0
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+        describe "with print and recursive function calls" <|
+            [ test "program counter is beyond the last instruction" <|
+                \_ ->
+                    Expect.equal vm.programCounter 34
+            , test "environment contains printed lines" <|
+                \_ ->
+                    Expect.equal vm.environment.lines
+                        (Array.fromList
+                            [ "small vanilla cone"
+                            , "small vanilla cup"
+                            , "small ultra chocolate cone"
+                            , "small ultra chocolate cup"
+                            , "small lychee cone"
+                            , "small lychee cup"
+                            , "small rum raisin cone"
+                            , "small rum raisin cup"
+                            , "small ginger cone"
+                            , "small ginger cup"
+                            , "medium vanilla cone"
+                            , "medium vanilla cup"
+                            , "medium ultra chocolate cone"
+                            , "medium ultra chocolate cup"
+                            , "medium lychee cone"
+                            , "medium lychee cup"
+                            , "medium rum raisin cone"
+                            , "medium rum raisin cup"
+                            , "medium ginger cone"
+                            , "medium ginger cup"
+                            , "large vanilla cone"
+                            , "large vanilla cup"
+                            , "large ultra chocolate cone"
+                            , "large ultra chocolate cup"
+                            , "large lychee cone"
+                            , "large lychee cup"
+                            , "large rum raisin cone"
+                            , "large rum raisin cup"
+                            , "large ginger cone"
+                            , "large ginger cup"
+                            ]
+                        )
+            ]
