@@ -35,13 +35,4 @@ type alias Command2 =
 -}
 print : Type.Value -> Environment -> Result String Environment
 print value env =
-    let
-        toString value =
-            case value of
-                Type.Word string ->
-                    string
-
-                Type.List list ->
-                    List.map toString list |> String.join ", "
-    in
-        Ok <| E.print (Type.toString value) env
+    Ok <| E.print (Type.toString value) env
