@@ -1,4 +1,4 @@
-module Ast exposing (..)
+module Test.Ast exposing (..)
 
 import Compiler.Ast as Ast
 import Expect exposing (Expectation)

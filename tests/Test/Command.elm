@@ -1,4 +1,4 @@
-module Command exposing (..)
+module Test.Command exposing (..)
 
 import Array
 import Environment exposing (Environment)

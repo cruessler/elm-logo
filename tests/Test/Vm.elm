@@ -1,4 +1,4 @@
-module Vm exposing (..)
+module Test.Vm exposing (..)
 
 import Array
 import Environment
