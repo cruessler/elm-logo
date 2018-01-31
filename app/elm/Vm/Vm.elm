@@ -52,6 +52,18 @@ type alias Vm =
     }
 
 
+{-| Initialize a `Vm` with a list of instructions and a program counter.
+-}
+initialize : List Instruction -> Int -> Vm
+initialize instructions programCounter =
+    { instructions = Array.fromList instructions
+    , programCounter = programCounter
+    , stack = []
+    , scopes = Scope.empty
+    , environment = Environment.empty
+    }
+
+
 {-| Increment the program counter of a `Vm`.
 -}
 incrementProgramCounter : Vm -> Vm
