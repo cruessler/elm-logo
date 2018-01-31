@@ -41,9 +41,9 @@ list : Parser Type.Value
 list =
     succeed Type.List
         |. symbol "["
-        |. spaces
+        |. maybeSpaces
         |= (value_ |> andThen (\value -> nextValueInList [ value ]))
-        |. spaces
+        |. maybeSpaces
         |. symbol "]"
 
 
@@ -75,6 +75,11 @@ word =
         |= keep oneOrMore (\c -> c /= ' ')
 
 
+maybeSpaces : Parser ()
+maybeSpaces =
+    ignore zeroOrMore (\c -> c == ' ')
+
+
 spaces : Parser ()
 spaces =
-    ignore zeroOrMore (\c -> c == ' ')
+    ignore oneOrMore (\c -> c == ' ')
