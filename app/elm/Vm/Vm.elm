@@ -5,6 +5,7 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
+import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Vm.Command as C
 import Vm.Introspect as I
@@ -38,6 +39,7 @@ type Instruction
     | JumpIfTrue Int
     | Jump Int
     | Call Int
+    | CallByName String
     | Return
 
 
@@ -49,6 +51,7 @@ type alias Vm =
     , stack : List Type.Value
     , scopes : List Scope
     , environment : Environment
+    , functionTable : Dict String Int
     }
 
 
@@ -61,6 +64,7 @@ initialize instructions programCounter =
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
+    , functionTable = Dict.empty
     }
 
 
@@ -445,6 +449,17 @@ execute instruction vm =
                     | stack = Type.Int (vm.programCounter + 1) :: vm.stack
                     , programCounter = address
                 }
+
+        CallByName functionName ->
+            Dict.get functionName vm.functionTable
+                |> Result.fromMaybe ("The function `" ++ functionName ++ "` does not exist")
+                |> Result.map
+                    (\address ->
+                        { vm
+                            | stack = Type.Int (vm.programCounter + 1) :: vm.stack
+                            , programCounter = address
+                        }
+                    )
 
         Return ->
             return vm

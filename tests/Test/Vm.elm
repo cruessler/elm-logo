@@ -1,6 +1,7 @@
 module Test.Vm exposing (..)
 
 import Array
+import Dict
 import Environment
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
@@ -20,6 +21,7 @@ emptyVm =
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
+    , functionTable = Dict.empty
     }
 
 
@@ -311,6 +313,7 @@ vmWithSampleProgram =
                     , Call 0
                     ]
                         |> Array.fromList
+                , functionTable = Dict.singleton "choices" 0
             }
                 |> runAndUnwrap
     in
