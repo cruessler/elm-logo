@@ -5,6 +5,7 @@ import Compiler.Parser as Parser
 import Expect exposing (Expectation)
 import Parser
 import Test exposing (..)
+import Vm.Command as C
 import Vm.Type as Type
 
 
@@ -45,3 +46,38 @@ value =
             , test "fail when given string cannot be parsed" <|
                 \_ -> Expect.err fail
             ]
+
+
+parsesFunction source function =
+    let
+        result =
+            Parser.run Parser.functionDefinition source
+    in
+        Expect.equal result (Ok function)
+
+
+functionDefinition : Test
+functionDefinition =
+    describe "define a function" <|
+        [ test "with mandatory arguments and no body" <|
+            \_ ->
+                parsesFunction "to foo :bar :baz\nend\n"
+                    { name = "foo"
+                    , requiredArguments = [ "bar", "baz" ]
+                    , body = []
+                    }
+        , test "with mandatory argument and body" <|
+            \_ ->
+                parsesFunction "to foo :bar\nprint :bar\nprint :baz\nend\n"
+                    { name = "foo"
+                    , requiredArguments = [ "bar" ]
+                    , body =
+                        [ Ast.Command1
+                            { name = "print", f = C.print }
+                            (Ast.Variable "bar")
+                        , Ast.Command1
+                            { name = "print", f = C.print }
+                            (Ast.Variable "baz")
+                        ]
+                    }
+        ]

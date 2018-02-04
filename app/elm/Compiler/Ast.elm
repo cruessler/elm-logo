@@ -1,4 +1,9 @@
-module Compiler.Ast exposing (Node(..), compile)
+module Compiler.Ast
+    exposing
+        ( Node(..)
+        , Function
+        , compile
+        )
 
 {-| This module provides types and functions for working with Logo ASTs.
 -}
@@ -8,6 +13,13 @@ import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
 import Vm.Vm exposing (Vm, Instruction(..))
+
+
+type alias Function =
+    { name : String
+    , requiredArguments : List String
+    , body : List Node
+    }
 
 
 type Node

@@ -2,6 +2,7 @@ module Compiler.Parser
     exposing
         ( root
         , value
+        , functionDefinition
         )
 
 {-| This module provides functions for parsing Logo code.
@@ -35,6 +36,73 @@ import Vm.Type as Type
 root : Parser (List Ast.Node)
 root =
     statements
+
+
+functionDefinition : Parser Ast.Function
+functionDefinition =
+    Parser.inContext "functionDefinition" <|
+        delayedCommit (Parser.keyword "to") <|
+            (succeed Ast.Function
+                |. spaces
+                |= functionName
+                |. spaces
+                |= arguments
+                |. maybeSpaces
+                |. symbol "\n"
+                |= functionBody
+            )
+
+
+functionName : Parser String
+functionName =
+    keep oneOrMore (\c -> c /= ' ')
+
+
+argument : Parser String
+argument =
+    succeed identity
+        |. symbol ":"
+        |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
+
+
+arguments : Parser (List String)
+arguments =
+    argument |> andThen (\argument -> nextArgument [ argument ])
+
+
+nextArgument : List String -> Parser (List String)
+nextArgument acc =
+    oneOf
+        [ delayedCommit spaces argument
+            |> andThen (\name -> nextArgument (name :: acc))
+        , succeed (List.reverse acc)
+        ]
+
+
+functionBody : Parser (List Ast.Node)
+functionBody =
+    Parser.inContext "functionBody" <|
+        (nextLine [])
+
+
+nextLine : List Ast.Node -> Parser (List Ast.Node)
+nextLine acc =
+    oneOf
+        [ Parser.keyword "end\n"
+            |> andThen (\_ -> succeed acc)
+        , line
+            |> andThen (\line -> nextLine (List.concat [ acc, line ]))
+        ]
+
+
+line : Parser (List Ast.Node)
+line =
+    Parser.inContext "line" <|
+        succeed identity
+            |. maybeSpaces
+            |= statements
+            |. maybeSpaces
+            |. symbol "\n"
 
 
 statements : Parser (List Ast.Node)
@@ -258,9 +326,10 @@ call =
                 (c /= '[')
                     && (c /= ']')
                     && (c /= '"')
+                    && (c /= '\n')
                     && (not <| Char.isDigit c)
             )
-            |. ignore zeroOrMore (\c -> c /= ' ')
+            |. ignore zeroOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 make : Parser Ast.Node
@@ -291,7 +360,7 @@ variable =
     Parser.inContext "variable" <|
         succeed Ast.Variable
             |. symbol ":"
-            |= keep oneOrMore (\c -> c /= ' ')
+            |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 value : Parser Ast.Node
@@ -344,7 +413,7 @@ word : Parser Type.Value
 word =
     succeed Type.Word
         |. symbol "\""
-        |= keep oneOrMore (\c -> c /= ' ')
+        |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 maybeSpaces : Parser ()
