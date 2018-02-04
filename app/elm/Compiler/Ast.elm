@@ -1,13 +1,16 @@
 module Compiler.Ast
     exposing
         ( Node(..)
+        , Program
         , Function
+        , compileProgram
         , compile
         )
 
 {-| This module provides types and functions for working with Logo ASTs.
 -}
 
+import Dict exposing (Dict)
 import Vm.Command as C
 import Vm.Introspect as I
 import Vm.Primitive as P
@@ -15,10 +18,29 @@ import Vm.Type as Type
 import Vm.Vm exposing (Vm, Instruction(..))
 
 
+type alias Program =
+    { functions : List Function
+    , body : List Node
+    }
+
+
 type alias Function =
     { name : String
     , requiredArguments : List String
     , body : List Node
+    }
+
+
+type alias CompiledProgram =
+    { instructions : List Instruction
+    , functionTable : Dict String Int
+    , startAddress : Int
+    }
+
+
+type alias CompiledFunction =
+    { name : String
+    , body : List Instruction
     }
 
 
@@ -139,3 +161,48 @@ compile node =
 
         Value value ->
             [ PushValue value ]
+
+
+compileProgram : Program -> CompiledProgram
+compileProgram { functions, body } =
+    let
+        compiledFunctions =
+            List.map compileFunction functions
+
+        ( functionTable, startAddress ) =
+            List.foldl
+                (\f ( acc, address ) ->
+                    ( Dict.insert f.name address acc
+                    , address + List.length f.body
+                    )
+                )
+                ( Dict.empty, 0 )
+                compiledFunctions
+
+        instructions =
+            List.append
+                (List.concatMap .body compiledFunctions)
+                (List.concatMap compile body)
+    in
+        { instructions = instructions
+        , functionTable = functionTable
+        , startAddress = startAddress
+        }
+
+
+compileFunction : Function -> CompiledFunction
+compileFunction { name, requiredArguments, body } =
+    let
+        instructions =
+            [ [ PushLocalScope ]
+            , List.concatMap (\arg -> [ LocalVariable arg, StoreVariable arg ]) requiredArguments
+            , List.concatMap compile body
+            , [ PopLocalScope
+              , Return
+              ]
+            ]
+                |> List.concat
+    in
+        { name = name
+        , body = instructions
+        }
