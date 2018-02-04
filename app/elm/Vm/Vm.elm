@@ -57,14 +57,14 @@ type alias Vm =
 
 {-| Initialize a `Vm` with a list of instructions and a program counter.
 -}
-initialize : List Instruction -> Int -> Vm
-initialize instructions programCounter =
+initialize : List Instruction -> Dict String Int -> Int -> Vm
+initialize instructions functionTable programCounter =
     { instructions = Array.fromList instructions
     , programCounter = programCounter
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
-    , functionTable = Dict.empty
+    , functionTable = functionTable
     }
 
 

@@ -23,8 +23,11 @@ printsLines program lines =
                             ++ "`. The error was: "
                             ++ (toString error)
                     )
-                |> Result.map (\node -> List.concatMap Ast.compile node)
-                |> Result.map (\instructions -> Vm.Vm.initialize instructions 0)
+                |> Result.map Ast.compileProgram
+                |> Result.map
+                    (\{ instructions, functionTable, startAddress } ->
+                        Vm.Vm.initialize instructions functionTable startAddress
+                    )
                 |> Result.andThen Vm.Vm.run
 
         match : Result String Vm.Vm.Vm -> Expectation
@@ -119,4 +122,17 @@ printContatenatedWords =
         [ printsLines
             """make "foo "bar make "bar "baz print sentence :foo :bar"""
             [ "bar baz" ]
+        ]
+
+
+functionDefinitions : Test
+functionDefinitions =
+    describe "define unused function and print words" <|
+        [ printsLines
+            """to foo :bar
+print :bar
+print :bar
+end
+print "baz print "baz"""
+            [ "baz", "baz" ]
         ]

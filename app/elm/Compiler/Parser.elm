@@ -33,9 +33,12 @@ import Parser
 import Vm.Type as Type
 
 
-root : Parser (List Ast.Node)
+root : Parser Ast.Program
 root =
-    statements
+    Parser.inContext "root" <|
+        succeed Ast.Program
+            |= Parser.repeat zeroOrMore functionDefinition
+            |= statements
 
 
 functionDefinition : Parser Ast.Function
