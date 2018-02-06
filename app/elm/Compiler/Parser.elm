@@ -13,6 +13,7 @@ import Compiler.Ast as Ast
 import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
+import Compiler.Parser.Helper as Parser
 import Parser
     exposing
         ( Parser
@@ -70,16 +71,7 @@ argument =
 
 arguments : Parser (List String)
 arguments =
-    argument |> andThen (\argument -> nextArgument [ argument ])
-
-
-nextArgument : List String -> Parser (List String)
-nextArgument acc =
-    oneOf
-        [ delayedCommit spaces argument
-            |> andThen (\name -> nextArgument (name :: acc))
-        , succeed (List.reverse acc)
-        ]
+    Parser.list { item = argument, separator = spaces }
 
 
 functionBody : Parser (List Ast.Node)
@@ -110,22 +102,7 @@ line =
 
 statements : Parser (List Ast.Node)
 statements =
-    statement |> andThen (\statement -> nextStatement [ statement ])
-
-
-nextStatement : List Ast.Node -> Parser (List Ast.Node)
-nextStatement acc =
-    let
-        nextStatement_ : Parser Ast.Node
-        nextStatement_ =
-            delayedCommit maybeSpaces <|
-                succeed identity
-                    |= statement
-    in
-        oneOf
-            [ nextStatement_ |> andThen (\value -> nextStatement (value :: acc))
-            , succeed (List.reverse acc)
-            ]
+    Parser.list { item = lazy (\_ -> statement), separator = spaces }
 
 
 statement : Parser Ast.Node
@@ -150,7 +127,7 @@ controlStructure keyword constructor =
             |. spaces
             |. symbol "["
             |. maybeSpaces
-            |= (statement |> andThen (\statement -> nextStatement [ statement ]))
+            |= statements
             |. maybeSpaces
             |. symbol "]"
 
@@ -199,20 +176,13 @@ commandWithArguments command =
                 _ ->
                     Parser.fail "could not parse function call"
     in
-        expressions numberOfArguments []
+        expressions numberOfArguments
             |> andThen makeNode
 
 
-expressions : Int -> List Ast.Node -> Parser (List Ast.Node)
-expressions num acc =
-    if num > 0 then
-        succeed identity
-            |. maybeSpaces
-            |= (expression
-                    |> andThen (\node -> expressions (num - 1) (node :: acc))
-               )
-    else
-        succeed (List.reverse acc)
+expressions : Int -> Parser (List Ast.Node)
+expressions count =
+    Parser.repeatExactly count { item = expression, separator = spaces }
 
 
 expression : Parser Ast.Node
@@ -276,7 +246,7 @@ introspectWithArguments introspect =
         if numberOfArguments == 0 then
             makeNode []
         else
-            expressions numberOfArguments []
+            expressions numberOfArguments
                 |> andThen makeNode
 
 
@@ -298,7 +268,7 @@ primitiveWithArguments primitive =
                 _ ->
                     Parser.fail "could not parse function call"
     in
-        expressions numberOfArguments []
+        expressions numberOfArguments
             |> andThen makeNode
 
 
@@ -386,24 +356,9 @@ list =
     succeed Type.List
         |. symbol "["
         |. maybeSpaces
-        |= (value_ |> andThen (\value -> nextValueInList [ value ]))
+        |= Parser.list { item = value_, separator = spaces }
         |. maybeSpaces
         |. symbol "]"
-
-
-nextValueInList : List Type.Value -> Parser (List Type.Value)
-nextValueInList acc =
-    oneOf
-        [ nextValueInList_ |> andThen (\value -> nextValueInList (value :: acc))
-        , succeed (List.reverse acc)
-        ]
-
-
-nextValueInList_ : Parser Type.Value
-nextValueInList_ =
-    delayedCommit spaces <|
-        succeed identity
-            |= value_
 
 
 int : Parser Type.Value

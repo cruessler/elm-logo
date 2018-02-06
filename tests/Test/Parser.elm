@@ -24,6 +24,9 @@ value =
         nestedList =
             Parser.run Parser.value "[ 1234 [ 1234 ] ]"
 
+        emptyList =
+            Parser.run Parser.value "[ ]"
+
         fail =
             Parser.run Parser.value " [ 1 2"
     in
@@ -43,6 +46,10 @@ value =
                             Ast.Value <|
                                 Type.List [ Type.Int 1234, Type.List [ Type.Int 1234 ] ]
                         )
+            , test "parse empty list" <|
+                \_ ->
+                    Expect.equal emptyList
+                        (Ok <| Ast.Value <| Type.List [])
             , test "fail when given string cannot be parsed" <|
                 \_ -> Expect.err fail
             ]
