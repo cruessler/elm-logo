@@ -127,12 +127,19 @@ printContatenatedWords =
 
 functionDefinitions : Test
 functionDefinitions =
-    describe "define unused function and print words" <|
+    describe "define function and print words" <|
         [ printsLines
             """to foo :bar
 print :bar
 print :bar
 end
 print "baz print "baz"""
+            [ "baz", "baz" ]
+        , printsLines
+            """to foo :bar
+print :bar
+print :bar
+end
+foo "baz"""
             [ "baz", "baz" ]
         ]

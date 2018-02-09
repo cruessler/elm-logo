@@ -2,6 +2,7 @@ module Test.Parser exposing (..)
 
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
+import Dict
 import Expect exposing (Expectation)
 import Parser
 import Test exposing (..)
@@ -58,7 +59,7 @@ value =
 parsesFunction source function =
     let
         result =
-            Parser.run Parser.functionDefinition source
+            Parser.run (Parser.functionDefinition Dict.empty) source
     in
         Expect.equal result (Ok function)
 
