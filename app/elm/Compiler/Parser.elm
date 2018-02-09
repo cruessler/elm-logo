@@ -102,7 +102,7 @@ functionHeader =
             |. spaces
             |= functionName
             |. spaces
-            |= arguments
+            |= requiredArguments
             |. maybeSpaces
             |. symbol "\n"
         )
@@ -113,16 +113,16 @@ functionName =
     keep oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
-argument : Parser String
-argument =
+requiredArguments : Parser (List String)
+requiredArguments =
+    Parser.list { item = requiredArgument, separator = spaces }
+
+
+requiredArgument : Parser String
+requiredArgument =
     succeed identity
         |. symbol ":"
         |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
-
-
-arguments : Parser (List String)
-arguments =
-    Parser.list { item = argument, separator = spaces }
 
 
 functionBody : Dict String FunctionDeclaration -> Parser (List Ast.Node)
