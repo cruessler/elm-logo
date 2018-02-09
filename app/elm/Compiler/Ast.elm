@@ -27,6 +27,7 @@ type alias Program =
 type alias Function =
     { name : String
     , requiredArguments : List String
+    , optionalArguments : List ( String, Node )
     , body : List Node
     }
 

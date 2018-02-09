@@ -79,7 +79,7 @@ functionDefinition knownFunctions =
     Parser.inContext "functionDefinition" <|
         (functionHeader
             |> andThen
-                (\( name, requiredArguments ) ->
+                (\( name, requiredArguments, optionalArguments ) ->
                     let
                         knownFunctions_ =
                             Dict.insert name
@@ -90,19 +90,28 @@ functionDefinition knownFunctions =
                                 knownFunctions
                     in
                         functionBody knownFunctions_
-                            |> Parser.map (Ast.Function name requiredArguments)
+                            |> Parser.map
+                                (Ast.Function name
+                                    requiredArguments
+                                    optionalArguments
+                                )
                 )
         )
 
 
-functionHeader : Parser ( String, List String )
+functionHeader : Parser ( String, List String, List ( String, Ast.Node ) )
 functionHeader =
     delayedCommit (Parser.keyword "to") <|
-        (succeed (,)
+        (succeed (\a b c -> ( a, b, c ))
             |. spaces
             |= functionName
             |. spaces
             |= requiredArguments
+            |= (oneOf
+                    [ delayedCommit spaces <| optionalArguments
+                    , succeed []
+                    ]
+               )
             |. maybeSpaces
             |. symbol "\n"
         )
@@ -123,6 +132,23 @@ requiredArgument =
     succeed identity
         |. symbol ":"
         |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
+
+
+optionalArguments : Parser (List ( String, Ast.Node ))
+optionalArguments =
+    Parser.list { item = optionalArgument, separator = spaces }
+
+
+optionalArgument : Parser ( String, Ast.Node )
+optionalArgument =
+    succeed (,)
+        |. symbol "["
+        |. maybeSpaces
+        |= requiredArgument
+        |. spaces
+        |= expression
+        |. maybeSpaces
+        |. symbol "]"
 
 
 functionBody : Dict String FunctionDeclaration -> Parser (List Ast.Node)

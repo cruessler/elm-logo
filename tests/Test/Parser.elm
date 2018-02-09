@@ -72,6 +72,7 @@ functionDefinition =
                 parsesFunction "to foo :bar :baz\nend\n"
                     { name = "foo"
                     , requiredArguments = [ "bar", "baz" ]
+                    , optionalArguments = []
                     , body = []
                     }
         , test "with mandatory argument and body" <|
@@ -79,6 +80,7 @@ functionDefinition =
                 parsesFunction "to foo :bar\nprint :bar\nprint :baz\nend\n"
                     { name = "foo"
                     , requiredArguments = [ "bar" ]
+                    , optionalArguments = []
                     , body =
                         [ Ast.Command1
                             { name = "print", f = C.print }
@@ -86,6 +88,18 @@ functionDefinition =
                         , Ast.Command1
                             { name = "print", f = C.print }
                             (Ast.Variable "baz")
+                        ]
+                    }
+        , test "with optional arguments" <|
+            \_ ->
+                parsesFunction "to foo :bar [:baz \"baz]\nprint :bar\nend\n"
+                    { name = "foo"
+                    , requiredArguments = [ "bar" ]
+                    , optionalArguments = [ ( "baz", Ast.Value <| Type.Word <| "baz" ) ]
+                    , body =
+                        [ Ast.Command1
+                            { name = "print", f = C.print }
+                            (Ast.Variable "bar")
                         ]
                     }
         ]
