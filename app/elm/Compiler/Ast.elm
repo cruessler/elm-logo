@@ -153,10 +153,14 @@ compile node =
                 |> List.concat
 
         Call name arguments ->
-            [ List.reverse arguments |> List.concatMap compile
-            , [ Vm.Vm.CallByName name ]
-            ]
-                |> List.concat
+            let
+                mangledName =
+                    name ++ (toString <| List.length arguments)
+            in
+                [ List.reverse arguments |> List.concatMap compile
+                , [ Vm.Vm.CallByName mangledName ]
+                ]
+                    |> List.concat
 
         Make name node ->
             [ compile node
@@ -211,6 +215,6 @@ compileFunction { name, requiredArguments, body } =
             ]
                 |> List.concat
     in
-        { name = name
+        { name = name ++ (toString <| List.length requiredArguments)
         , body = instructions
         }
