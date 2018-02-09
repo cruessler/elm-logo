@@ -53,6 +53,7 @@ type Node
     | Primitive2 P.Primitive2 Node Node
     | Introspect0 (I.Introspect0 Vm)
     | Introspect1 (I.Introspect1 Vm) Node
+    | Call String (List Node)
     | Make String Node
     | Variable String
     | Value Type.Value
@@ -147,6 +148,12 @@ compile node =
         Introspect1 i node ->
             [ compile node
             , [ Vm.Vm.Introspect1 i ]
+            ]
+                |> List.concat
+
+        Call name arguments ->
+            [ List.reverse arguments |> List.concatMap compile
+            , [ Vm.Vm.CallByName name ]
             ]
                 |> List.concat
 
