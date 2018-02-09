@@ -125,6 +125,10 @@ printContatenatedWords =
         ]
 
 
+{-| The programs in these tests are deliberately put at the beginning of a
+line because the parser expects "end" to be the only thing in a line that
+closes a function definition.
+-}
 functionDefinitions : Test
 functionDefinitions =
     describe "define function and print words" <|
@@ -142,4 +146,11 @@ print :bar
 end
 foo "baz"""
             [ "baz", "baz" ]
+        , printsLines
+            """to foo :bar
+if emptyp :bar [ print "baz foo [ "baz ] ]
+print "bar
+end
+foo []"""
+            [ "baz", "bar", "bar" ]
         ]

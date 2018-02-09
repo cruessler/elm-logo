@@ -77,16 +77,35 @@ body functions =
 functionDefinition : Dict String FunctionDeclaration -> Parser Ast.Function
 functionDefinition knownFunctions =
     Parser.inContext "functionDefinition" <|
-        delayedCommit (Parser.keyword "to") <|
-            (succeed Ast.Function
-                |. spaces
-                |= functionName
-                |. spaces
-                |= arguments
-                |. maybeSpaces
-                |. symbol "\n"
-                |= functionBody knownFunctions
-            )
+        (functionHeader
+            |> andThen
+                (\( name, requiredArguments ) ->
+                    let
+                        knownFunctions_ =
+                            Dict.insert name
+                                { name = name
+                                , requiredArguments =
+                                    List.length requiredArguments
+                                }
+                                knownFunctions
+                    in
+                        functionBody knownFunctions_
+                            |> Parser.map (Ast.Function name requiredArguments)
+                )
+        )
+
+
+functionHeader : Parser ( String, List String )
+functionHeader =
+    delayedCommit (Parser.keyword "to") <|
+        (succeed (,)
+            |. spaces
+            |= functionName
+            |. spaces
+            |= arguments
+            |. maybeSpaces
+            |. symbol "\n"
+        )
 
 
 functionName : Parser String
