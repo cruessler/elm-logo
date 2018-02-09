@@ -458,7 +458,7 @@ word : Parser Type.Value
 word =
     succeed Type.Word
         |. symbol "\""
-        |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
+        |= keep oneOrMore (\c -> c /= ' ' && c /= ']' && c /= '\n')
 
 
 maybeSpaces : Parser ()
