@@ -434,7 +434,7 @@ make =
             (succeed (,)
                 |. Parser.keyword "make"
                 |. spaces
-                |= word
+                |= wordOutsideList
                 |. spaces
                 |= expression
                 |> andThen makeNode
@@ -451,27 +451,17 @@ variable =
 
 value : Parser Ast.Node
 value =
-    Parser.map Ast.Value value_
+    Parser.map Ast.Value valueOutsideList
 
 
-value_ : Parser Type.Value
-value_ =
-    Parser.inContext "value" <|
+valueOutsideList : Parser Type.Value
+valueOutsideList =
+    Parser.inContext "valueOutsideList" <|
         oneOf
             [ lazy (\_ -> list)
             , int
-            , word
+            , wordOutsideList
             ]
-
-
-list : Parser Type.Value
-list =
-    succeed Type.List
-        |. symbol "["
-        |. maybeSpaces
-        |= Parser.list { item = value_, separator = spaces }
-        |. maybeSpaces
-        |. symbol "]"
 
 
 int : Parser Type.Value
@@ -480,11 +470,60 @@ int =
         |> Parser.map Type.Int
 
 
-word : Parser Type.Value
-word =
+wordOutsideList : Parser Type.Value
+wordOutsideList =
     succeed Type.Word
         |. symbol "\""
-        |= keep oneOrMore (\c -> c /= ' ' && c /= ']' && c /= ')' && c /= '\n')
+        |= keep oneOrMore
+            (\c ->
+                (c /= ' ')
+                    && (c /= '[')
+                    && (c /= ']')
+                    && (c /= '(')
+                    && (c /= ')')
+                    && (c /= '\n')
+            )
+
+
+list : Parser Type.Value
+list =
+    succeed Type.List
+        |. symbol "["
+        |. maybeSpaces
+        |= Parser.list { item = valueInList, separator = spaces }
+        |. maybeSpaces
+        |. symbol "]"
+
+
+valueInList : Parser Type.Value
+valueInList =
+    Parser.inContext "valueInList" <|
+        oneOf
+            [ lazy (\_ -> list)
+            , int
+            , wordInList
+            ]
+
+
+wordInList : Parser Type.Value
+wordInList =
+    succeed Type.Word
+        |= keep oneOrMore
+            (\c ->
+                (c /= ' ')
+                    && (c /= '[')
+                    && (c /= ']')
+                    && (c /= '(')
+                    && (c /= ')')
+                    && (c /= '\n')
+                    && (c /= '+')
+                    && (c /= '-')
+                    && (c /= '*')
+                    && (c /= '/')
+                    && (c /= '=')
+                    && (c /= '<')
+                    && (c /= '>')
+            )
 
 
 maybeSpaces : Parser ()

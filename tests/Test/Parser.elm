@@ -20,7 +20,7 @@ value =
             Parser.run Parser.value "\"word"
 
         list =
-            Parser.run Parser.value "[ 1234 \"word ]"
+            Parser.run Parser.value "[ 1234 word ]"
 
         nestedList =
             Parser.run Parser.value "[ 1234 [ 1234 ] ]"
