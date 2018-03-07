@@ -477,7 +477,7 @@ templateVariable =
             succeed makeNode
                 |. symbol "?"
                 |. maybeSpaces
-                |= oneOf [ Parser.source <| Parser.keyword "rest", digits ]
+                |= oneOf [ Parser.source <| Parser.keyword "rest", digits, succeed "1" ]
 
 
 call : Parser String
