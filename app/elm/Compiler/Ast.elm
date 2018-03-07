@@ -4,6 +4,7 @@ module Compiler.Ast
         , Program
         , Function
         , compileProgram
+        , compileFunction
         , compile
         )
 
@@ -58,6 +59,24 @@ type Node
     | Make String Node
     | Variable String
     | Value Type.Value
+
+
+{-| Mangle the name of a function based on its number of arguments. This is
+used to disambiguate variants of a function that take different numbers of
+arguments.
+
+The declaration
+
+    to foo :bar [:baz "qux]
+    end
+
+would yield two functions, "foo1" and "foo2", which take 1 and 2 arguments,
+respectively.
+
+-}
+mangleName : String -> Int -> String
+mangleName name arguments =
+    name ++ (toString arguments)
 
 
 {-| Compile an AST node to a list of VM instructions.
@@ -179,7 +198,7 @@ compileProgram : Program -> CompiledProgram
 compileProgram { functions, body } =
     let
         compiledFunctions =
-            List.map compileFunction functions
+            List.concatMap compileFunction functions
 
         ( functionTable, startAddress ) =
             List.foldl
@@ -202,19 +221,91 @@ compileProgram { functions, body } =
         }
 
 
-compileFunction : Function -> CompiledFunction
-compileFunction { name, requiredArguments, body } =
+compileRequiredArgument : String -> List Instruction
+compileRequiredArgument arg =
+    [ LocalVariable arg, StoreVariable arg ]
+
+
+compileOptionalArgument : ( String, Node ) -> List Instruction
+compileOptionalArgument ( arg, node ) =
+    [ [ LocalVariable arg ]
+    , compile node
+    , [ StoreVariable arg ]
+    ]
+        |> List.concat
+
+
+{-| Compile a function, taking optional arguments into account by returning
+multiple versions, each taking a different number of arguments.
+-}
+compileFunction : Function -> List CompiledFunction
+compileFunction { name, requiredArguments, optionalArguments, body } =
     let
-        instructions =
+        {- Instructions for required arguments. -}
+        instructionsForRequiredArguments =
             [ [ PushLocalScope ]
-            , List.concatMap (\arg -> [ LocalVariable arg, StoreVariable arg ]) requiredArguments
-            , List.concatMap compile body
+            , List.concatMap compileRequiredArgument requiredArguments
+            ]
+                |> List.concat
+
+        {- Instructions for the function body. -}
+        instructionsForBody =
+            [ List.concatMap compile body
             , [ PopLocalScope
-              , Return
+              , Vm.Vm.Return
               ]
             ]
                 |> List.concat
+
+        numberOfRequiredArguments =
+            List.length requiredArguments
+
+        numberOfOptionalArguments =
+            List.length optionalArguments
+
+        {- Instructions if an optional argument is compiled like a required
+           argument. In this case, the value for the argument is expected to be
+           passed on the stack.
+        -}
+        instructionsRequired =
+            List.map (Tuple.first >> compileRequiredArgument) optionalArguments
+
+        {- Instructions if an optional argument is compiled as optional
+           argument. In this case, the value for the argument is computed by the callee itself.
+        -}
+        instructionsOptional =
+            List.map compileOptionalArgument optionalArguments
+
+        {- Given a number of optional arguments to be compiled as required
+           arguments, compile a function body.
+        -}
+        compileBody : Int -> List Instruction
+        compileBody i =
+            let
+                instructions =
+                    (List.take i instructionsRequired)
+                        ++ (List.drop i instructionsOptional)
+                        |> List.concat
+            in
+                [ instructionsForRequiredArguments
+                , instructions
+                , instructionsForBody
+                ]
+                    |> List.concat
     in
-        { name = name ++ (toString <| List.length requiredArguments)
-        , body = instructions
-        }
+        {- Compile the function for each number of arguments. If, e. g., a
+           function takes 1 required and 2 optional arguments, the list
+           returned by this function will contain a function for each of the
+           following cases:
+
+             - 1 required argument, 2 optional arguments,
+             - 2 required arguments, 1 optional argument,
+             - 3 required arguments.
+        -}
+        List.map
+            (\i ->
+                { name = mangleName name (numberOfRequiredArguments + i)
+                , body = compileBody i
+                }
+            )
+            (List.range 0 numberOfOptionalArguments |> List.reverse)

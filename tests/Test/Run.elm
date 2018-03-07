@@ -199,3 +199,16 @@ end
 (foo "bar)"""
             "not enough inputs to foo"
         ]
+
+
+optionalArguments : Test
+optionalArguments =
+    describe "define function with default value for optional parameter" <|
+        [ printsLines
+            """to foo :bar [:baz "qux]
+print :bar
+print :baz
+end
+(foo "bar) (foo "bar "quux)"""
+            [ "bar", "qux", "bar", "quux" ]
+        ]
