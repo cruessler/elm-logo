@@ -194,6 +194,7 @@ statement knownFunctions =
             [ lazy (\_ -> foreach knownFunctions)
             , lazy (\_ -> repeat knownFunctions)
             , lazy (\_ -> if_ knownFunctions)
+            , (succeed Ast.Return |. Parser.keyword "stop")
             , make
             , variableFunctionCall knownFunctions
             , functionCall knownFunctions

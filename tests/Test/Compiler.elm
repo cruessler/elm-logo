@@ -4,7 +4,7 @@ import Compiler.Ast as Ast exposing (Node(..))
 import Expect exposing (Expectation)
 import Test exposing (Test, describe, test)
 import Vm.Type as Type
-import Vm.Vm exposing (Instruction(..))
+import Vm.Vm as Vm exposing (Instruction(..))
 
 
 compileFunction : Test
@@ -32,7 +32,7 @@ compileFunction =
                                 , LocalVariable "baz"
                                 , StoreVariable "baz"
                                 , PopLocalScope
-                                , Return
+                                , Vm.Return
                                 ]
                           }
                         , { name = "foo1"
@@ -44,7 +44,7 @@ compileFunction =
                                 , PushValue (Type.Word "baz")
                                 , StoreVariable "baz"
                                 , PopLocalScope
-                                , Return
+                                , Vm.Return
                                 ]
                           }
                         ]

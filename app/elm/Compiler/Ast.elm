@@ -56,6 +56,7 @@ type Node
     | Introspect0 (I.Introspect0 Vm)
     | Introspect1 (I.Introspect1 Vm) Node
     | Call String (List Node)
+    | Return
     | Make String Node
     | Variable String
     | Value Type.Value
@@ -180,6 +181,11 @@ compile node =
                 , [ Vm.Vm.CallByName mangledName ]
                 ]
                     |> List.concat
+
+        Return ->
+            [ PopLocalScope
+            , Vm.Vm.Return
+            ]
 
         Make name node ->
             [ compile node
