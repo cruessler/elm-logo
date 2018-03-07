@@ -17,7 +17,9 @@ type Primitive
 
 all : List Primitive
 all =
-    [ Primitive1 { name = "emptyp", f = P.emptyp }
+    [ Primitive1 { name = "butfirst", f = P.butfirst }
+    , Primitive1 { name = "emptyp", f = P.emptyp }
+    , Primitive1 { name = "first", f = P.first }
     , Primitive2 { name = "sentence", f = P.sentence }
     ]
 

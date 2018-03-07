@@ -211,4 +211,42 @@ print :baz
 end
 (foo "bar) (foo "bar "quux)"""
             [ "bar", "qux", "bar", "quux" ]
+        , printsLines
+            """to choices :menu [:sofar []]
+if emptyp :menu [print :sofar stop]
+foreach first :menu [(choices butfirst :menu sentence :sofar ?)]
+end
+choices [[small medium large] [vanilla [ultra chocolate] lychee [rum raisin] ginger] [cone cup]]
+"""
+            [ "small vanilla cone"
+            , "small vanilla cup"
+            , "small ultra chocolate cone"
+            , "small ultra chocolate cup"
+            , "small lychee cone"
+            , "small lychee cup"
+            , "small rum raisin cone"
+            , "small rum raisin cup"
+            , "small ginger cone"
+            , "small ginger cup"
+            , "medium vanilla cone"
+            , "medium vanilla cup"
+            , "medium ultra chocolate cone"
+            , "medium ultra chocolate cup"
+            , "medium lychee cone"
+            , "medium lychee cup"
+            , "medium rum raisin cone"
+            , "medium rum raisin cup"
+            , "medium ginger cone"
+            , "medium ginger cup"
+            , "large vanilla cone"
+            , "large vanilla cup"
+            , "large ultra chocolate cone"
+            , "large ultra chocolate cup"
+            , "large lychee cone"
+            , "large lychee cup"
+            , "large rum raisin cone"
+            , "large rum raisin cup"
+            , "large ginger cone"
+            , "large ginger cup"
+            ]
         ]
