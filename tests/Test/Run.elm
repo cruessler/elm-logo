@@ -45,6 +45,27 @@ printsLines program lines =
             \_ -> match result
 
 
+failsParsing : String -> String -> Test
+failsParsing program message =
+    let
+        result =
+            Parser.run Parser.root program
+
+        match result =
+            case result of
+                Err error ->
+                    Expect.equal error.problem (Parser.Fail message)
+
+                _ ->
+                    Expect.fail <|
+                        "Expected to fail with error message `"
+                            ++ message
+                            ++ "`, but parsed program successfully"
+    in
+        test program <|
+            \_ -> match result
+
+
 statements : Test
 statements =
     describe "call print several times" <|
@@ -153,4 +174,28 @@ print "bar
 end
 foo []"""
             [ "baz", "bar", "bar" ]
+        ]
+
+
+variableFunctionCalls : Test
+variableFunctionCalls =
+    describe "define function and call it inside parentheses" <|
+        [ printsLines
+            """to foo :bar
+print :bar
+end
+(foo "baz) (foo "baz)"""
+            [ "baz", "baz" ]
+        , failsParsing
+            """to foo :bar
+print :bar
+end
+(foo "bar "baz)"""
+            "too many inputs to foo"
+        , failsParsing
+            """to foo :bar :baz
+print :bar
+end
+(foo "bar)"""
+            "not enough inputs to foo"
         ]

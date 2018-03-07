@@ -38,6 +38,7 @@ import Vm.Type as Type
 type alias FunctionDeclaration =
     { name : String
     , requiredArguments : Int
+    , optionalArguments : Int
     }
 
 
@@ -45,11 +46,13 @@ mapFunctionDeclarations : List Ast.Function -> Dict String FunctionDeclaration
 mapFunctionDeclarations functions =
     functions
         |> List.map
-            (\{ name, requiredArguments } ->
+            (\{ name, requiredArguments, optionalArguments } ->
                 ( name
                 , { name = name
                   , requiredArguments =
                         List.length requiredArguments
+                  , optionalArguments =
+                        List.length optionalArguments
                   }
                 )
             )
@@ -86,6 +89,8 @@ functionDefinition knownFunctions =
                                 { name = name
                                 , requiredArguments =
                                     List.length requiredArguments
+                                , optionalArguments =
+                                    List.length optionalArguments
                                 }
                                 knownFunctions
                     in
@@ -190,6 +195,7 @@ statement knownFunctions =
             , lazy (\_ -> repeat knownFunctions)
             , lazy (\_ -> if_ knownFunctions)
             , make
+            , variableFunctionCall knownFunctions
             , functionCall knownFunctions
             ]
 
@@ -255,6 +261,75 @@ functionCall_ knownFunctions name =
 
             ( _, Just function ) ->
                 functionWithArguments function
+
+            _ ->
+                Parser.fail "could not parse function call"
+
+
+{-| In case a function can take a variable number of arguments, you have to use
+parentheses around a function call if it does not take the default number of
+arguments.
+
+If, e. g., you call `print` with one argument you can do so without parentheses
+because the default number of arguments to `print` is 1. If, however, you want
+to supply more than one argument, you have to use parentheses, because
+otherwise the parser cannot know how many arguments you want to supply.
+
+    print 1 ; can be used without parentheses
+    (print 1) ; can be used with parentheses
+
+    print "hello "world ; can’t be used without parentheses
+    (print "hello "world) ; has to be used with parentheses
+
+-}
+variableFunctionCall : Dict String FunctionDeclaration -> Parser Ast.Node
+variableFunctionCall knownFunctions =
+    delayedCommit (symbol "(") <|
+        ((succeed (,)
+            |. maybeSpaces
+            |= call
+            |= oneOf
+                [ succeed identity
+                    |. spaces
+                    |= Parser.list
+                        { item = expression
+                        , separator = spaces
+                        }
+                , succeed []
+                ]
+            |. maybeSpaces
+            |. symbol ")"
+         )
+            |> andThen (\( a, b ) -> variableFunctionCall_ knownFunctions a b)
+        )
+
+
+variableFunctionCall_ :
+    Dict String FunctionDeclaration
+    -> String
+    -> List Ast.Node
+    -> Parser Ast.Node
+variableFunctionCall_ knownFunctions name arguments =
+    let
+        function =
+            Dict.get name knownFunctions
+
+        numberOfArguments =
+            List.length arguments
+    in
+        case function of
+            Just function ->
+                if function.requiredArguments <= numberOfArguments then
+                    if
+                        numberOfArguments
+                            <= function.requiredArguments
+                            + function.optionalArguments
+                    then
+                        succeed <| Ast.Call name arguments
+                    else
+                        Parser.fail <| "too many inputs to " ++ name
+                else
+                    Parser.fail <| "not enough inputs to " ++ name
 
             _ ->
                 Parser.fail "could not parse function call"
