@@ -1,6 +1,6 @@
 # A Logo interpreter, written in Elm
 
-This are the early stages of a Logo interpreter, written in Elm.
+These are the early stages of a Logo interpreter, written in Elm.
 
 ## Status
 
