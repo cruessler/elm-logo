@@ -21,6 +21,7 @@
     "brunch": "^2.8.2",
     "elm-brunch": "^0.7.0",
     "elm-test": "^0.18.9",
-    "hmr-brunch": "^0.1.1"
+    "hmr-brunch": "^0.1.1",
+    "hoek": "^5.0.3"
   }
 }
