@@ -1,0 +1,36 @@
+# This file is a blend of [elm-test’s `.travis.yml`][elm-test-config] and
+# [elm-time’s `.travis.yml`][elm-time-config].
+#
+# [elm-test-config]: https://github.com/elm-community/elm-time/blob/5384e576e62f47efc7c3cdca5620fd05b6fb2cf1/.travis.yml
+# [elm-css-config]: https://github.com/rtfeldman/elm-css/blob/ab408a2cc01fe577f63c2974ffb6c72497984515/.travis.yml
+
+language: node_js
+node_js: node
+
+cache:
+  directories:
+    - elm-stuff/build-artifacts
+    - tests/elm-stuff/build-artifacts
+    - sysconfcpus
+
+before_install:
+  - | # Epic build time improvement, see https://github.com/elm-lang/elm-compiler/issues/1473#issuecomment-245704142
+    if [ ! -d sysconfcpus/bin ];
+    then
+      git clone --depth=50 https://github.com/obmarg/libsysconfcpus.git;
+      cd libsysconfcpus;
+      ./configure --prefix=$TRAVIS_BUILD_DIR/sysconfcpus;
+      make && make install;
+      cd ..;
+    fi
+
+install:
+  - npm install -g elm@0.18.0 elm-test@0.18.12 elm-format@0.6.1-alpha
+  - mv $(npm config get prefix)/bin/elm-make $(npm config get prefix)/bin/elm-make-orig
+  - printf '%s\n\n' '#!/bin/bash' 'echo "Running elm-make with sysconfcpus -n 2"' '$TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make-orig "$@"' > $(npm config get prefix)/bin/elm-make
+  - chmod +x $(npm config get prefix)/bin/elm-make
+  - elm-package install --yes
+
+script:
+  - elm-format --validate app/elm tests
+  - elm-test
