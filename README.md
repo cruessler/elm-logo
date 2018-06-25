@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/cruessler/elm-logo.svg?branch=master)](https://travis-ci.org/cruessler/elm-logo)
+
 # A Logo interpreter, written in Elm
 
 These are the early stages of a Logo interpreter, written in Elm.
