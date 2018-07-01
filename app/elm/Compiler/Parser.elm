@@ -13,24 +13,14 @@ import Compiler.Ast as Ast
 import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
-import Compiler.Parser.Helper as Parser
+import Compiler.Parser.Helper as Helper
 import Dict exposing (Dict)
-import Parser
+import Parser as P
     exposing
         ( Parser
         , Count(..)
         , (|.)
         , (|=)
-        , succeed
-        , zeroOrMore
-        , oneOrMore
-        , oneOf
-        , andThen
-        , delayedCommit
-        , symbol
-        , keep
-        , ignore
-        , lazy
         )
 import Vm.Type as Type
 
@@ -61,9 +51,9 @@ mapFunctionDeclarations functions =
 
 root : Parser Ast.Program
 root =
-    Parser.inContext "root" <|
-        (Parser.repeat zeroOrMore (functionDefinition Dict.empty)
-            |> andThen body
+    P.inContext "root" <|
+        (P.repeat P.zeroOrMore (functionDefinition Dict.empty)
+            |> P.andThen body
         )
 
 
@@ -74,14 +64,14 @@ body functions =
             mapFunctionDeclarations functions
     in
         statements knownFunctions
-            |> Parser.map (Ast.Program functions)
+            |> P.map (Ast.Program functions)
 
 
 functionDefinition : Dict String FunctionDeclaration -> Parser Ast.Function
 functionDefinition knownFunctions =
-    Parser.inContext "functionDefinition" <|
+    P.inContext "functionDefinition" <|
         (functionHeader
-            |> andThen
+            |> P.andThen
                 (\( name, requiredArguments, optionalArguments ) ->
                     let
                         knownFunctions_ =
@@ -95,7 +85,7 @@ functionDefinition knownFunctions =
                                 knownFunctions
                     in
                         functionBody knownFunctions_
-                            |> Parser.map
+                            |> P.map
                                 (Ast.Function name
                                     requiredArguments
                                     optionalArguments
@@ -106,95 +96,95 @@ functionDefinition knownFunctions =
 
 functionHeader : Parser ( String, List String, List ( String, Ast.Node ) )
 functionHeader =
-    delayedCommit (Parser.keyword "to") <|
-        (succeed (\a b c -> ( a, b, c ))
+    P.delayedCommit (P.keyword "to") <|
+        (P.succeed (\a b c -> ( a, b, c ))
             |. spaces
             |= functionName
             |. spaces
             |= requiredArguments
-            |= (oneOf
-                    [ delayedCommit spaces <| optionalArguments
-                    , succeed []
+            |= (P.oneOf
+                    [ P.delayedCommit spaces <| optionalArguments
+                    , P.succeed []
                     ]
                )
             |. maybeSpaces
-            |. symbol "\n"
+            |. P.symbol "\n"
         )
 
 
 functionName : Parser String
 functionName =
-    keep oneOrMore (\c -> c /= ' ' && c /= '\n')
+    P.keep P.oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 requiredArguments : Parser (List String)
 requiredArguments =
-    Parser.list { item = requiredArgument, separator = spaces }
+    Helper.list { item = requiredArgument, separator = spaces }
 
 
 requiredArgument : Parser String
 requiredArgument =
-    succeed identity
-        |. symbol ":"
-        |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
+    P.succeed identity
+        |. P.symbol ":"
+        |= P.keep P.oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 optionalArguments : Parser (List ( String, Ast.Node ))
 optionalArguments =
-    Parser.list { item = optionalArgument, separator = spaces }
+    Helper.list { item = optionalArgument, separator = spaces }
 
 
 optionalArgument : Parser ( String, Ast.Node )
 optionalArgument =
-    succeed (,)
-        |. symbol "["
+    P.succeed (,)
+        |. P.symbol "["
         |. maybeSpaces
         |= requiredArgument
         |. spaces
         |= expression
         |. maybeSpaces
-        |. symbol "]"
+        |. P.symbol "]"
 
 
 functionBody : Dict String FunctionDeclaration -> Parser (List Ast.Node)
 functionBody knownFunctions =
-    Parser.inContext "functionBody" <|
+    P.inContext "functionBody" <|
         (nextLine knownFunctions [])
 
 
 nextLine : Dict String FunctionDeclaration -> List Ast.Node -> Parser (List Ast.Node)
 nextLine knownFunctions acc =
-    oneOf
-        [ Parser.keyword "end\n"
-            |> andThen (\_ -> succeed acc)
+    P.oneOf
+        [ P.keyword "end\n"
+            |> P.andThen (\_ -> P.succeed acc)
         , line knownFunctions
-            |> andThen (\line -> nextLine knownFunctions (List.concat [ acc, line ]))
+            |> P.andThen (\line -> nextLine knownFunctions (List.concat [ acc, line ]))
         ]
 
 
 line : Dict String FunctionDeclaration -> Parser (List Ast.Node)
 line knownFunctions =
-    Parser.inContext "line" <|
-        succeed identity
+    P.inContext "line" <|
+        P.succeed identity
             |. maybeSpaces
             |= statements knownFunctions
             |. maybeSpaces
-            |. symbol "\n"
+            |. P.symbol "\n"
 
 
 statements : Dict String FunctionDeclaration -> Parser (List Ast.Node)
 statements knownFunctions =
-    Parser.list { item = lazy (\_ -> statement knownFunctions), separator = spaces }
+    Helper.list { item = P.lazy (\_ -> statement knownFunctions), separator = spaces }
 
 
 statement : Dict String FunctionDeclaration -> Parser Ast.Node
 statement knownFunctions =
-    Parser.inContext "statement" <|
-        oneOf
-            [ lazy (\_ -> foreach knownFunctions)
-            , lazy (\_ -> repeat knownFunctions)
-            , lazy (\_ -> if_ knownFunctions)
-            , (succeed Ast.Return |. Parser.keyword "stop")
+    P.inContext "statement" <|
+        P.oneOf
+            [ P.lazy (\_ -> foreach knownFunctions)
+            , P.lazy (\_ -> repeat knownFunctions)
+            , P.lazy (\_ -> if_ knownFunctions)
+            , (P.succeed Ast.Return |. P.keyword "stop")
             , make
             , variableFunctionCall knownFunctions
             , functionCall knownFunctions
@@ -211,17 +201,17 @@ controlStructure :
         )
     -> Parser Ast.Node
 controlStructure knownFunctions keyword constructor =
-    Parser.inContext keyword <|
-        succeed constructor
-            |. Parser.keyword keyword
-            |. symbol " "
+    P.inContext keyword <|
+        P.succeed constructor
+            |. P.keyword keyword
+            |. P.symbol " "
             |= expression
             |. spaces
-            |. symbol "["
+            |. P.symbol "["
             |. maybeSpaces
             |= statements knownFunctions
             |. maybeSpaces
-            |. symbol "]"
+            |. P.symbol "]"
 
 
 if_ : Dict String FunctionDeclaration -> Parser Ast.Node
@@ -231,7 +221,7 @@ if_ knownFunctions =
 
 foreach : Dict String FunctionDeclaration -> Parser Ast.Node
 foreach knownFunctions =
-    lazy (\_ -> controlStructure knownFunctions "foreach" Ast.Foreach)
+    P.lazy (\_ -> controlStructure knownFunctions "foreach" Ast.Foreach)
 
 
 repeat : Dict String FunctionDeclaration -> Parser Ast.Node
@@ -241,9 +231,9 @@ repeat knownFunctions =
 
 functionCall : Dict String FunctionDeclaration -> Parser Ast.Node
 functionCall knownFunctions =
-    Parser.inContext "functionCall" <|
+    P.inContext "functionCall" <|
         (call
-            |> andThen (\name -> lazy (\_ -> functionCall_ knownFunctions name))
+            |> P.andThen (\name -> P.lazy (\_ -> functionCall_ knownFunctions name))
         )
 
 
@@ -264,7 +254,7 @@ functionCall_ knownFunctions name =
                 functionWithArguments function
 
             _ ->
-                Parser.fail "could not parse function call"
+                P.fail "could not parse function call"
 
 
 {-| In case a function can take a variable number of arguments, you have to use
@@ -285,23 +275,23 @@ otherwise the parser cannot know how many arguments you want to supply.
 -}
 variableFunctionCall : Dict String FunctionDeclaration -> Parser Ast.Node
 variableFunctionCall knownFunctions =
-    delayedCommit (symbol "(") <|
-        ((succeed (,)
+    P.delayedCommit (P.symbol "(") <|
+        ((P.succeed (,)
             |. maybeSpaces
             |= call
-            |= oneOf
-                [ succeed identity
+            |= P.oneOf
+                [ P.succeed identity
                     |. spaces
-                    |= Parser.list
+                    |= Helper.list
                         { item = expression
                         , separator = spaces
                         }
-                , succeed []
+                , P.succeed []
                 ]
             |. maybeSpaces
-            |. symbol ")"
+            |. P.symbol ")"
          )
-            |> andThen (\( a, b ) -> variableFunctionCall_ knownFunctions a b)
+            |> P.andThen (\( a, b ) -> variableFunctionCall_ knownFunctions a b)
         )
 
 
@@ -326,14 +316,14 @@ variableFunctionCall_ knownFunctions name arguments =
                             <= function.requiredArguments
                             + function.optionalArguments
                     then
-                        succeed <| Ast.Call name arguments
+                        P.succeed <| Ast.Call name arguments
                     else
-                        Parser.fail <| "too many inputs to " ++ name
+                        P.fail <| "too many inputs to " ++ name
                 else
-                    Parser.fail <| "not enough inputs to " ++ name
+                    P.fail <| "not enough inputs to " ++ name
 
             _ ->
-                Parser.fail "could not parse function call"
+                P.fail "could not parse function call"
 
 
 commandWithArguments : Command.Command -> Parser Ast.Node
@@ -346,13 +336,13 @@ commandWithArguments command =
         makeNode result =
             case ( command, result ) of
                 ( Command.Command1 command1, [ first ] ) ->
-                    succeed <| Ast.Command1 command1 first
+                    P.succeed <| Ast.Command1 command1 first
 
                 _ ->
-                    Parser.fail "could not parse function call"
+                    P.fail "could not parse function call"
     in
         expressions numberOfArguments
-            |> andThen makeNode
+            |> P.andThen makeNode
 
 
 functionWithArguments : FunctionDeclaration -> Parser Ast.Node
@@ -363,34 +353,34 @@ functionWithArguments function =
 
         makeNode : List Ast.Node -> Parser Ast.Node
         makeNode result =
-            succeed <| Ast.Call function.name result
+            P.succeed <| Ast.Call function.name result
     in
         expressions numberOfArguments
-            |> andThen makeNode
+            |> P.andThen makeNode
 
 
 expressions : Int -> Parser (List Ast.Node)
 expressions count =
-    Parser.repeatExactly count { item = expression, separator = spaces }
+    Helper.repeatExactly count { item = expression, separator = spaces }
 
 
 expression : Parser Ast.Node
 expression =
-    Parser.inContext "expression" <|
-        delayedCommit maybeSpaces <|
-            oneOf
+    P.inContext "expression" <|
+        P.delayedCommit maybeSpaces <|
+            P.oneOf
                 [ templateVariable
                 , variable
-                , lazy (\_ -> primitive)
+                , P.lazy (\_ -> primitive)
                 , value
                 ]
 
 
 primitive : Parser Ast.Node
 primitive =
-    Parser.inContext "primitive" <|
+    P.inContext "primitive" <|
         (call
-            |> andThen (\name -> lazy (\_ -> primitive_ name))
+            |> P.andThen (\name -> P.lazy (\_ -> primitive_ name))
         )
 
 
@@ -411,7 +401,7 @@ primitive_ name =
                 introspectWithArguments introspect
 
             _ ->
-                Parser.fail "could not parse function call"
+                P.fail "could not parse function call"
 
 
 introspectWithArguments : Introspect.Introspect -> Parser Ast.Node
@@ -424,19 +414,19 @@ introspectWithArguments introspect =
         makeNode result =
             case ( introspect, result ) of
                 ( Introspect.Introspect1 introspect1, [ first ] ) ->
-                    succeed <| Ast.Introspect1 introspect1 first
+                    P.succeed <| Ast.Introspect1 introspect1 first
 
                 ( Introspect.Introspect0 introspect0, [] ) ->
-                    succeed <| Ast.Introspect0 introspect0
+                    P.succeed <| Ast.Introspect0 introspect0
 
                 _ ->
-                    Parser.fail "could not parse function call"
+                    P.fail "could not parse function call"
     in
         if numberOfArguments == 0 then
             makeNode []
         else
             expressions numberOfArguments
-                |> andThen makeNode
+                |> P.andThen makeNode
 
 
 primitiveWithArguments : Primitive.Primitive -> Parser Ast.Node
@@ -449,23 +439,23 @@ primitiveWithArguments primitive =
         makeNode result =
             case ( primitive, result ) of
                 ( Primitive.Primitive2 primitive2, [ first, second ] ) ->
-                    succeed <| Ast.Primitive2 primitive2 first second
+                    P.succeed <| Ast.Primitive2 primitive2 first second
 
                 ( Primitive.Primitive1 primitive1, [ first ] ) ->
-                    succeed <| Ast.Primitive1 primitive1 first
+                    P.succeed <| Ast.Primitive1 primitive1 first
 
                 _ ->
-                    Parser.fail "could not parse function call"
+                    P.fail "could not parse function call"
     in
         expressions numberOfArguments
-            |> andThen makeNode
+            |> P.andThen makeNode
 
 
 templateVariable : Parser Ast.Node
 templateVariable =
     let
         digits =
-            keep oneOrMore Char.isDigit
+            P.keep P.oneOrMore Char.isDigit
 
         makeNode : String -> Ast.Node
         makeNode argument =
@@ -473,17 +463,17 @@ templateVariable =
                 Introspect.templateVariable
                 (Ast.Value <| Type.Word argument)
     in
-        Parser.inContext "templateVariable" <|
-            succeed makeNode
-                |. symbol "?"
+        P.inContext "templateVariable" <|
+            P.succeed makeNode
+                |. P.symbol "?"
                 |. maybeSpaces
-                |= oneOf [ Parser.source <| Parser.keyword "rest", digits, succeed "1" ]
+                |= P.oneOf [ P.source <| P.keyword "rest", digits, P.succeed "1" ]
 
 
 call : Parser String
 call =
-    Parser.source <|
-        ignore (Exactly 1)
+    P.source <|
+        P.ignore (Exactly 1)
             (\c ->
                 (c /= '[')
                     && (c /= ']')
@@ -491,7 +481,7 @@ call =
                     && (c /= '\n')
                     && (not <| Char.isDigit c)
             )
-            |. ignore zeroOrMore (\c -> c /= ' ' && c /= '\n')
+            |. P.ignore P.zeroOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 make : Parser Ast.Node
@@ -501,40 +491,40 @@ make =
         makeNode ( name, node ) =
             case name of
                 Type.Word name ->
-                    succeed <| Ast.Make name node
+                    P.succeed <| Ast.Make name node
 
                 _ ->
-                    Parser.fail "make expects the first argument to be a word"
+                    P.fail "make expects the first argument to be a word"
     in
-        Parser.inContext "make" <|
-            (succeed (,)
-                |. Parser.keyword "make"
+        P.inContext "make" <|
+            (P.succeed (,)
+                |. P.keyword "make"
                 |. spaces
                 |= wordOutsideList
                 |. spaces
                 |= expression
-                |> andThen makeNode
+                |> P.andThen makeNode
             )
 
 
 variable : Parser Ast.Node
 variable =
-    Parser.inContext "variable" <|
-        succeed Ast.Variable
-            |. symbol ":"
-            |= keep oneOrMore (\c -> c /= ' ' && c /= '\n')
+    P.inContext "variable" <|
+        P.succeed Ast.Variable
+            |. P.symbol ":"
+            |= P.keep P.oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 value : Parser Ast.Node
 value =
-    Parser.map Ast.Value valueOutsideList
+    P.map Ast.Value valueOutsideList
 
 
 valueOutsideList : Parser Type.Value
 valueOutsideList =
-    Parser.inContext "valueOutsideList" <|
-        oneOf
-            [ lazy (\_ -> list)
+    P.inContext "valueOutsideList" <|
+        P.oneOf
+            [ P.lazy (\_ -> list)
             , int
             , wordOutsideList
             ]
@@ -542,15 +532,15 @@ valueOutsideList =
 
 int : Parser Type.Value
 int =
-    Parser.int
-        |> Parser.map Type.Int
+    P.int
+        |> P.map Type.Int
 
 
 wordOutsideList : Parser Type.Value
 wordOutsideList =
-    succeed Type.Word
-        |. symbol "\""
-        |= keep oneOrMore
+    P.succeed Type.Word
+        |. P.symbol "\""
+        |= P.keep P.oneOrMore
             (\c ->
                 (c /= ' ')
                     && (c /= '[')
@@ -563,19 +553,19 @@ wordOutsideList =
 
 list : Parser Type.Value
 list =
-    succeed Type.List
-        |. symbol "["
+    P.succeed Type.List
+        |. P.symbol "["
         |. maybeSpaces
-        |= Parser.list { item = valueInList, separator = spaces }
+        |= Helper.list { item = valueInList, separator = spaces }
         |. maybeSpaces
-        |. symbol "]"
+        |. P.symbol "]"
 
 
 valueInList : Parser Type.Value
 valueInList =
-    Parser.inContext "valueInList" <|
-        oneOf
-            [ lazy (\_ -> list)
+    P.inContext "valueInList" <|
+        P.oneOf
+            [ P.lazy (\_ -> list)
             , int
             , wordInList
             ]
@@ -583,8 +573,8 @@ valueInList =
 
 wordInList : Parser Type.Value
 wordInList =
-    succeed Type.Word
-        |= keep oneOrMore
+    P.succeed Type.Word
+        |= P.keep P.oneOrMore
             (\c ->
                 (c /= ' ')
                     && (c /= '[')
@@ -604,9 +594,9 @@ wordInList =
 
 maybeSpaces : Parser ()
 maybeSpaces =
-    ignore zeroOrMore (\c -> c == ' ')
+    P.ignore P.zeroOrMore (\c -> c == ' ')
 
 
 spaces : Parser ()
 spaces =
-    ignore oneOrMore (\c -> c == ' ')
+    P.ignore P.oneOrMore (\c -> c == ' ')
