@@ -173,15 +173,12 @@ vmWithTemplateLoop =
                 | instructions =
                     [ PushValue (Type.Word "word")
                     , PushTemplateScope
-                    , PushValue (Type.Word "rest")
-                    , Introspect1 { name = "?", f = I.templateVariable }
-                    , Eval1 { name = "emptyp", f = P.emptyp }
-                    , JumpIfTrue 6
                     , EnterTemplateScope
+                    , JumpIfTrue 5
                     , PushValue (Type.Word "1")
                     , Introspect1 { name = "?", f = I.templateVariable }
                     , Command1 { name = "print", f = C.print }
-                    , Jump -8
+                    , Jump -5
                     , PopTemplateScope
                     ]
                         |> Array.fromList
@@ -240,7 +237,7 @@ vmWithSampleProgram =
     let
         vm =
             { emptyVm
-                | programCounter = 31
+                | programCounter = 28
                 , instructions =
                     [ PushLocalScope
                     , LocalVariable "menu"
@@ -267,11 +264,8 @@ vmWithSampleProgram =
 
                     -- foreach [ ...
                     , PushTemplateScope
-                    , PushValue (Type.Word "rest")
-                    , Introspect1 { name = "?", f = I.templateVariable }
-                    , Eval1 { name = "emptyp", f = P.emptyp }
-                    , JumpIfTrue 10
                     , EnterTemplateScope
+                    , JumpIfTrue 9
 
                     -- sentence :sofar ?
                     , PushValue (Type.Word "1")
@@ -285,7 +279,7 @@ vmWithSampleProgram =
 
                     -- choices ...
                     , Call 0
-                    , Jump -12
+                    , Jump -9
                     , PopTemplateScope
 
                     -- ... ]
@@ -324,7 +318,7 @@ vmWithSampleProgram =
         describe "with print and recursive function calls" <|
             [ test "program counter is beyond the last instruction" <|
                 \_ ->
-                    Expect.equal vm.programCounter 34
+                    Expect.equal vm.programCounter 31
             , test "environment contains printed lines" <|
                 \_ ->
                     Expect.equal vm.environment.lines

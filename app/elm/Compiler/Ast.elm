@@ -126,14 +126,11 @@ compile node =
             in
                 [ compiledIterator
                 , [ PushTemplateScope
-                  , PushValue (Type.Word "rest")
-                  , Vm.Vm.Introspect1 { name = "?", f = I.templateVariable }
-                  , Eval1 { name = "emptyp", f = P.emptyp }
-                  , JumpIfTrue ((List.length compiledChildren) + 3)
                   , EnterTemplateScope
+                  , JumpIfTrue ((List.length compiledChildren) + 2)
                   ]
                 , compiledChildren
-                , [ Jump ((List.length compiledChildren) + 5 |> negate)
+                , [ Jump ((List.length compiledChildren) + 2 |> negate)
                   , PopTemplateScope
                   ]
                 ]

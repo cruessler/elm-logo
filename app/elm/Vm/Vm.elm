@@ -321,8 +321,11 @@ enterTemplateScope vm =
     vm.scopes
         |> Scope.enterTemplateScope
         |> Result.map
-            (\scopes ->
-                { vm | scopes = scopes }
+            (\( lastPass, scopes ) ->
+                { vm
+                    | scopes = scopes
+                    , stack = (Type.fromBool lastPass |> Stack.Value) :: vm.stack
+                }
                     |> incrementProgramCounter
             )
         |> Result.mapError (Internal << Scope)

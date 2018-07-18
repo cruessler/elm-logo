@@ -256,7 +256,7 @@ popTemplateScope scopes =
 
 {-| Advance the iterator if the topmost scope is a template scope.
 -}
-enterTemplateScope : List Scope -> Result Error (List Scope)
+enterTemplateScope : List Scope -> Result Error ( Bool, List Scope )
 enterTemplateScope scopes =
     case scopes of
         (Template iter) :: rest ->
@@ -264,7 +264,7 @@ enterTemplateScope scopes =
                 newIter =
                     Iterator.step iter
             in
-                Ok <| Template newIter :: rest
+                Ok <| ( newIter.current == Nothing, Template newIter :: rest )
 
         _ ->
             Err <| WrongType LoopScope
