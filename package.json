@@ -16,6 +16,8 @@
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
+    "elm": "^0.18.0",
+    "elm-format": "^0.6.1-alpha",
     "elm-test": "^0.18.9"
   }
 }
