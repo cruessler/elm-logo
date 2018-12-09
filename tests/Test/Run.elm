@@ -28,7 +28,7 @@ printsLines program lines =
                     (\{ instructions, functionTable, startAddress } ->
                         Vm.Vm.initialize instructions functionTable startAddress
                     )
-                |> Result.andThen Vm.Vm.run
+                |> Result.andThen (Vm.Vm.run >> Result.mapError toString)
 
         match : Result String Vm.Vm.Vm -> Expectation
         match result =

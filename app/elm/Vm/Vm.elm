@@ -12,6 +12,7 @@ import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Scope, Binding(..))
 import Vm.Type as Type
+import Vm.Error as Error exposing (Error(..), Internal(..))
 
 
 {-| Represent instructions a `Vm` can execute.
@@ -78,7 +79,7 @@ incrementProgramCounter vm =
 {-| Evaluate a primitive that takes 1 argument and put the result on top of the
 stack.
 -}
-eval1 : P.Primitive1 -> Vm -> Result String Vm
+eval1 : P.Primitive1 -> Vm -> Result Error Vm
 eval1 primitive vm =
     case vm.stack of
         first :: rest ->
@@ -88,15 +89,16 @@ eval1 primitive vm =
                         { vm | stack = (value :: rest) }
                             |> incrementProgramCounter
                     )
+                |> Result.mapError Primitive
 
         _ ->
-            Err <| "Not enough inputs to " ++ primitive.name
+            Err <| NotEnoughInputs <| primitive.name
 
 
 {-| Evaluate a primitive that takes 2 arguments and put the result on top of
 the stack.
 -}
-eval2 : P.Primitive2 -> Vm -> Result String Vm
+eval2 : P.Primitive2 -> Vm -> Result Error Vm
 eval2 primitive vm =
     case vm.stack of
         first :: second :: rest ->
@@ -106,14 +108,15 @@ eval2 primitive vm =
                         { vm | stack = (value :: rest) }
                             |> incrementProgramCounter
                     )
+                |> Result.mapError Primitive
 
         _ ->
-            Err <| "Not enough inputs to " ++ primitive.name
+            Err <| NotEnoughInputs <| primitive.name
 
 
 {-| Run a command that takes one argument.
 -}
-command1 : C.Command1 -> Vm -> Result String Vm
+command1 : C.Command1 -> Vm -> Result Error Vm
 command1 command vm =
     case vm.stack of
         first :: rest ->
@@ -123,14 +126,15 @@ command1 command vm =
                         { vm | stack = rest, environment = environment }
                             |> incrementProgramCounter
                     )
+                |> Result.mapError Primitive
 
         _ ->
-            Err <| "Not enough inputs to " ++ command.name
+            Err <| NotEnoughInputs <| command.name
 
 
 {-| Run a command that takes two arguments.
 -}
-command2 : C.Command2 -> Vm -> Result String Vm
+command2 : C.Command2 -> Vm -> Result Error Vm
 command2 command vm =
     case vm.stack of
         first :: second :: rest ->
@@ -140,14 +144,15 @@ command2 command vm =
                         { vm | stack = rest, environment = environment }
                             |> incrementProgramCounter
                     )
+                |> Result.mapError Primitive
 
         _ ->
-            Err <| "Not enough inputs to " ++ command.name
+            Err <| NotEnoughInputs <| command.name
 
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
 -}
-introspect0 : I.Introspect0 Vm -> Vm -> Result String Vm
+introspect0 : I.Introspect0 Vm -> Vm -> Result Error Vm
 introspect0 primitive vm =
     primitive.f vm
         |> Result.map
@@ -155,11 +160,12 @@ introspect0 primitive vm =
                 { vm | stack = value :: vm.stack }
                     |> incrementProgramCounter
             )
+        |> Result.mapError Primitive
 
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
 -}
-introspect1 : I.Introspect1 Vm -> Vm -> Result String Vm
+introspect1 : I.Introspect1 Vm -> Vm -> Result Error Vm
 introspect1 primitive vm =
     case vm.stack of
         first :: rest ->
@@ -169,12 +175,13 @@ introspect1 primitive vm =
                         { vm | stack = value :: rest }
                             |> incrementProgramCounter
                     )
+                |> Result.mapError Primitive
 
         _ ->
-            Err <| "Not enough inputs to " ++ primitive.name
+            Err <| NotEnoughInputs primitive.name
 
 
-pushVariable : String -> Vm -> Result String Vm
+pushVariable : String -> Vm -> Result Error Vm
 pushVariable name vm =
     case Scope.thing name vm.scopes of
         Just (Defined value) ->
@@ -182,10 +189,10 @@ pushVariable name vm =
                 ({ vm | stack = value :: vm.stack } |> incrementProgramCounter)
 
         _ ->
-            Err <| name ++ " has no value"
+            Err <| Internal <| Error.VariableUndefined name
 
 
-storeVariable : String -> Vm -> Result String Vm
+storeVariable : String -> Vm -> Result Error Vm
 storeVariable name vm =
     case vm.stack of
         first :: rest ->
@@ -198,10 +205,10 @@ storeVariable name vm =
                 )
 
         _ ->
-            Err <| "The stack is empty"
+            Err <| Internal EmptyStack
 
 
-localVariable : String -> Vm -> Result String Vm
+localVariable : String -> Vm -> Result Error Vm
 localVariable name vm =
     Ok
         ({ vm | scopes = Scope.local name vm.scopes }
@@ -215,7 +222,7 @@ pushLoopScope vm =
         |> incrementProgramCounter
 
 
-popLoopScope : Vm -> Result String Vm
+popLoopScope : Vm -> Result Error Vm
 popLoopScope vm =
     vm.scopes
         |> Scope.popLoopScope
@@ -224,9 +231,10 @@ popLoopScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
+        |> Result.mapError (always <| Internal Scope)
 
 
-enterLoopScope : Vm -> Result String Vm
+enterLoopScope : Vm -> Result Error Vm
 enterLoopScope vm =
     vm.scopes
         |> Scope.enterLoopScope
@@ -235,9 +243,10 @@ enterLoopScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
+        |> Result.mapError (always <| Internal Scope)
 
 
-pushTemplateScope : Vm -> Result String Vm
+pushTemplateScope : Vm -> Result Error Vm
 pushTemplateScope vm =
     case vm.stack of
         first :: rest ->
@@ -250,10 +259,10 @@ pushTemplateScope vm =
                 )
 
         _ ->
-            Err "There is nothing on the stack to be used as an iterator"
+            Err <| Internal NoIterator
 
 
-popTemplateScope : Vm -> Result String Vm
+popTemplateScope : Vm -> Result Error Vm
 popTemplateScope vm =
     vm.scopes
         |> Scope.popTemplateScope
@@ -262,9 +271,10 @@ popTemplateScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
+        |> Result.mapError (always <| Internal Scope)
 
 
-enterTemplateScope : Vm -> Result String Vm
+enterTemplateScope : Vm -> Result Error Vm
 enterTemplateScope vm =
     vm.scopes
         |> Scope.enterTemplateScope
@@ -273,9 +283,10 @@ enterTemplateScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
+        |> Result.mapError (always <| Internal Scope)
 
 
-pushLocalScope : Vm -> Result String Vm
+pushLocalScope : Vm -> Result Error Vm
 pushLocalScope vm =
     case vm.stack of
         (Type.Int returnAddress) :: rest ->
@@ -288,10 +299,10 @@ pushLocalScope vm =
                 )
 
         _ ->
-            Err "There is no return address on the stack"
+            Err <| Internal NoReturnAddress
 
 
-popLocalScope : Vm -> Result String Vm
+popLocalScope : Vm -> Result Error Vm
 popLocalScope vm =
     vm.scopes
         |> Scope.popLocalScope
@@ -303,9 +314,10 @@ popLocalScope vm =
                 }
                     |> incrementProgramCounter
             )
+        |> Result.mapError (always <| Internal Scope)
 
 
-toBoolean : Type.Value -> Result String Bool
+toBoolean : Type.Value -> Result Error Bool
 toBoolean value =
     case value of
         Type.Word word ->
@@ -314,13 +326,13 @@ toBoolean value =
             else if String.toLower word == "false" then
                 Ok False
             else
-                Err <| "A conditional doesn’t like " ++ (toString value) ++ " as input"
+                Err <| Internal <| NoBoolean (toString value)
 
         _ ->
-            Err <| "A conditional doesn’t like " ++ (toString value) ++ " as input"
+            Err <| Internal <| NoBoolean (toString value)
 
 
-jumpIfFalse : Int -> Vm -> Result String Vm
+jumpIfFalse : Int -> Vm -> Result Error Vm
 jumpIfFalse by vm =
     case vm.stack of
         first :: rest ->
@@ -337,10 +349,10 @@ jumpIfFalse by vm =
                     )
 
         _ ->
-            Err "There is nothing on the stack to be evaluated to true or false"
+            Err <| Internal EmptyStack
 
 
-jumpIfTrue : Int -> Vm -> Result String Vm
+jumpIfTrue : Int -> Vm -> Result Error Vm
 jumpIfTrue by vm =
     case vm.stack of
         first :: rest ->
@@ -357,10 +369,10 @@ jumpIfTrue by vm =
                     )
 
         _ ->
-            Err "There is nothing on the stack to be evaluated to true or false"
+            Err <| Internal EmptyStack
 
 
-return : Vm -> Result String Vm
+return : Vm -> Result Error Vm
 return vm =
     case vm.stack of
         (Type.Int returnAddress) :: rest ->
@@ -371,12 +383,12 @@ return vm =
                 }
 
         _ ->
-            Err "There is no return address on the stack"
+            Err <| Internal NoReturnAddress
 
 
 {-| Execute a single instruction.
 -}
-execute : Instruction -> Vm -> Result String Vm
+execute : Instruction -> Vm -> Result Error Vm
 execute instruction vm =
     case instruction of
         PushValue value ->
@@ -452,7 +464,7 @@ execute instruction vm =
 
         CallByName functionName ->
             Dict.get functionName vm.functionTable
-                |> Result.fromMaybe ("The function `" ++ functionName ++ "` does not exist")
+                |> Result.fromMaybe (Internal <| FunctionUndefined functionName)
                 |> Result.map
                     (\address ->
                         { vm
@@ -468,17 +480,17 @@ execute instruction vm =
 {-| Execute a single instruction, returning an error when the program counter
 does not point to a valid instruction.
 -}
-step : Vm -> Result String Vm
+step : Vm -> Result Error Vm
 step vm =
     Array.get vm.programCounter vm.instructions
-        |> Result.fromMaybe ("Program counter pointing to non-existent instruction")
+        |> Result.fromMaybe (Internal NoInstruction)
         |> Result.andThen
             (\instruction -> execute instruction vm)
 
 
 {-| Run a `Vm` until the program counter points to an invalid instruction.
 -}
-run : Vm -> Result String Vm
+run : Vm -> Result Error Vm
 run vm =
     case Array.get vm.programCounter vm.instructions of
         Just instruction ->
