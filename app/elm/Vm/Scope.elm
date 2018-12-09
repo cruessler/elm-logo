@@ -2,6 +2,7 @@ module Vm.Scope
     exposing
         ( Scope(..)
         , Binding(..)
+        , Error(..)
         , empty
         , make
         , thing
@@ -51,6 +52,18 @@ type Scope
     | Local Int Variables
     | Template Iterator
     | Loop Int
+
+
+type Type
+    = RootScope
+    | LocalScope
+    | TemplateScope
+    | LoopScope
+
+
+type Error
+    = WrongType Type
+    | NoCurrentValue
 
 
 empty : List Scope
@@ -150,14 +163,14 @@ pushLocalScope returnAddress scopes =
     Local returnAddress { variables = Dict.empty } :: scopes
 
 
-popLocalScope : List Scope -> Result String ( Int, List Scope )
+popLocalScope : List Scope -> Result Error ( Int, List Scope )
 popLocalScope scopes =
     case scopes of
         (Local returnAddress _) :: rest ->
             Ok ( returnAddress, rest )
 
         _ ->
-            Err "The topmost scope is not a local scope"
+            Err <| WrongType LocalScope
 
 
 {-| Create a variable with local scope. Variables with local scope are visible
@@ -187,26 +200,26 @@ pushLoopScope scopes =
 
 {-| Remove the topmost scope if it is a loop scope.
 -}
-popLoopScope : List Scope -> Result String (List Scope)
+popLoopScope : List Scope -> Result Error (List Scope)
 popLoopScope scopes =
     case scopes of
         (Loop _) :: rest ->
             Ok rest
 
         _ ->
-            Err "The topmost scope is not a loop scope"
+            Err <| WrongType LoopScope
 
 
 {-| Increment the loop counter if the topmost scope is a loop scope.
 -}
-enterLoopScope : List Scope -> Result String (List Scope)
+enterLoopScope : List Scope -> Result Error (List Scope)
 enterLoopScope scopes =
     case scopes of
         (Loop count) :: rest ->
             Ok <| Loop (count + 1) :: rest
 
         _ ->
-            Err "The topmost scope is not a loop scope"
+            Err <| WrongType LoopScope
 
 
 repcount : List Scope -> Int
@@ -228,19 +241,19 @@ pushTemplateScope value scopes =
 
 {-| Remove the topmost scope if it is a template scope.
 -}
-popTemplateScope : List Scope -> Result String (List Scope)
+popTemplateScope : List Scope -> Result Error (List Scope)
 popTemplateScope scopes =
     case scopes of
         (Template _) :: rest ->
             Ok rest
 
         _ ->
-            Err "The topmost scope is not a template scope"
+            Err <| WrongType TemplateScope
 
 
 {-| Advance the iterator if the topmost scope is a template scope.
 -}
-enterTemplateScope : List Scope -> Result String (List Scope)
+enterTemplateScope : List Scope -> Result Error (List Scope)
 enterTemplateScope scopes =
     case scopes of
         (Template iter) :: rest ->
@@ -251,12 +264,12 @@ enterTemplateScope scopes =
                 Ok <| Template newIter :: rest
 
         _ ->
-            Err "The topmost scope is not a loop scope"
+            Err <| WrongType LoopScope
 
 
 {-| Get a template variable if the topmost scope is a template scope.
 -}
-templateVariable : Type.Value -> List Scope -> Result String Type.Value
+templateVariable : Type.Value -> List Scope -> Result Error Type.Value
 templateVariable value scopes =
     case scopes of
         (Template iter) :: _ ->
@@ -266,11 +279,7 @@ templateVariable value scopes =
 
                 _ ->
                     iter.current
-                        |> Result.fromMaybe
-                            ("? doesn't like "
-                                ++ (Type.toString value)
-                                ++ " as input"
-                            )
+                        |> Result.fromMaybe NoCurrentValue
 
         _ ->
-            Err "The topmost scope is not a template scope"
+            Err <| WrongType TemplateScope

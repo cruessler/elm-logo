@@ -160,7 +160,7 @@ introspect0 primitive vm =
                 { vm | stack = value :: vm.stack }
                     |> incrementProgramCounter
             )
-        |> Result.mapError Primitive
+        |> Result.mapError (Internal << Scope)
 
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
@@ -175,7 +175,7 @@ introspect1 primitive vm =
                         { vm | stack = value :: rest }
                             |> incrementProgramCounter
                     )
-                |> Result.mapError Primitive
+                |> Result.mapError (Internal << Scope)
 
         _ ->
             Err <| NotEnoughInputs primitive.name
@@ -231,7 +231,7 @@ popLoopScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
-        |> Result.mapError (always <| Internal Scope)
+        |> Result.mapError (Internal << Scope)
 
 
 enterLoopScope : Vm -> Result Error Vm
@@ -243,7 +243,7 @@ enterLoopScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
-        |> Result.mapError (always <| Internal Scope)
+        |> Result.mapError (Internal << Scope)
 
 
 pushTemplateScope : Vm -> Result Error Vm
@@ -271,7 +271,7 @@ popTemplateScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
-        |> Result.mapError (always <| Internal Scope)
+        |> Result.mapError (Internal << Scope)
 
 
 enterTemplateScope : Vm -> Result Error Vm
@@ -283,7 +283,7 @@ enterTemplateScope vm =
                 { vm | scopes = scopes }
                     |> incrementProgramCounter
             )
-        |> Result.mapError (always <| Internal Scope)
+        |> Result.mapError (Internal << Scope)
 
 
 pushLocalScope : Vm -> Result Error Vm
@@ -314,7 +314,7 @@ popLocalScope vm =
                 }
                     |> incrementProgramCounter
             )
-        |> Result.mapError (always <| Internal Scope)
+        |> Result.mapError (Internal << Scope)
 
 
 toBoolean : Type.Value -> Result Error Bool

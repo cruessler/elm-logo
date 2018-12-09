@@ -3,6 +3,8 @@ module Vm.Error exposing (Error(..), Internal(..))
 {-| This module provides types for representing errors and invalid states.
 -}
 
+import Vm.Scope as Scope
+
 
 {-| Represent errors that stem from the specifics of this Logo implementation.
 These include invalid states of the VM’s stack or instruction pointer, and
@@ -12,7 +14,7 @@ type Internal
     = EmptyStack
     | VariableUndefined String
     | FunctionUndefined String
-    | Scope
+    | Scope Scope.Error
     | NoIterator
     | NoReturnAddress
     | NoBoolean String
