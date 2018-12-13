@@ -12,6 +12,7 @@ calls to undefined functions.
 -}
 type Internal
     = EmptyStack
+    | InvalidStack
     | VariableUndefined String
     | FunctionUndefined String
     | Scope Scope.Error

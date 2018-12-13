@@ -8,11 +8,12 @@ import Array exposing (Array)
 import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Vm.Command as C
+import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Scope, Binding(..))
+import Vm.Stack as Stack exposing (Stack)
 import Vm.Type as Type
-import Vm.Error as Error exposing (Error(..), Internal(..))
 
 
 {-| Represent instructions a `Vm` can execute.
@@ -49,7 +50,7 @@ type Instruction
 type alias Vm =
     { instructions : Array Instruction
     , programCounter : Int
-    , stack : List Type.Value
+    , stack : Stack
     , scopes : List Scope
     , environment : Environment
     , functionTable : Dict String Int
@@ -82,14 +83,17 @@ stack.
 eval1 : P.Primitive1 -> Vm -> Result Error Vm
 eval1 primitive vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             primitive.f first
                 |> Result.map
                     (\value ->
-                        { vm | stack = (value :: rest) }
+                        { vm | stack = (Stack.Value value :: rest) }
                             |> incrementProgramCounter
                     )
                 |> Result.mapError Primitive
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| NotEnoughInputs <| primitive.name
@@ -101,14 +105,17 @@ the stack.
 eval2 : P.Primitive2 -> Vm -> Result Error Vm
 eval2 primitive vm =
     case vm.stack of
-        first :: second :: rest ->
+        (Stack.Value first) :: (Stack.Value second) :: rest ->
             primitive.f first second
                 |> Result.map
                     (\value ->
-                        { vm | stack = (value :: rest) }
+                        { vm | stack = (Stack.Value value :: rest) }
                             |> incrementProgramCounter
                     )
                 |> Result.mapError Primitive
+
+        _ :: _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| NotEnoughInputs <| primitive.name
@@ -119,7 +126,7 @@ eval2 primitive vm =
 command1 : C.Command1 -> Vm -> Result Error Vm
 command1 command vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             command.f first vm.environment
                 |> Result.map
                     (\environment ->
@@ -127,6 +134,9 @@ command1 command vm =
                             |> incrementProgramCounter
                     )
                 |> Result.mapError Primitive
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| NotEnoughInputs <| command.name
@@ -137,7 +147,7 @@ command1 command vm =
 command2 : C.Command2 -> Vm -> Result Error Vm
 command2 command vm =
     case vm.stack of
-        first :: second :: rest ->
+        (Stack.Value first) :: (Stack.Value second) :: rest ->
             command.f first second vm.environment
                 |> Result.map
                     (\environment ->
@@ -145,6 +155,9 @@ command2 command vm =
                             |> incrementProgramCounter
                     )
                 |> Result.mapError Primitive
+
+        _ :: _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| NotEnoughInputs <| command.name
@@ -157,7 +170,7 @@ introspect0 primitive vm =
     primitive.f vm
         |> Result.map
             (\value ->
-                { vm | stack = value :: vm.stack }
+                { vm | stack = Stack.Value value :: vm.stack }
                     |> incrementProgramCounter
             )
         |> Result.mapError (Internal << Scope)
@@ -168,14 +181,17 @@ introspect0 primitive vm =
 introspect1 : I.Introspect1 Vm -> Vm -> Result Error Vm
 introspect1 primitive vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             primitive.f first vm
                 |> Result.map
                     (\value ->
-                        { vm | stack = value :: rest }
+                        { vm | stack = Stack.Value value :: rest }
                             |> incrementProgramCounter
                     )
                 |> Result.mapError (Internal << Scope)
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| NotEnoughInputs primitive.name
@@ -186,7 +202,7 @@ pushVariable name vm =
     case Scope.thing name vm.scopes of
         Just (Defined value) ->
             Ok
-                ({ vm | stack = value :: vm.stack } |> incrementProgramCounter)
+                ({ vm | stack = Stack.Value value :: vm.stack } |> incrementProgramCounter)
 
         _ ->
             Err <| Internal <| Error.VariableUndefined name
@@ -195,7 +211,7 @@ pushVariable name vm =
 storeVariable : String -> Vm -> Result Error Vm
 storeVariable name vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             Ok
                 ({ vm
                     | stack = rest
@@ -203,6 +219,9 @@ storeVariable name vm =
                  }
                     |> incrementProgramCounter
                 )
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| Internal EmptyStack
@@ -249,7 +268,7 @@ enterLoopScope vm =
 pushTemplateScope : Vm -> Result Error Vm
 pushTemplateScope vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             Ok
                 ({ vm
                     | scopes = Scope.pushTemplateScope first vm.scopes
@@ -257,6 +276,9 @@ pushTemplateScope vm =
                  }
                     |> incrementProgramCounter
                 )
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| Internal NoIterator
@@ -289,7 +311,7 @@ enterTemplateScope vm =
 pushLocalScope : Vm -> Result Error Vm
 pushLocalScope vm =
     case vm.stack of
-        (Type.Int returnAddress) :: rest ->
+        (Stack.Address returnAddress) :: rest ->
             Ok
                 ({ vm
                     | scopes = Scope.pushLocalScope returnAddress vm.scopes
@@ -297,6 +319,9 @@ pushLocalScope vm =
                  }
                     |> incrementProgramCounter
                 )
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| Internal NoReturnAddress
@@ -310,7 +335,7 @@ popLocalScope vm =
             (\( returnAddress, scopes ) ->
                 { vm
                     | scopes = scopes
-                    , stack = (Type.Int returnAddress) :: vm.stack
+                    , stack = (Stack.Address returnAddress) :: vm.stack
                 }
                     |> incrementProgramCounter
             )
@@ -335,7 +360,7 @@ toBoolean value =
 jumpIfFalse : Int -> Vm -> Result Error Vm
 jumpIfFalse by vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             toBoolean first
                 |> Result.map
                     (\bool ->
@@ -348,6 +373,9 @@ jumpIfFalse by vm =
                             { vm | stack = rest } |> incrementProgramCounter
                     )
 
+        _ :: rest ->
+            Err <| Internal InvalidStack
+
         _ ->
             Err <| Internal EmptyStack
 
@@ -355,7 +383,7 @@ jumpIfFalse by vm =
 jumpIfTrue : Int -> Vm -> Result Error Vm
 jumpIfTrue by vm =
     case vm.stack of
-        first :: rest ->
+        (Stack.Value first) :: rest ->
             toBoolean first
                 |> Result.map
                     (\bool ->
@@ -368,6 +396,9 @@ jumpIfTrue by vm =
                             { vm | stack = rest } |> incrementProgramCounter
                     )
 
+        _ :: rest ->
+            Err <| Internal InvalidStack
+
         _ ->
             Err <| Internal EmptyStack
 
@@ -375,12 +406,15 @@ jumpIfTrue by vm =
 return : Vm -> Result Error Vm
 return vm =
     case vm.stack of
-        (Type.Int returnAddress) :: rest ->
+        (Stack.Address returnAddress) :: rest ->
             Ok
                 { vm
                     | programCounter = returnAddress
                     , stack = rest
                 }
+
+        _ :: rest ->
+            Err <| Internal InvalidStack
 
         _ ->
             Err <| Internal NoReturnAddress
@@ -393,7 +427,7 @@ execute instruction vm =
     case instruction of
         PushValue value ->
             Ok
-                ({ vm | stack = value :: vm.stack } |> incrementProgramCounter)
+                ({ vm | stack = Stack.Value value :: vm.stack } |> incrementProgramCounter)
 
         PushVariable name ->
             pushVariable name vm
@@ -458,7 +492,7 @@ execute instruction vm =
         Call address ->
             Ok
                 { vm
-                    | stack = Type.Int (vm.programCounter + 1) :: vm.stack
+                    | stack = Stack.Address (vm.programCounter + 1) :: vm.stack
                     , programCounter = address
                 }
 
@@ -468,7 +502,7 @@ execute instruction vm =
                 |> Result.map
                     (\address ->
                         { vm
-                            | stack = Type.Int (vm.programCounter + 1) :: vm.stack
+                            | stack = Stack.Address (vm.programCounter + 1) :: vm.stack
                             , programCounter = address
                         }
                     )

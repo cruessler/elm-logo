@@ -4,12 +4,12 @@ import Array
 import Dict
 import Environment
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope
+import Vm.Stack as Stack
 import Vm.Type as Type
 import Vm.Vm exposing (..)
 
@@ -38,6 +38,7 @@ runAndUnwrap : Vm -> Vm
 runAndUnwrap vm =
     vm
         |> run
+        |> Result.mapError (Debug.log "running the VM produced an error")
         |> Result.withDefault emptyVm
 
 
@@ -60,7 +61,7 @@ vmWithTwoInstructions =
                     Expect.equal vm.programCounter 2
             , test "stack gets changed" <|
                 \_ ->
-                    Expect.equal vm.stack [ Type.Word "w" ]
+                    Expect.equal vm.stack [ Stack.Value <| Type.Word "w" ]
             ]
 
 
@@ -80,7 +81,7 @@ vmWithVariables =
     in
         test "setting and getting a variable" <|
             \_ ->
-                Expect.equal vm.stack [ Type.Word "word" ]
+                Expect.equal vm.stack [ Stack.Value <| Type.Word "word" ]
 
 
 vmWithIntrospection : Test
@@ -96,7 +97,7 @@ vmWithIntrospection =
     in
         test "calling repcount outside a loop" <|
             \_ ->
-                Expect.equal vm.stack [ Type.Word "-1" ]
+                Expect.equal vm.stack [ Stack.Value <| Type.Word "-1" ]
 
 
 vmWithConditionalPrint : Test
@@ -195,9 +196,9 @@ vmWithLocalScope =
     let
         vm =
             { emptyVm
-                | instructions =
-                    [ PushValue (Type.Int 0)
-                    , PushLocalScope
+                | stack = [ Stack.Address 0 ]
+                , instructions =
+                    [ PushLocalScope
                     , LocalVariable "arg"
                     , PushValue (Type.Word "value")
                     , StoreVariable "arg"
