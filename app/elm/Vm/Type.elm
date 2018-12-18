@@ -14,18 +14,29 @@ e. a string) or a `List`.
 
 The variant `Int` is an optimization which is useful in two cases:
 
-  - It can be used in places where numbers are expected, e.g. with `repeat`.
+  - It can be used in places where integers are expected, e. g. with `repeat`.
   - It enables integers to be put on the stack without the need to first
     convert them to a string which is useful to save return addresses.
 
-For use with Logo primitives, an `Int` is considered to be a `Word` and will be
-converted to its string representation as necessary.
+The variant `Float` is an optimization which is useful when dealing with
+numbers which can be parsed once at compile time. It also enables faster type
+checking for Logo primitives which expect floats as input, e. g. `sum`.
+
+For use with Logo primitives, `Int` as well as `Float` are considered to be a
+`Word` and will be converted to their string representation as necessary.
 
 -}
 type Value
     = Word String
     | Int Int
+    | Float Float
     | List (List Value)
+
+
+type Error
+    = NoInt
+    | NoFloat
+    | NoBool
 
 
 {-| Create a string representation of a `Value`.
@@ -54,6 +65,9 @@ toString value =
             Int int ->
                 Basics.toString int
 
+            Float float ->
+                Basics.toString float
+
             List list ->
                 list
                     |> List.map inList
@@ -64,7 +78,77 @@ toString value =
 -}
 toInt : Value -> Result Error Int
 toInt value =
+    case value of
+        Word word ->
+            String.toInt word |> Result.mapError (always NoInt)
+
+        Int int ->
             Ok int
 
         _ ->
-            Err <| "I don’t know how to convert " ++ (toString value) ++ " to an integer"
+            Err NoInt
+
+
+{-| Parse `Value` as a float.
+-}
+toFloat : Value -> Result Error Float
+toFloat value =
+    case value of
+        Word word ->
+            String.toFloat word |> Result.mapError (always NoFloat)
+
+        Int int ->
+            Ok (Basics.toFloat int)
+
+        Float float ->
+            Ok float
+
+        _ ->
+            Err <| NoFloat
+
+
+{-| Parse `Value` as a bool.
+-}
+toBool : Value -> Result Error Bool
+toBool value =
+    case value of
+        Word word ->
+            case String.toLower word of
+                "true" ->
+                    Ok True
+
+                "false" ->
+                    Ok False
+
+                _ ->
+                    Err NoBool
+
+        _ ->
+            Err NoBool
+
+
+true : Value
+true =
+    Word "true"
+
+
+false : Value
+false =
+    Word "false"
+
+
+{-| Convert a float to a `Value`.
+-}
+fromFloat : Float -> Value
+fromFloat =
+    Float
+
+
+{-| Convert a bool to a `Value`.
+-}
+fromBool : Bool -> Value
+fromBool bool =
+    if bool then
+        true
+    else
+        false

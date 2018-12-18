@@ -21,7 +21,6 @@ manual][ucb-manual].
 -}
 
 import Vm.Type as Type
-import Dict exposing (Dict)
 
 
 {-| Represent a builtin function that takes one argument.
@@ -62,6 +61,9 @@ first value =
         Type.Int int ->
             Ok <| Type.Word <| String.left 1 <| toString int
 
+        Type.Float float ->
+            Ok <| Type.Word <| String.left 1 <| toString float
+
         Type.List (first :: rest) ->
             Ok first
 
@@ -89,6 +91,9 @@ butfirst value =
         Type.Int int ->
             Ok <| Type.Word <| String.dropLeft 1 <| toString int
 
+        Type.Float float ->
+            Ok <| Type.Word <| String.dropLeft 1 <| toString float
+
         Type.List (first :: rest) ->
             Ok <| Type.List rest
 
@@ -114,6 +119,9 @@ count value =
                 Type.Int int ->
                     int |> toString |> String.length
 
+                Type.Float float ->
+                    float |> toString |> String.length
+
                 Type.List list ->
                     List.length list
     in
@@ -130,18 +138,26 @@ than the second one.
 -}
 lessThan : Type.Value -> Type.Value -> Result String Type.Value
 lessThan value1 value2 =
-    Type.toInt value1
-        |> Result.andThen
-            (\int1 ->
-                Type.toInt value2
-                    |> Result.andThen
-                        (\int2 ->
-                            if int1 < int2 then
-                                Ok (Type.Word "true")
-                            else
-                                Ok (Type.Word "false")
-                        )
-            )
+    case Type.toInt value1 of
+        Ok int1 ->
+            case Type.toInt value2 of
+                Ok int2 ->
+                    if int1 < int2 then
+                        Ok (Type.Word "true")
+                    else
+                        Ok (Type.Word "false")
+
+                Err _ ->
+                    Err <|
+                        "lessThan"
+                            ++ (Type.toString value2)
+                            ++ " as input"
+
+        Err _ ->
+            Err <|
+                "lessThan doesn’t like "
+                    ++ (Type.toString value1)
+                    ++ " as input"
 
 
 {-| Check whether a given `Value` is empty. Only the empty `Word` and the empty
@@ -176,14 +192,11 @@ sentence value1 value2 =
         toList : Type.Value -> List Type.Value
         toList value =
             case value of
-                Type.Word _ ->
-                    [ value ]
-
-                Type.Int _ ->
-                    [ value ]
-
                 Type.List list ->
                     list
+
+                _ ->
+                    [ value ]
 
         list1 =
             toList value1

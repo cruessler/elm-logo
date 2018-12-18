@@ -55,3 +55,12 @@ step iter =
             { current = Nothing
             , rest = Type.List []
             }
+
+        _ ->
+            let
+                word =
+                    Type.toString iter.rest
+            in
+                { current = Just <| Type.Word <| String.left 1 word
+                , rest = Type.Word <| String.dropLeft 1 word
+                }
