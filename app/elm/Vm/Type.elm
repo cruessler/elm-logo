@@ -32,28 +32,38 @@ type Value
 -}
 toString : Value -> String
 toString value =
-    case value of
-        Word word ->
-            word
+    let
+        inList v =
+            case v of
+                List list ->
+                    let
+                        string =
+                            list
+                                |> List.map inList
+                                |> String.join " "
+                    in
+                        "[" ++ string ++ "]"
 
-        Int int ->
-            Basics.toString int
+                _ ->
+                    toString v
+    in
+        case value of
+            Word word ->
+                word
 
-        List list ->
-            list
-                |> List.map toString
-                |> String.join " "
+            Int int ->
+                Basics.toString int
+
+            List list ->
+                list
+                    |> List.map inList
+                    |> String.join " "
 
 
 {-| Parse `Value` as an integer.
 -}
-toInt : Value -> Result String Int
+toInt : Value -> Result Error Int
 toInt value =
-    case value of
-        Word word ->
-            String.toInt word
-
-        Int int ->
             Ok int
 
         _ ->
