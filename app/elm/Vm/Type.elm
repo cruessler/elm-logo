@@ -34,9 +34,9 @@ type Value
 
 
 type Error
-    = NoInt
-    | NoFloat
-    | NoBool
+    = NoInt String
+    | NoFloat String
+    | NoBool String
 
 
 {-| Create a string representation of a `Value`.
@@ -80,13 +80,13 @@ toInt : Value -> Result Error Int
 toInt value =
     case value of
         Word word ->
-            String.toInt word |> Result.mapError (always NoInt)
+            String.toInt word |> Result.mapError (always NoInt word)
 
         Int int ->
             Ok int
 
         _ ->
-            Err NoInt
+            Err <| NoInt (toString value)
 
 
 {-| Parse `Value` as a float.
@@ -95,7 +95,7 @@ toFloat : Value -> Result Error Float
 toFloat value =
     case value of
         Word word ->
-            String.toFloat word |> Result.mapError (always NoFloat)
+            String.toFloat word |> Result.mapError (always NoFloat word)
 
         Int int ->
             Ok (Basics.toFloat int)
@@ -104,7 +104,7 @@ toFloat value =
             Ok float
 
         _ ->
-            Err <| NoFloat
+            Err <| NoFloat (toString value)
 
 
 {-| Parse `Value` as a bool.
@@ -121,10 +121,10 @@ toBool value =
                     Ok False
 
                 _ ->
-                    Err NoBool
+                    Err <| NoBool word
 
         _ ->
-            Err NoBool
+            Err <| NoBool (toString value)
 
 
 true : Value
