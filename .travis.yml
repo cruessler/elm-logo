@@ -5,7 +5,7 @@
 # [elm-css-config]: https://github.com/rtfeldman/elm-css/blob/ab408a2cc01fe577f63c2974ffb6c72497984515/.travis.yml
 
 language: node_js
-node_js: node
+node_js: 10
 
 cache:
   directories:
