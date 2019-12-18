@@ -3,6 +3,8 @@ module Vm.Type
         ( Value(..)
         , toString
         , toInt
+        , true
+        , false
         )
 
 {-| This module contains types and functions related to Logo types.

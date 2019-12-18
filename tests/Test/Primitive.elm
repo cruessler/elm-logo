@@ -75,4 +75,12 @@ primitives =
                     in
                         Expect.equal (P.count <| T.Word <| string) (Ok <| T.Word <| toString length)
             ]
+        , describe "integerp"
+            [ test "works with an integer" <|
+                \_ ->
+                    Expect.equal (P.integerp <| T.Int <| 10) (Ok <| T.true)
+            , test "works with a string" <|
+                \_ ->
+                    Expect.equal (P.integerp <| T.Word <| "word") (Ok <| T.false)
+            ]
         ]

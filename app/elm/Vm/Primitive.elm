@@ -8,6 +8,7 @@ module Vm.Primitive
         , lessThan
         , emptyp
         , sentence
+        , integerp
         )
 
 {-| This module contains types and functions related to Logo’s builtin
@@ -205,3 +206,28 @@ sentence value1 value2 =
             toList value2
     in
         Ok <| Type.List <| List.append list1 list2
+
+
+{-| Check whether a given `Value` is an integer.
+
+    integerp (Word "a") == Word "false"
+    integerp (Int 10) == Word "true"
+    integerp (Word "10") == Word "true"
+
+-}
+integerp : Type.Value -> Result String Type.Value
+integerp value =
+    case value of
+        Type.Int _ ->
+            Ok Type.true
+
+        Type.Word word ->
+            case String.toInt word of
+                Ok _ ->
+                    Ok Type.true
+
+                Err _ ->
+                    Ok Type.false
+
+        _ ->
+            Ok Type.false

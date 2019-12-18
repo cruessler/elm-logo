@@ -169,7 +169,7 @@ foo "baz"""
             [ "baz", "baz" ]
         , printsLines
             """to foo :bar
-if emptyp :bar [ print "baz foo [ "baz ] ]
+if emptyp :bar [ if integerp 10 [ print "baz foo [ "baz ] ] ]
 print "bar
 end
 foo []"""
