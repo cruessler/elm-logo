@@ -6,6 +6,7 @@ import Environment
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Vm.Command as C
+import Vm.Exception as Exception
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope
@@ -139,13 +140,17 @@ vmWithPrintLoop =
                 | instructions =
                     [ PushLoopScope
                     , PushValue (Type.Word "10")
+                    , Duplicate
+                    , Eval1 { name = "integerp", f = P.integerp }
+                    , JumpIfTrue 2
+                    , Vm.Vm.Raise (Exception.WrongInput "repeat")
                     , Introspect0 { name = "repcount", f = I.repcount }
                     , Eval2 { name = "lessThan", f = P.lessThan }
                     , JumpIfFalse 5
                     , EnterLoopScope
                     , PushValue (Type.Word "word")
                     , Command1 { name = "print", f = C.print }
-                    , Jump -7
+                    , Jump -11
                     , PopLoopScope
                     ]
                         |> Array.fromList
@@ -154,7 +159,7 @@ vmWithPrintLoop =
     in
         describe "with print loop" <|
             [ test "program counter gets incremented" <|
-                \_ -> Expect.equal vm.programCounter 10
+                \_ -> Expect.equal vm.programCounter 14
             , test "stack is empty" <|
                 \_ -> Expect.equal vm.stack []
             , test "environment contains printed lines" <|

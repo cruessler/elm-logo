@@ -9,6 +9,7 @@ import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Vm.Command as C
 import Vm.Error as Error exposing (Error(..), Internal(..))
+import Vm.Exception as Exception exposing (Exception)
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Scope, Binding(..))
@@ -43,6 +44,8 @@ type Instruction
     | Call Int
     | CallByName String
     | Return
+    | Duplicate
+    | Raise Exception
 
 
 {-| Represent a stack based virtual machine.
@@ -420,6 +423,36 @@ return vm =
             Err <| Internal NoReturnAddress
 
 
+duplicate : Vm -> Result Error Vm
+duplicate vm =
+    case vm.stack of
+        (Stack.Value first) :: rest ->
+            Ok
+                ({ vm
+                    | stack =
+                        (Stack.Value first)
+                            :: (Stack.Value first)
+                            :: rest
+                 }
+                    |> incrementProgramCounter
+                )
+
+        _ ->
+            Err <| Internal EmptyStack
+
+
+raise : Exception -> Vm -> Result Error Vm
+raise exception vm =
+    case exception of
+        Exception.WrongInput function ->
+            case vm.stack of
+                (Stack.Value first) :: rest ->
+                    Err <| WrongInput function (Type.toString first)
+
+                _ ->
+                    Err <| Internal EmptyStack
+
+
 {-| Execute a single instruction.
 -}
 execute : Instruction -> Vm -> Result Error Vm
@@ -509,6 +542,12 @@ execute instruction vm =
 
         Return ->
             return vm
+
+        Duplicate ->
+            duplicate vm
+
+        Raise exception ->
+            raise exception vm
 
 
 {-| Execute a single instruction, returning an error when the program counter

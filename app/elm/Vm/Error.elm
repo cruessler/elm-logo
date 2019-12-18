@@ -25,4 +25,5 @@ type Internal
 type Error
     = NotEnoughInputs String
     | Primitive String
+    | WrongInput String String
     | Internal Internal

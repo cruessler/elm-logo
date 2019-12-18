@@ -13,6 +13,7 @@ module Compiler.Ast
 
 import Dict exposing (Dict)
 import Vm.Command as C
+import Vm.Exception as Exception
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
@@ -95,13 +96,17 @@ compile node =
             in
                 [ [ PushLoopScope ]
                 , compiledTimes
-                , [ Vm.Vm.Introspect0 { name = "repcount", f = I.repcount }
+                , [ Duplicate
+                  , Eval1 { name = "integerp", f = P.integerp }
+                  , JumpIfTrue 2
+                  , Vm.Vm.Raise (Exception.WrongInput "repeat")
+                  , Vm.Vm.Introspect0 { name = "repcount", f = I.repcount }
                   , Eval2 { name = "lessThan", f = P.lessThan }
                   , JumpIfFalse ((List.length compiledChildren) + 3)
                   , EnterLoopScope
                   ]
                 , compiledChildren
-                , [ Jump ((List.length compiledChildren) + 5 |> negate)
+                , [ Jump ((List.length compiledChildren) + 9 |> negate)
                   , PopLoopScope
                   ]
                 ]

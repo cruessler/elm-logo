@@ -4,6 +4,7 @@ import Compiler.Ast as Ast
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Vm.Command as C
+import Vm.Exception as Exception
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
@@ -57,14 +58,18 @@ repeat =
                     Expect.equal ast
                         [ PushLoopScope
                         , PushValue (Type.Int 10)
-                        , Introspect0 { name = "repcount", f = I.repcount }
+                        , Duplicate
+                        , Eval1 { name = "integerp", f = P.integerp }
+                        , JumpIfTrue 2
+                        , Raise (Exception.WrongInput "repeat")
+                        , Vm.Vm.Introspect0 { name = "repcount", f = I.repcount }
                         , Eval2 { name = "lessThan", f = P.lessThan }
                         , JumpIfFalse 6
                         , EnterLoopScope
                         , PushValue (Type.Word "")
                         , Eval1 { name = "emptyp", f = P.emptyp }
                         , Command1 { name = "print", f = C.print }
-                        , Jump -8
+                        , Jump -12
                         , PopLoopScope
                         ]
         ]
