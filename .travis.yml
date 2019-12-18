@@ -1,7 +1,7 @@
-# This file is a blend of [elm-test’s `.travis.yml`][elm-test-config] and
+# This file is a blend of [elm-css’s `.travis.yml`][elm-test-config] and
 # [elm-time’s `.travis.yml`][elm-time-config].
 #
-# [elm-test-config]: https://github.com/elm-community/elm-time/blob/5384e576e62f47efc7c3cdca5620fd05b6fb2cf1/.travis.yml
+# [elm-time-config]: https://github.com/elm-community/elm-time/blob/5384e576e62f47efc7c3cdca5620fd05b6fb2cf1/.travis.yml
 # [elm-css-config]: https://github.com/rtfeldman/elm-css/blob/ab408a2cc01fe577f63c2974ffb6c72497984515/.travis.yml
 
 language: node_js
