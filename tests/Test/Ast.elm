@@ -56,20 +56,18 @@ repeat =
                             |> Ast.compile
                 in
                     Expect.equal ast
-                        [ PushLoopScope
-                        , PushValue (Type.Int 10)
+                        [ PushValue (Type.Int 10)
                         , Duplicate
                         , Eval1 { name = "integerp", f = P.integerp }
                         , JumpIfTrue 2
                         , Raise (Exception.WrongInput "repeat")
-                        , Vm.Vm.Introspect0 { name = "repcount", f = I.repcount }
-                        , Eval2 { name = "lessThan", f = P.lessThan }
-                        , JumpIfFalse 6
+                        , PushLoopScope
                         , EnterLoopScope
+                        , JumpIfTrue 5
                         , PushValue (Type.Word "")
                         , Eval1 { name = "emptyp", f = P.emptyp }
                         , Command1 { name = "print", f = C.print }
-                        , Jump -12
+                        , Jump -5
                         , PopLoopScope
                         ]
         ]

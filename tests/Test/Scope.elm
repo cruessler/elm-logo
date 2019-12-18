@@ -39,4 +39,24 @@ scopes =
                             |> Scope.thing "x"
                             |> Expect.equal (Just Undefined)
             ]
+        , describe "popLocalScope"
+            [ test "does not pop root scope" <|
+                \_ ->
+                    let
+                        scope =
+                            Scope.empty
+                    in
+                        Expect.err (Scope.popLocalScope scope)
+            , test "pops until local scope is popped" <|
+                \_ ->
+                    let
+                        scope =
+                            Scope.empty
+                    in
+                        scope
+                            |> Scope.pushLocalScope 0
+                            |> Scope.pushLoopScope 10
+                            |> Scope.popLocalScope
+                            |> Expect.equal (Ok ( 0, scope ))
+            ]
         ]

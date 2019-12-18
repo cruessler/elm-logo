@@ -138,19 +138,17 @@ vmWithPrintLoop =
         vm =
             { emptyVm
                 | instructions =
-                    [ PushLoopScope
-                    , PushValue (Type.Word "10")
+                    [ PushValue (Type.Word "10")
                     , Duplicate
                     , Eval1 { name = "integerp", f = P.integerp }
                     , JumpIfTrue 2
                     , Vm.Vm.Raise (Exception.WrongInput "repeat")
-                    , Introspect0 { name = "repcount", f = I.repcount }
-                    , Eval2 { name = "lessThan", f = P.lessThan }
-                    , JumpIfFalse 5
+                    , PushLoopScope
                     , EnterLoopScope
+                    , JumpIfTrue 4
                     , PushValue (Type.Word "word")
                     , Command1 { name = "print", f = C.print }
-                    , Jump -11
+                    , Jump -4
                     , PopLoopScope
                     ]
                         |> Array.fromList
@@ -159,7 +157,7 @@ vmWithPrintLoop =
     in
         describe "with print loop" <|
             [ test "program counter gets incremented" <|
-                \_ -> Expect.equal vm.programCounter 14
+                \_ -> Expect.equal vm.programCounter 12
             , test "stack is empty" <|
                 \_ -> Expect.equal vm.stack []
             , test "environment contains printed lines" <|

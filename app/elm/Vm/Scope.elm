@@ -51,7 +51,7 @@ type Scope
     = Root Variables
     | Local Int Variables
     | Template Iterator
-    | Loop Int
+    | Loop { current : Int, total : Int }
 
 
 type Type
@@ -169,6 +169,9 @@ popLocalScope scopes =
         (Local returnAddress _) :: rest ->
             Ok ( returnAddress, rest )
 
+        _ :: rest ->
+            popLocalScope rest
+
         _ ->
             Err <| WrongType LocalScope
 
@@ -193,9 +196,9 @@ local name scopes =
 
 {-| Create a new loop scope which is used to implement `repeat`.
 -}
-pushLoopScope : List Scope -> List Scope
-pushLoopScope scopes =
-    (Loop 0) :: scopes
+pushLoopScope : Int -> List Scope -> List Scope
+pushLoopScope total scopes =
+    (Loop { current = 0, total = total }) :: scopes
 
 
 {-| Remove the topmost scope if it is a loop scope.
@@ -212,11 +215,11 @@ popLoopScope scopes =
 
 {-| Increment the loop counter if the topmost scope is a loop scope.
 -}
-enterLoopScope : List Scope -> Result Error (List Scope)
+enterLoopScope : List Scope -> Result Error ( Bool, List Scope )
 enterLoopScope scopes =
     case scopes of
-        (Loop count) :: rest ->
-            Ok <| Loop (count + 1) :: rest
+        (Loop { current, total }) :: rest ->
+            Ok <| ( current == total, Loop { current = current + 1, total = total } :: rest )
 
         _ ->
             Err <| WrongType LoopScope
@@ -225,8 +228,8 @@ enterLoopScope scopes =
 repcount : List Scope -> Int
 repcount scopes =
     case scopes of
-        (Loop count) :: rest ->
-            count
+        (Loop { current }) :: rest ->
+            current
 
         _ ->
             -1

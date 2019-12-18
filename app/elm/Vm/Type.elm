@@ -1,6 +1,8 @@
 module Vm.Type
     exposing
-        ( Value(..)
+        ( Error
+        , Value(..)
+        , fromBool
         , toString
         , toInt
         , true

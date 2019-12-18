@@ -4,6 +4,7 @@ module Vm.Error exposing (Error(..), Internal(..))
 -}
 
 import Vm.Scope as Scope
+import Vm.Type as Type
 
 
 {-| Represent errors that stem from the specifics of this Logo implementation.
@@ -16,6 +17,7 @@ type Internal
     | VariableUndefined String
     | FunctionUndefined String
     | Scope Scope.Error
+    | Type Type.Error
     | NoIterator
     | NoReturnAddress
     | NoBoolean String

@@ -238,10 +238,24 @@ localVariable name vm =
         )
 
 
-pushLoopScope : Vm -> Vm
+pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
-    { vm | scopes = Scope.pushLoopScope vm.scopes }
-        |> incrementProgramCounter
+    case vm.stack of
+        (Stack.Value first) :: rest ->
+            first
+                |> Type.toInt
+                |> Result.mapError (Internal << Type)
+                |> Result.map
+                    (\total ->
+                        { vm
+                            | scopes = Scope.pushLoopScope total vm.scopes
+                            , stack = rest
+                        }
+                    )
+                |> Result.map incrementProgramCounter
+
+        _ ->
+            Err <| Internal EmptyStack
 
 
 popLoopScope : Vm -> Result Error Vm
@@ -261,8 +275,11 @@ enterLoopScope vm =
     vm.scopes
         |> Scope.enterLoopScope
         |> Result.map
-            (\scopes ->
-                { vm | scopes = scopes }
+            (\( lastPass, scopes ) ->
+                { vm
+                    | scopes = scopes
+                    , stack = (Type.fromBool lastPass |> Stack.Value) :: vm.stack
+                }
                     |> incrementProgramCounter
             )
         |> Result.mapError (Internal << Scope)
@@ -490,7 +507,7 @@ execute instruction vm =
             command2 command vm
 
         PushLoopScope ->
-            Ok (pushLoopScope vm)
+            pushLoopScope vm
 
         PopLoopScope ->
             popLoopScope vm
