@@ -5,7 +5,7 @@ module Vm.Primitive
         , first
         , butfirst
         , count
-        , lessThan
+        , lessp
         , emptyp
         , sentence
         , integerp
@@ -133,13 +133,13 @@ count value =
 {-| Convert two values to numbers and compare whether the first one is less
 than the second one.
 
-    lessThan (Word "0") (Word "1") == Ok (Word "true")
-    lessThan (Word "1") (Word "1") == Ok (Word "false")
-    lessThan (Word "a") (Word "1") == Err _
+    lessp (Word "0") (Word "1") == Ok (Word "true")
+    lessp (Word "1") (Word "1") == Ok (Word "false")
+    lessp (Word "a") (Word "1") == Err _
 
 -}
-lessThan : Type.Value -> Type.Value -> Result Error Type.Value
-lessThan value1 value2 =
+lessp : Type.Value -> Type.Value -> Result Error Type.Value
+lessp value1 value2 =
     case Type.toInt value1 of
         Ok int1 ->
             case Type.toInt value2 of
@@ -150,10 +150,10 @@ lessThan value1 value2 =
                         Ok (Type.Word "false")
 
                 Err _ ->
-                    Err <| WrongInput "lessThan" (Type.toString value2)
+                    Err <| WrongInput "lessp" (Type.toString value2)
 
         Err _ ->
-            Err <| WrongInput "lessThan" (Type.toString value2)
+            Err <| WrongInput "lessp" (Type.toString value2)
 
 
 {-| Check whether a given `Value` is empty. Only the empty `Word` and the empty

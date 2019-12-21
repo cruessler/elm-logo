@@ -52,4 +52,5 @@ repeatWithInvalidArguments =
         , failsWithMessage "print butfirst []" <| Runtime <| Vm.Error.WrongInput "butfirst" ""
         , failsWithMessage "print first []" <| Runtime <| Vm.Error.WrongInput "first" ""
         , failsWithMessage "print first butfirst \"a" <| Runtime <| Vm.Error.WrongInput "first" ""
+        , failsWithMessage "print lessp \"word \"word" <| Runtime <| Vm.Error.WrongInput "lessp" "word"
         ]
