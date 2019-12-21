@@ -49,4 +49,7 @@ repeatWithInvalidArguments : Test
 repeatWithInvalidArguments =
     describe "repeat fails given non-integer argument" <|
         [ failsWithMessage "repeat \"foo []" <| Runtime <| Vm.Error.WrongInput "repeat" "foo"
+        , failsWithMessage "print butfirst []" <| Runtime <| Vm.Error.WrongInput "butfirst" ""
+        , failsWithMessage "print first []" <| Runtime <| Vm.Error.WrongInput "first" ""
+        , failsWithMessage "print first butfirst \"a" <| Runtime <| Vm.Error.WrongInput "first" ""
         ]

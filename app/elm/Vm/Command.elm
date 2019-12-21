@@ -10,6 +10,7 @@ commands. A command can take arguments and returns no value.
 -}
 
 import Environment as E exposing (Environment)
+import Vm.Error exposing (Error)
 import Vm.Type as Type
 
 
@@ -18,7 +19,7 @@ import Vm.Type as Type
 type alias Command1 =
     { name : String
     , f :
-        Type.Value -> Environment -> Result String Environment
+        Type.Value -> Environment -> Result Error Environment
     }
 
 
@@ -27,12 +28,12 @@ type alias Command1 =
 type alias Command2 =
     { name : String
     , f :
-        Type.Value -> Type.Value -> Environment -> Result String Environment
+        Type.Value -> Type.Value -> Environment -> Result Error Environment
     }
 
 
 {-| Print a value to the console.
 -}
-print : Type.Value -> Environment -> Result String Environment
+print : Type.Value -> Environment -> Result Error Environment
 print value env =
     Ok <| E.print (Type.toString value) env

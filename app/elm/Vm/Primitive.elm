@@ -21,6 +21,7 @@ manual][ucb-manual].
 
 -}
 
+import Vm.Error as Error exposing (Error(..))
 import Vm.Type as Type
 
 
@@ -29,7 +30,7 @@ import Vm.Type as Type
 type alias Primitive1 =
     { name : String
     , f :
-        Type.Value -> Result String Type.Value
+        Type.Value -> Result Error Type.Value
     }
 
 
@@ -38,7 +39,7 @@ type alias Primitive1 =
 type alias Primitive2 =
     { name : String
     , f :
-        Type.Value -> Type.Value -> Result String Type.Value
+        Type.Value -> Type.Value -> Result Error Type.Value
     }
 
 
@@ -50,11 +51,11 @@ type alias Primitive2 =
 Return `Err ...` for empty inputs.
 
 -}
-first : Type.Value -> Result String Type.Value
+first : Type.Value -> Result Error Type.Value
 first value =
     case value of
         Type.Word "" ->
-            Err "first doesn’t like an empty word as input"
+            Err <| WrongInput "first" (Type.toString value)
 
         Type.Word str ->
             Ok <| Type.Word <| String.left 1 str
@@ -69,7 +70,7 @@ first value =
             Ok first
 
         Type.List [] ->
-            Err "first doesn’t like [] as input"
+            Err <| WrongInput "first" (Type.toString value)
 
 
 {-| Get all but the first element of a `Value`.
@@ -80,11 +81,11 @@ first value =
 Return `Err ...` for empty inputs.
 
 -}
-butfirst : Type.Value -> Result String Type.Value
+butfirst : Type.Value -> Result Error Type.Value
 butfirst value =
     case value of
         Type.Word "" ->
-            Err "butfirst doesn’t like an empty word as input"
+            Err <| WrongInput "butfirst" (Type.toString value)
 
         Type.Word str ->
             Ok <| Type.Word <| String.dropLeft 1 str
@@ -99,7 +100,7 @@ butfirst value =
             Ok <| Type.List rest
 
         Type.List [] ->
-            Err "first doesn’t like [] as input"
+            Err <| WrongInput "butfirst" (Type.toString value)
 
 
 {-| Count the number of characters in a `Word` or the number of elements in a
@@ -109,7 +110,7 @@ butfirst value =
     count (List [ Word "word" ]) == Ok (Word "1")
 
 -}
-count : Type.Value -> Result String Type.Value
+count : Type.Value -> Result Error Type.Value
 count value =
     let
         length =
@@ -137,7 +138,7 @@ than the second one.
     lessThan (Word "a") (Word "1") == Err _
 
 -}
-lessThan : Type.Value -> Type.Value -> Result String Type.Value
+lessThan : Type.Value -> Type.Value -> Result Error Type.Value
 lessThan value1 value2 =
     case Type.toInt value1 of
         Ok int1 ->
@@ -149,16 +150,10 @@ lessThan value1 value2 =
                         Ok (Type.Word "false")
 
                 Err _ ->
-                    Err <|
-                        "lessThan"
-                            ++ (Type.toString value2)
-                            ++ " as input"
+                    Err <| WrongInput "lessThan" (Type.toString value2)
 
         Err _ ->
-            Err <|
-                "lessThan doesn’t like "
-                    ++ (Type.toString value1)
-                    ++ " as input"
+            Err <| WrongInput "lessThan" (Type.toString value2)
 
 
 {-| Check whether a given `Value` is empty. Only the empty `Word` and the empty
@@ -168,7 +163,7 @@ lessThan value1 value2 =
     emptyp (Word "word") == Word "false"
 
 -}
-emptyp : Type.Value -> Result String Type.Value
+emptyp : Type.Value -> Result Error Type.Value
 emptyp value =
     case value of
         Type.Word "" ->
@@ -187,7 +182,7 @@ emptyp value =
     sentence (Word "a") (List [ Word "b" ]) == List [ Word "a", Word "b" ]
 
 -}
-sentence : Type.Value -> Type.Value -> Result String Type.Value
+sentence : Type.Value -> Type.Value -> Result Error Type.Value
 sentence value1 value2 =
     let
         toList : Type.Value -> List Type.Value
@@ -215,7 +210,7 @@ sentence value1 value2 =
     integerp (Word "10") == Word "true"
 
 -}
-integerp : Type.Value -> Result String Type.Value
+integerp : Type.Value -> Result Error Type.Value
 integerp value =
     case value of
         Type.Int _ ->

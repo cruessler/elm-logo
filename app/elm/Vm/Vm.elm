@@ -93,7 +93,6 @@ eval1 primitive vm =
                         { vm | stack = (Stack.Value value :: rest) }
                             |> incrementProgramCounter
                     )
-                |> Result.mapError Primitive
 
         _ :: rest ->
             Err <| Internal InvalidStack
@@ -115,7 +114,6 @@ eval2 primitive vm =
                         { vm | stack = (Stack.Value value :: rest) }
                             |> incrementProgramCounter
                     )
-                |> Result.mapError Primitive
 
         _ :: _ :: rest ->
             Err <| Internal InvalidStack
@@ -136,7 +134,6 @@ command1 command vm =
                         { vm | stack = rest, environment = environment }
                             |> incrementProgramCounter
                     )
-                |> Result.mapError Primitive
 
         _ :: rest ->
             Err <| Internal InvalidStack
@@ -157,7 +154,6 @@ command2 command vm =
                         { vm | stack = rest, environment = environment }
                             |> incrementProgramCounter
                     )
-                |> Result.mapError Primitive
 
         _ :: _ :: rest ->
             Err <| Internal InvalidStack
