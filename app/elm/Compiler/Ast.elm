@@ -3,6 +3,7 @@ module Compiler.Ast
         ( Node(..)
         , Program
         , Function
+        , Context(..)
         , compileProgram
         , compileFunction
         , compile
@@ -13,7 +14,7 @@ module Compiler.Ast
 
 import Dict exposing (Dict)
 import Vm.Command as C
-import Vm.Exception as Exception
+import Vm.Exception as Exception exposing (Exception)
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
@@ -57,10 +58,11 @@ type Node
     | Introspect0 (I.Introspect0 Vm)
     | Introspect1 (I.Introspect1 Vm) Node
     | Call String (List Node)
-    | Return
+    | Return (Maybe Node)
     | Make String Node
     | Variable String
     | Value Type.Value
+    | Raise Exception
 
 
 {-| Mangle the name of a function based on its number of arguments. This is
@@ -81,18 +83,210 @@ mangleName name arguments =
     name ++ (toString arguments)
 
 
+{-| Represents the context an AST node can be compiled in.
+
+This is relevant for whether or not to raise exceptions about unused or missing
+return values.
+
+If the context is `Statement` the node is expected to not return a value, if it
+is `Expression` it is expected to return a value.
+
+-}
+type Context
+    = Statement
+    | Expression { caller : String }
+
+
+{-| Represents the type of a callee.
+
+This is relevant for whether or not it can be statically determined whether to
+raise exceptions about unused or missing return values at runtime.
+
+A `Primitive` always returns a value while a `Command` never does. If the
+callee is a `UserDefinedFunction` we can only at runtime determine whether it
+returns a value because user-defined functions can contain `ifelse` whose
+branches not necessarily have the same type.
+
+-}
+type Callee
+    = Primitive { name : String }
+    | Command { name : String }
+    | UserDefinedFunction { name : String }
+    | DoesNotApply
+
+
+{-| Determine the type of a callee.
+
+Return `DoesNotApply` if a node does not represent a call or a value.
+
+-}
+typeOfCallee : Node -> Callee
+typeOfCallee node =
+    case node of
+        Repeat _ _ ->
+            Command { name = "repeat" }
+
+        Foreach _ _ ->
+            Command { name = "foreach" }
+
+        Command1 c _ ->
+            Command { name = c.name }
+
+        Primitive1 p _ ->
+            Primitive { name = p.name }
+
+        Primitive2 p _ _ ->
+            Primitive { name = p.name }
+
+        Introspect0 i ->
+            Primitive { name = i.name }
+
+        Introspect1 i _ ->
+            Primitive { name = i.name }
+
+        Call name _ ->
+            UserDefinedFunction { name = name }
+
+        Make _ _ ->
+            Command { name = "make" }
+
+        Variable name ->
+            Primitive { name = name }
+
+        Value _ ->
+            Primitive { name = "value" }
+
+        If _ _ ->
+            DoesNotApply
+
+        Return _ ->
+            DoesNotApply
+
+        Raise _ ->
+            DoesNotApply
+
+
+{-| Compile a non-empty branch of a control structure, e. g. of an `if`, to a
+list of VM instructions.
+
+All nodes except the last one are compiled as statements while the last one is
+compiled in the context of the control structure.
+
+-}
+compileNonEmptyBranch : Context -> List Node -> List Instruction
+compileNonEmptyBranch context children =
+    case children of
+        [] ->
+            []
+
+        [ first ] ->
+            compileInContext context first
+
+        first :: rest ->
+            compileInContext Statement first ++ compileNonEmptyBranch context rest
+
+
+{-| Compile the branch of a control structure, e. g. of an `if`, to a list of
+VM instructions.
+
+If the branch is empty, it can be statically determined whether to raise an
+exception at runtime.
+
+-}
+compileBranch : String -> Context -> List Node -> List Instruction
+compileBranch controlStructure context children =
+    case children of
+        [] ->
+            case context of
+                Statement ->
+                    []
+
+                Expression { caller } ->
+                    [ Vm.Vm.Raise (Exception.NoOutput caller controlStructure) ]
+
+        _ ->
+            compileNonEmptyBranch context children
+
+
+{-| Compile an AST node to a list of VM instructions.
+
+This function inserts instructions that check at runtime whether or not a
+caller expects a user-defind function to return a value, and raise an expection
+if the expectation is not met.
+
+    to foo :bar
+      print "bar
+    end
+    print foo "baz ; fails at runtime because `foo` did not return a value
+
+    to foo :bar
+      output "bar
+    end
+    foo "baz ; fails at runtime because `foo` did return a value that was not
+             ; passed to another function
+
+If it can statically be determined whether the caller expects a value, the
+instruction for raising an exception can be inserted without a check.
+
+    print print 5
+    3
+
+-}
+compileInContext : Context -> Node -> List Instruction
+compileInContext context node =
+    let
+        instructions =
+            compile context node
+    in
+        case context of
+            Statement ->
+                case typeOfCallee node of
+                    UserDefinedFunction _ ->
+                        instructions
+                            ++ [ CheckReturn
+                               , JumpIfFalse 2
+                               , Vm.Vm.Raise Exception.NoUseOfValue
+                               ]
+
+                    Primitive _ ->
+                        instructions
+                            ++ [ Vm.Vm.Raise Exception.NoUseOfValue ]
+
+                    _ ->
+                        instructions
+
+            Expression { caller } ->
+                case typeOfCallee node of
+                    UserDefinedFunction { name } ->
+                        instructions
+                            ++ [ CheckReturn
+                               , JumpIfTrue 2
+                               , Vm.Vm.Raise (Exception.NoOutput caller name)
+                               ]
+
+                    Primitive _ ->
+                        instructions
+
+                    Command { name } ->
+                        instructions
+                            ++ [ Vm.Vm.Raise (Exception.NoOutput caller name) ]
+
+                    DoesNotApply ->
+                        instructions
+
+
 {-| Compile an AST node to a list of VM instructions.
 -}
-compile : Node -> List Instruction
-compile node =
+compile : Context -> Node -> List Instruction
+compile context node =
     case node of
         Repeat times children ->
             let
                 compiledTimes =
-                    compile times
+                    compileInContext (Expression { caller = "repeat" }) times
 
                 compiledChildren =
-                    List.concatMap compile children
+                    List.concatMap (compileInContext Statement) children
 
                 body =
                     [ [ PushLoopScope
@@ -119,10 +313,10 @@ compile node =
         Foreach iterator children ->
             let
                 compiledIterator =
-                    compile iterator
+                    compileInContext (Expression { caller = "foreach" }) iterator
 
                 compiledChildren =
-                    List.concatMap compile children
+                    List.concatMap (compileInContext Statement) children
             in
                 [ compiledIterator
                 , [ PushTemplateScope
@@ -139,32 +333,33 @@ compile node =
         If condition children ->
             let
                 compiledCondition =
-                    compile condition
+                    compileInContext (Expression { caller = "if" }) condition
 
                 compiledChildren =
-                    List.concatMap compile children
+                    compileBranch "if" context children
             in
                 [ compiledCondition
-                , [ JumpIfFalse ((List.length compiledChildren) + 1) ]
+                , [ JumpIfFalse ((List.length compiledChildren) + 1)
+                  ]
                 , compiledChildren
                 ]
                     |> List.concat
 
         Command1 c node ->
-            [ (compile node)
+            [ (compileInContext (Expression { caller = c.name }) node)
             , [ Vm.Vm.Command1 c ]
             ]
                 |> List.concat
 
         Primitive1 p node ->
-            [ (compile node)
+            [ (compileInContext (Expression { caller = p.name }) node)
             , [ Eval1 p ]
             ]
                 |> List.concat
 
         Primitive2 p first second ->
-            [ (compile second)
-            , (compile first)
+            [ (compileInContext (Expression { caller = p.name }) second)
+            , (compileInContext (Expression { caller = p.name }) first)
             , [ Eval2 p ]
             ]
                 |> List.concat
@@ -173,7 +368,7 @@ compile node =
             [ Vm.Vm.Introspect0 i ]
 
         Introspect1 i node ->
-            [ compile node
+            [ compileInContext (Expression { caller = i.name }) node
             , [ Vm.Vm.Introspect1 i ]
             ]
                 |> List.concat
@@ -183,18 +378,28 @@ compile node =
                 mangledName =
                     name ++ (toString <| List.length arguments)
             in
-                [ List.reverse arguments |> List.concatMap compile
+                [ List.reverse arguments
+                    |> List.concatMap (compileInContext (Expression { caller = name }))
                 , [ Vm.Vm.CallByName mangledName ]
                 ]
                     |> List.concat
 
-        Return ->
-            [ PopLocalScope
+        Return (Just node) ->
+            [ (compileInContext (Expression { caller = "output" })) node
+            , [ PopLocalScope
+              , Vm.Vm.Return
+              ]
+            ]
+                |> List.concat
+
+        Return Nothing ->
+            [ PushVoid
+            , PopLocalScope
             , Vm.Vm.Return
             ]
 
         Make name node ->
-            [ compile node
+            [ compileInContext (Expression { caller = "make" }) node
             , [ StoreVariable name ]
             ]
                 |> List.concat
@@ -204,6 +409,9 @@ compile node =
 
         Value value ->
             [ PushValue value ]
+
+        Raise error ->
+            [ Vm.Vm.Raise error ]
 
 
 compileProgram : Program -> CompiledProgram
@@ -225,7 +433,7 @@ compileProgram { functions, body } =
         instructions =
             List.append
                 (List.concatMap .body compiledFunctions)
-                (List.concatMap compile body)
+                (List.concatMap (compileInContext Statement) body)
     in
         { instructions = instructions
         , functionTable = functionTable
@@ -238,10 +446,10 @@ compileRequiredArgument arg =
     [ LocalVariable arg, StoreVariable arg ]
 
 
-compileOptionalArgument : ( String, Node ) -> List Instruction
-compileOptionalArgument ( arg, node ) =
+compileOptionalArgument : Context -> ( String, Node ) -> List Instruction
+compileOptionalArgument context ( arg, node ) =
     [ [ LocalVariable arg ]
-    , compile node
+    , compileInContext context node
     , [ StoreVariable arg ]
     ]
         |> List.concat
@@ -262,8 +470,9 @@ compileFunction { name, requiredArguments, optionalArguments, body } =
 
         {- Instructions for the function body. -}
         instructionsForBody =
-            [ List.concatMap compile body
-            , [ PopLocalScope
+            [ List.concatMap (compileInContext Statement) body
+            , [ PushVoid
+              , PopLocalScope
               , Vm.Vm.Return
               ]
             ]
@@ -286,7 +495,7 @@ compileFunction { name, requiredArguments, optionalArguments, body } =
            argument. In this case, the value for the argument is computed by the callee itself.
         -}
         instructionsOptional =
-            List.map compileOptionalArgument optionalArguments
+            List.map (compileOptionalArgument (Expression { caller = name })) optionalArguments
 
         {- Given a number of optional arguments to be compiled as required
            arguments, compile a function body.

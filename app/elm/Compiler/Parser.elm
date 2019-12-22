@@ -13,6 +13,7 @@ import Compiler.Ast as Ast
 import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
+import Compiler.Parser.Callable as Callable
 import Compiler.Parser.Helper as Helper
 import Dict exposing (Dict)
 import Parser as P
@@ -22,7 +23,14 @@ import Parser as P
         , (|.)
         , (|=)
         )
+import Vm.Exception as Exception
 import Vm.Type as Type
+
+
+type alias State =
+    { userDefinedFunctions : Dict String Ast.Function
+    , inFunction : Bool
+    }
 
 
 type alias FunctionDeclaration =
@@ -32,59 +40,53 @@ type alias FunctionDeclaration =
     }
 
 
-mapFunctionDeclarations : List Ast.Function -> Dict String FunctionDeclaration
+mapFunctionDeclarations : List Ast.Function -> Dict String Ast.Function
 mapFunctionDeclarations functions =
     functions
-        |> List.map
-            (\{ name, requiredArguments, optionalArguments } ->
-                ( name
-                , { name = name
-                  , requiredArguments =
-                        List.length requiredArguments
-                  , optionalArguments =
-                        List.length optionalArguments
-                  }
-                )
-            )
+        |> List.map (\function -> ( function.name, function ))
         |> Dict.fromList
 
 
 root : Parser Ast.Program
 root =
-    P.inContext "root" <|
-        (P.repeat P.zeroOrMore (functionDefinition Dict.empty)
-            |> P.andThen body
-        )
+    let
+        state =
+            { inFunction = False, userDefinedFunctions = Dict.empty }
+    in
+        P.inContext "root" <|
+            (P.repeat P.zeroOrMore (functionDefinition state)
+                |> P.andThen body
+            )
 
 
 body : List Ast.Function -> Parser Ast.Program
 body functions =
     let
-        knownFunctions =
+        userDefinedFunctions =
             mapFunctionDeclarations functions
     in
-        statements knownFunctions
+        statements
+            { inFunction = False
+            , userDefinedFunctions = userDefinedFunctions
+            }
             |> P.map (Ast.Program functions)
 
 
-functionDefinition : Dict String FunctionDeclaration -> Parser Ast.Function
-functionDefinition knownFunctions =
+functionDefinition : State -> Parser Ast.Function
+functionDefinition state =
     P.inContext "functionDefinition" <|
-        (functionHeader
+        (functionHeader state
             |> P.andThen
-                (\( name, requiredArguments, optionalArguments ) ->
+                (\({ name, requiredArguments, optionalArguments } as function) ->
                     let
-                        knownFunctions_ =
-                            Dict.insert name
-                                { name = name
-                                , requiredArguments =
-                                    List.length requiredArguments
-                                , optionalArguments =
-                                    List.length optionalArguments
-                                }
-                                knownFunctions
+                        userDefinedFunctions_ =
+                            Dict.insert name function state.userDefinedFunctions
                     in
-                        functionBody knownFunctions_
+                        functionBody
+                            { state
+                                | inFunction = True
+                                , userDefinedFunctions = userDefinedFunctions_
+                            }
                             |> P.map
                                 (Ast.Function name
                                     requiredArguments
@@ -94,21 +96,24 @@ functionDefinition knownFunctions =
         )
 
 
-functionHeader : Parser ( String, List String, List ( String, Ast.Node ) )
-functionHeader =
-    P.delayedCommit (P.keyword "to") <|
-        (P.succeed (\a b c -> ( a, b, c ))
-            |. spaces
+functionHeader : State -> Parser Ast.Function
+functionHeader state =
+    P.delayedCommit (P.keyword "to" |. spaces) <|
+        (P.succeed Ast.Function
             |= functionName
-            |. spaces
-            |= requiredArguments
             |= (P.oneOf
-                    [ P.delayedCommit spaces <| optionalArguments
+                    [ P.delayedCommit spaces <| requiredArguments
+                    , P.succeed []
+                    ]
+               )
+            |= (P.oneOf
+                    [ P.delayedCommit spaces <| optionalArguments state
                     , P.succeed []
                     ]
                )
             |. maybeSpaces
             |. P.symbol "\n"
+            |= P.succeed []
         )
 
 
@@ -129,70 +134,112 @@ requiredArgument =
         |= P.keep P.oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
-optionalArguments : Parser (List ( String, Ast.Node ))
-optionalArguments =
-    Helper.list { item = optionalArgument, separator = spaces }
+optionalArguments : State -> Parser (List ( String, Ast.Node ))
+optionalArguments state =
+    Helper.list { item = optionalArgument state, separator = spaces }
 
 
-optionalArgument : Parser ( String, Ast.Node )
-optionalArgument =
+optionalArgument : State -> Parser ( String, Ast.Node )
+optionalArgument state =
     P.succeed (,)
         |. P.symbol "["
         |. maybeSpaces
         |= requiredArgument
         |. spaces
-        |= expression
+        |= statement state
         |. maybeSpaces
         |. P.symbol "]"
 
 
-functionBody : Dict String FunctionDeclaration -> Parser (List Ast.Node)
-functionBody knownFunctions =
+functionBody : State -> Parser (List Ast.Node)
+functionBody state =
     P.inContext "functionBody" <|
-        (nextLine knownFunctions [])
+        (nextLine state [])
 
 
-nextLine : Dict String FunctionDeclaration -> List Ast.Node -> Parser (List Ast.Node)
-nextLine knownFunctions acc =
+nextLine : State -> List Ast.Node -> Parser (List Ast.Node)
+nextLine state acc =
     P.oneOf
         [ P.keyword "end\n"
             |> P.andThen (\_ -> P.succeed acc)
-        , line knownFunctions
-            |> P.andThen (\line -> nextLine knownFunctions (List.concat [ acc, line ]))
+        , line state
+            |> P.andThen (\line -> nextLine state (List.concat [ acc, line ]))
         ]
 
 
-line : Dict String FunctionDeclaration -> Parser (List Ast.Node)
-line knownFunctions =
+line : State -> Parser (List Ast.Node)
+line state =
     P.inContext "line" <|
         P.succeed identity
             |. maybeSpaces
-            |= statements knownFunctions
+            |= statements state
             |. maybeSpaces
             |. P.symbol "\n"
 
 
-statements : Dict String FunctionDeclaration -> Parser (List Ast.Node)
-statements knownFunctions =
-    Helper.list { item = P.lazy (\_ -> statement knownFunctions), separator = spaces }
+statements : State -> Parser (List Ast.Node)
+statements state =
+    Helper.list
+        { item = P.lazy (\_ -> statement state)
+        , separator = spaces
+        }
 
 
-statement : Dict String FunctionDeclaration -> Parser Ast.Node
-statement knownFunctions =
+{-| Parse anything that’s valid where a statement is expected.
+
+Most of the alternatives are statements, but some are expressions. The
+function is named `statement` to avoid having to use `statementOrExpression`
+throughout the parser although the latter would be the correct name.
+
+Although an expression is syntactically valid at the top level of a program it
+will lead to a runtime error.
+
+This function parses both statements and expressions and leaves it to the later
+stages of the compiler to deal with semantically invalid programs.
+
+-}
+statement : State -> Parser Ast.Node
+statement state =
     P.inContext "statement" <|
         P.oneOf
-            [ P.lazy (\_ -> foreach knownFunctions)
-            , P.lazy (\_ -> repeat knownFunctions)
-            , P.lazy (\_ -> if_ knownFunctions)
-            , (P.succeed Ast.Return |. P.keyword "stop")
-            , make
-            , variableFunctionCall knownFunctions
-            , functionCall knownFunctions
+            [ variableFunctionCall state
+            , P.lazy (\_ -> foreach state)
+            , P.lazy (\_ -> repeat state)
+            , P.lazy (\_ -> if_ state)
+            , P.lazy (\_ -> output state)
+            , stop
+            , make state
+            , functionCall state
+            , templateVariable
+            , variable
+            , P.lazy (\_ -> primitive state)
+            , value
             ]
 
 
+output : State -> Parser Ast.Node
+output state =
+    let
+        makeNode expr =
+            if state.inFunction then
+                Ast.Return <| Just expr
+            else
+                Ast.Raise <| Exception.OutputOutsideFunction
+    in
+        P.inContext "output" <|
+            P.succeed makeNode
+                |. P.keyword "output"
+                |. spaces
+                |= statement state
+
+
+stop : Parser Ast.Node
+stop =
+    P.succeed (Ast.Return Nothing) |. P.keyword "stop"
+
+
 controlStructure :
-    Dict String FunctionDeclaration
+    State
     -> String
     ->
         (Ast.Node
@@ -200,61 +247,74 @@ controlStructure :
          -> Ast.Node
         )
     -> Parser Ast.Node
-controlStructure knownFunctions keyword constructor =
+controlStructure state keyword constructor =
     P.inContext keyword <|
         P.succeed constructor
             |. P.keyword keyword
             |. P.symbol " "
-            |= expression
+            |= statement state
             |. spaces
             |. P.symbol "["
             |. maybeSpaces
-            |= statements knownFunctions
+            |= statements state
             |. maybeSpaces
             |. P.symbol "]"
 
 
-if_ : Dict String FunctionDeclaration -> Parser Ast.Node
-if_ knownFunctions =
-    controlStructure knownFunctions "if" Ast.If
+if_ : State -> Parser Ast.Node
+if_ state =
+    controlStructure state "if" Ast.If
 
 
-foreach : Dict String FunctionDeclaration -> Parser Ast.Node
-foreach knownFunctions =
-    P.lazy (\_ -> controlStructure knownFunctions "foreach" Ast.Foreach)
+foreach : State -> Parser Ast.Node
+foreach state =
+    P.lazy (\_ -> controlStructure state "foreach" Ast.Foreach)
 
 
-repeat : Dict String FunctionDeclaration -> Parser Ast.Node
-repeat knownFunctions =
-    controlStructure knownFunctions "repeat" Ast.Repeat
+repeat : State -> Parser Ast.Node
+repeat state =
+    controlStructure state "repeat" Ast.Repeat
 
 
-functionCall : Dict String FunctionDeclaration -> Parser Ast.Node
-functionCall knownFunctions =
+functionCall : State -> Parser Ast.Node
+functionCall state =
     P.inContext "functionCall" <|
         (call
-            |> P.andThen (\name -> P.lazy (\_ -> functionCall_ knownFunctions name))
+            |> P.andThen
+                (\name ->
+                    P.succeed identity
+                        |. maybeSpaces
+                        |= functionCall_ state name
+                )
         )
 
 
-functionCall_ : Dict String FunctionDeclaration -> String -> Parser Ast.Node
-functionCall_ knownFunctions name =
-    let
-        command =
-            Command.find name
+functionCall_ : State -> String -> Parser Ast.Node
+functionCall_ state name =
+    Callable.find state.userDefinedFunctions name
+        |> Maybe.map
+            (\callable ->
+                let
+                    numberOfArguments =
+                        Callable.numberOfArguments callable
+                in
+                    arguments state numberOfArguments
+                        |> P.andThen (\arguments -> Callable.makeNode arguments callable)
+            )
+        |> Maybe.withDefault (P.fail <| "could not parse call to " ++ name)
 
-        function =
-            Dict.get name knownFunctions
-    in
-        case ( command, function ) of
-            ( Just command, _ ) ->
-                commandWithArguments command
 
-            ( _, Just function ) ->
-                functionWithArguments function
-
-            _ ->
-                P.fail "could not parse function call"
+arguments : State -> Int -> Parser (List Ast.Node)
+arguments state count =
+    if count > 0 then
+        P.inContext "arguments" <|
+            P.delayedCommit maybeSpaces <|
+                Helper.repeatExactly count
+                    { item = statement state
+                    , separator = spaces
+                    }
+    else
+        P.succeed []
 
 
 {-| In case a function can take a variable number of arguments, you have to use
@@ -273,8 +333,8 @@ otherwise the parser cannot know how many arguments you want to supply.
     (print "hello "world) ; has to be used with parentheses
 
 -}
-variableFunctionCall : Dict String FunctionDeclaration -> Parser Ast.Node
-variableFunctionCall knownFunctions =
+variableFunctionCall : State -> Parser Ast.Node
+variableFunctionCall state =
     P.delayedCommit (P.symbol "(") <|
         ((P.succeed (,)
             |. maybeSpaces
@@ -283,7 +343,7 @@ variableFunctionCall knownFunctions =
                 [ P.succeed identity
                     |. spaces
                     |= Helper.list
-                        { item = expression
+                        { item = P.lazy (\_ -> statement state)
                         , separator = spaces
                         }
                 , P.succeed []
@@ -291,43 +351,19 @@ variableFunctionCall knownFunctions =
             |. maybeSpaces
             |. P.symbol ")"
          )
-            |> P.andThen (\( a, b ) -> variableFunctionCall_ knownFunctions a b)
+            |> P.andThen (\( a, b ) -> variableFunctionCall_ state a b)
         )
 
 
-variableFunctionCall_ :
-    Dict String FunctionDeclaration
-    -> String
-    -> List Ast.Node
-    -> Parser Ast.Node
-variableFunctionCall_ knownFunctions name arguments =
-    let
-        function =
-            Dict.get name knownFunctions
-
-        numberOfArguments =
-            List.length arguments
-    in
-        case function of
-            Just function ->
-                if function.requiredArguments <= numberOfArguments then
-                    if
-                        numberOfArguments
-                            <= function.requiredArguments
-                            + function.optionalArguments
-                    then
-                        P.succeed <| Ast.Call name arguments
-                    else
-                        P.fail <| "too many inputs to " ++ name
-                else
-                    P.fail <| "not enough inputs to " ++ name
-
-            _ ->
-                P.fail "could not parse function call"
+variableFunctionCall_ : State -> String -> List Ast.Node -> Parser Ast.Node
+variableFunctionCall_ state name arguments =
+    Callable.find state.userDefinedFunctions name
+        |> Maybe.map (Callable.makeNode arguments)
+        |> Maybe.withDefault (P.fail <| "could not parse call to function " ++ name)
 
 
-commandWithArguments : Command.Command -> Parser Ast.Node
-commandWithArguments command =
+commandWithArguments : State -> Command.Command -> Parser Ast.Node
+commandWithArguments state command =
     let
         numberOfArguments =
             Command.arguments command
@@ -341,12 +377,12 @@ commandWithArguments command =
                 _ ->
                     P.fail "could not parse function call"
     in
-        expressions numberOfArguments
+        arguments state numberOfArguments
             |> P.andThen makeNode
 
 
-functionWithArguments : FunctionDeclaration -> Parser Ast.Node
-functionWithArguments function =
+functionWithArguments : State -> FunctionDeclaration -> Parser Ast.Node
+functionWithArguments state function =
     let
         numberOfArguments =
             function.requiredArguments
@@ -355,37 +391,20 @@ functionWithArguments function =
         makeNode result =
             P.succeed <| Ast.Call function.name result
     in
-        expressions numberOfArguments
+        arguments state numberOfArguments
             |> P.andThen makeNode
 
 
-expressions : Int -> Parser (List Ast.Node)
-expressions count =
-    Helper.repeatExactly count { item = expression, separator = spaces }
-
-
-expression : Parser Ast.Node
-expression =
-    P.inContext "expression" <|
-        P.delayedCommit maybeSpaces <|
-            P.oneOf
-                [ templateVariable
-                , variable
-                , P.lazy (\_ -> primitive)
-                , value
-                ]
-
-
-primitive : Parser Ast.Node
-primitive =
+primitive : State -> Parser Ast.Node
+primitive state =
     P.inContext "primitive" <|
         (call
-            |> P.andThen (\name -> P.lazy (\_ -> primitive_ name))
+            |> P.andThen (\name -> P.lazy (\_ -> primitive_ state name))
         )
 
 
-primitive_ : String -> Parser Ast.Node
-primitive_ name =
+primitive_ : State -> String -> Parser Ast.Node
+primitive_ state name =
     let
         primitive =
             Primitive.find name
@@ -395,17 +414,17 @@ primitive_ name =
     in
         case ( primitive, introspect ) of
             ( Just primitive, _ ) ->
-                primitiveWithArguments primitive
+                primitiveWithArguments state primitive
 
             ( _, Just introspect ) ->
-                introspectWithArguments introspect
+                introspectWithArguments state introspect
 
             _ ->
                 P.fail "could not parse function call"
 
 
-introspectWithArguments : Introspect.Introspect -> Parser Ast.Node
-introspectWithArguments introspect =
+introspectWithArguments : State -> Introspect.Introspect -> Parser Ast.Node
+introspectWithArguments state introspect =
     let
         numberOfArguments =
             Introspect.arguments introspect
@@ -425,12 +444,12 @@ introspectWithArguments introspect =
         if numberOfArguments == 0 then
             makeNode []
         else
-            expressions numberOfArguments
+            arguments state numberOfArguments
                 |> P.andThen makeNode
 
 
-primitiveWithArguments : Primitive.Primitive -> Parser Ast.Node
-primitiveWithArguments primitive =
+primitiveWithArguments : State -> Primitive.Primitive -> Parser Ast.Node
+primitiveWithArguments state primitive =
     let
         numberOfArguments =
             Primitive.arguments primitive
@@ -447,7 +466,7 @@ primitiveWithArguments primitive =
                 _ ->
                     P.fail "could not parse function call"
     in
-        expressions numberOfArguments
+        arguments state numberOfArguments
             |> P.andThen makeNode
 
 
@@ -477,15 +496,19 @@ call =
             (\c ->
                 (c /= '[')
                     && (c /= ']')
+                    && (c /= '(')
+                    && (c /= ')')
+                    && (c /= ':')
                     && (c /= '"')
+                    && (c /= '?')
                     && (c /= '\n')
                     && (not <| Char.isDigit c)
             )
             |. P.ignore P.zeroOrMore (\c -> c /= ' ' && c /= '\n')
 
 
-make : Parser Ast.Node
-make =
+make : State -> Parser Ast.Node
+make state =
     let
         makeNode : ( Type.Value, Ast.Node ) -> Parser Ast.Node
         makeNode ( name, node ) =
@@ -502,7 +525,7 @@ make =
                 |. spaces
                 |= wordOutsideList
                 |. spaces
-                |= expression
+                |= P.lazy (\_ -> statement state)
                 |> P.andThen makeNode
             )
 

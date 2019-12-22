@@ -36,7 +36,7 @@ primitive =
             \_ ->
                 let
                     ast =
-                        emptyp |> Ast.compile
+                        emptyp |> Ast.compile (Ast.Expression { caller = "" })
                 in
                     Expect.equal ast
                         [ PushValue (Type.Word "")
@@ -53,7 +53,7 @@ repeat =
                 let
                     ast =
                         Ast.Repeat intLiteral [ print emptyp ]
-                            |> Ast.compile
+                            |> Ast.compile (Ast.Expression { caller = "" })
                 in
                     Expect.equal ast
                         [ PushValue (Type.Int 10)

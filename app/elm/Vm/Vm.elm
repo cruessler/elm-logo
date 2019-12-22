@@ -43,7 +43,9 @@ type Instruction
     | Jump Int
     | Call Int
     | CallByName String
+    | PushVoid
     | Return
+    | CheckReturn
     | Duplicate
     | Raise Exception
 
@@ -468,6 +470,17 @@ raise exception vm =
                 _ ->
                     Err <| Internal EmptyStack
 
+        Exception.NoUseOfValue ->
+            case vm.stack of
+                (Stack.Value first) :: rest ->
+                    Err <| NoUseOfValue (Type.toString first)
+
+                _ ->
+                    Err <| Internal EmptyStack
+
+        _ ->
+            Err <| Exception exception
+
 
 {-| Execute a single instruction.
 -}
@@ -556,8 +569,28 @@ execute instruction vm =
                         }
                     )
 
+        PushVoid ->
+            Ok ({ vm | stack = Stack.Void :: vm.stack } |> incrementProgramCounter)
+
         Return ->
             return vm
+
+        CheckReturn ->
+            case vm.stack of
+                Stack.Void :: rest ->
+                    Ok
+                        ({ vm | stack = (Stack.Value Type.false) :: rest }
+                            |> incrementProgramCounter
+                        )
+
+                (Stack.Value _) :: rest ->
+                    Ok
+                        ({ vm | stack = (Stack.Value Type.true) :: vm.stack }
+                            |> incrementProgramCounter
+                        )
+
+                _ ->
+                    Err <| Internal InvalidStack
 
         Duplicate ->
             duplicate vm

@@ -6,6 +6,7 @@ import Expect exposing (Expectation)
 import Parser
 import Test exposing (Test, describe, test)
 import Vm.Error
+import Vm.Exception as Exception
 import Vm.Vm as Vm
 
 
@@ -59,4 +60,47 @@ functionsWithInvalidArguments =
         , failsWithMessage "print first []" <| Runtime <| Vm.Error.WrongInput "first" ""
         , failsWithMessage "print first butfirst \"a" <| Runtime <| Vm.Error.WrongInput "first" ""
         , failsWithMessage "print lessp \"word \"word" <| Runtime <| Vm.Error.WrongInput "lessp" "word"
+        ]
+
+
+noOutput : Test
+noOutput =
+    describe "prints error if no value is returned" <|
+        [ failsWithMessage """to foo :bar
+print "bar
+end
+print foo "baz""" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "foo"
+        , failsWithMessage """to foo :bar
+repeat 4 [ print 4 ]
+end
+print foo "baz""" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "foo"
+        , failsWithMessage "print print 3" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "print"
+        , failsWithMessage "print print print 3" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "print"
+        , failsWithMessage "if print 3 [ print 3 ]" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "if" "print"
+        , failsWithMessage "print if \"true []" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "if"
+        , failsWithMessage "print repeat 1 [ print 1 ]" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "repeat"
+        , failsWithMessage "print foreach 1 [ print 1 ]" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "foreach"
+        , failsWithMessage """print make "foo "bar""" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "make"
+        ]
+
+
+outputOutsideProcedure : Test
+outputOutsideProcedure =
+    describe "prints error if output is used outside procedure" <|
+        [ failsWithMessage """to foo :bar [:baz output 5]
+print :bar
+end
+foo "bar""" <| Runtime <| Vm.Error.Exception <| Exception.OutputOutsideFunction
+        , failsWithMessage "output 5" <| Runtime <| Vm.Error.Exception <| Exception.OutputOutsideFunction
+        ]
+
+
+noUseOfValue : Test
+noUseOfValue =
+    describe "prints error if value is not passed to function" <|
+        [ failsWithMessage "3" <| Runtime <| Vm.Error.NoUseOfValue "3"
+        , failsWithMessage "repcount" <| Runtime <| Vm.Error.NoUseOfValue "-1"
+        , failsWithMessage "foreach 1 [ 5 ]" <| Runtime <| Vm.Error.NoUseOfValue "5"
+        , failsWithMessage "repeat 1 [ 5 ]" <| Runtime <| Vm.Error.NoUseOfValue "5"
+        , failsWithMessage "if \"true [ 5 ]" <| Runtime <| Vm.Error.NoUseOfValue "5"
         ]

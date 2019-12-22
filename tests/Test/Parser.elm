@@ -56,10 +56,14 @@ value =
             ]
 
 
+parsesFunction : String -> Ast.Function -> Expectation
 parsesFunction source function =
     let
+        state =
+            { inFunction = False, userDefinedFunctions = Dict.empty }
+
         result =
-            Parser.run (Parser.functionDefinition Dict.empty) source
+            Parser.run (Parser.functionDefinition state) source
     in
         Expect.equal result (Ok function)
 

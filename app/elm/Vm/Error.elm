@@ -3,6 +3,7 @@ module Vm.Error exposing (Error(..), Internal(..))
 {-| This module provides types for representing errors and invalid states.
 -}
 
+import Vm.Exception exposing (Exception)
 import Vm.Scope as Scope
 import Vm.Type as Type
 
@@ -28,4 +29,7 @@ type Error
     = NotEnoughInputs String
     | Primitive String
     | WrongInput String String
+    | NoUseOfValue String
+    | NoOutput String String
     | Internal Internal
+    | Exception Exception

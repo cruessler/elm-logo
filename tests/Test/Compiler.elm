@@ -31,6 +31,7 @@ compileFunction =
                                 , StoreVariable "bar"
                                 , LocalVariable "baz"
                                 , StoreVariable "baz"
+                                , PushVoid
                                 , PopLocalScope
                                 , Vm.Return
                                 ]
@@ -43,6 +44,7 @@ compileFunction =
                                 , LocalVariable "baz"
                                 , PushValue (Type.Word "baz")
                                 , StoreVariable "baz"
+                                , PushVoid
                                 , PopLocalScope
                                 , Vm.Return
                                 ]
