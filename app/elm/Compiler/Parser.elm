@@ -1,7 +1,6 @@
 module Compiler.Parser
     exposing
         ( root
-        , value
         , functionDefinition
         )
 
@@ -15,6 +14,7 @@ import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
 import Compiler.Parser.Callable as Callable
 import Compiler.Parser.Helper as Helper
+import Compiler.Parser.Value as Value
 import Dict exposing (Dict)
 import Parser as P
     exposing
@@ -98,20 +98,20 @@ functionDefinition state =
 
 functionHeader : State -> Parser Ast.Function
 functionHeader state =
-    P.delayedCommit (P.keyword "to" |. spaces) <|
+    P.delayedCommit (P.keyword "to" |. Helper.spaces) <|
         (P.succeed Ast.Function
             |= functionName
             |= (P.oneOf
-                    [ P.delayedCommit spaces <| requiredArguments
+                    [ P.delayedCommit Helper.spaces <| requiredArguments
                     , P.succeed []
                     ]
                )
             |= (P.oneOf
-                    [ P.delayedCommit spaces <| optionalArguments state
+                    [ P.delayedCommit Helper.spaces <| optionalArguments state
                     , P.succeed []
                     ]
                )
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |. P.symbol "\n"
             |= P.succeed []
         )
@@ -124,7 +124,7 @@ functionName =
 
 requiredArguments : Parser (List String)
 requiredArguments =
-    Helper.list { item = requiredArgument, separator = spaces }
+    Helper.list { item = requiredArgument, separator = Helper.spaces }
 
 
 requiredArgument : Parser String
@@ -136,18 +136,18 @@ requiredArgument =
 
 optionalArguments : State -> Parser (List ( String, Ast.Node ))
 optionalArguments state =
-    Helper.list { item = optionalArgument state, separator = spaces }
+    Helper.list { item = optionalArgument state, separator = Helper.spaces }
 
 
 optionalArgument : State -> Parser ( String, Ast.Node )
 optionalArgument state =
     P.succeed (,)
         |. P.symbol "["
-        |. maybeSpaces
+        |. Helper.maybeSpaces
         |= requiredArgument
-        |. spaces
+        |. Helper.spaces
         |= statement state
-        |. maybeSpaces
+        |. Helper.maybeSpaces
         |. P.symbol "]"
 
 
@@ -171,9 +171,9 @@ line : State -> Parser (List Ast.Node)
 line state =
     P.inContext "line" <|
         P.succeed identity
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |= statements state
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |. P.symbol "\n"
 
 
@@ -181,7 +181,7 @@ statements : State -> Parser (List Ast.Node)
 statements state =
     Helper.list
         { item = P.lazy (\_ -> statement state)
-        , separator = spaces
+        , separator = Helper.spaces
         }
 
 
@@ -213,7 +213,7 @@ statement state =
             , templateVariable
             , variable
             , P.lazy (\_ -> primitive state)
-            , value
+            , Value.value
             ]
 
 
@@ -229,7 +229,7 @@ output state =
         P.inContext "output" <|
             P.succeed makeNode
                 |. P.keyword "output"
-                |. spaces
+                |. Helper.spaces
                 |= statement state
 
 
@@ -253,11 +253,11 @@ controlStructure state keyword constructor =
             |. P.keyword keyword
             |. P.symbol " "
             |= statement state
-            |. spaces
+            |. Helper.spaces
             |. P.symbol "["
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |= statements state
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |. P.symbol "]"
 
 
@@ -283,7 +283,7 @@ functionCall state =
             |> P.andThen
                 (\name ->
                     P.succeed identity
-                        |. maybeSpaces
+                        |. Helper.maybeSpaces
                         |= functionCall_ state name
                 )
         )
@@ -308,10 +308,10 @@ arguments : State -> Int -> Parser (List Ast.Node)
 arguments state count =
     if count > 0 then
         P.inContext "arguments" <|
-            P.delayedCommit maybeSpaces <|
+            P.delayedCommit Helper.maybeSpaces <|
                 Helper.repeatExactly count
                     { item = statement state
-                    , separator = spaces
+                    , separator = Helper.spaces
                     }
     else
         P.succeed []
@@ -337,18 +337,18 @@ variableFunctionCall : State -> Parser Ast.Node
 variableFunctionCall state =
     P.delayedCommit (P.symbol "(") <|
         ((P.succeed (,)
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |= call
             |= P.oneOf
                 [ P.succeed identity
-                    |. spaces
+                    |. Helper.spaces
                     |= Helper.list
                         { item = P.lazy (\_ -> statement state)
-                        , separator = spaces
+                        , separator = Helper.spaces
                         }
                 , P.succeed []
                 ]
-            |. maybeSpaces
+            |. Helper.maybeSpaces
             |. P.symbol ")"
          )
             |> P.andThen (\( a, b ) -> variableFunctionCall_ state a b)
@@ -485,7 +485,7 @@ templateVariable =
         P.inContext "templateVariable" <|
             P.succeed makeNode
                 |. P.symbol "?"
-                |. maybeSpaces
+                |. Helper.maybeSpaces
                 |= P.oneOf [ P.source <| P.keyword "rest", digits, P.succeed "1" ]
 
 
@@ -522,9 +522,9 @@ make state =
         P.inContext "make" <|
             (P.succeed (,)
                 |. P.keyword "make"
-                |. spaces
-                |= wordOutsideList
-                |. spaces
+                |. Helper.spaces
+                |= Value.wordOutsideList
+                |. Helper.spaces
                 |= P.lazy (\_ -> statement state)
                 |> P.andThen makeNode
             )
@@ -535,91 +535,19 @@ variable =
     P.inContext "variable" <|
         P.succeed Ast.Variable
             |. P.symbol ":"
-            |= P.keep P.oneOrMore (\c -> c /= ' ' && c /= '\n')
-
-
-value : Parser Ast.Node
-value =
-    P.map Ast.Value valueOutsideList
-
-
-valueOutsideList : Parser Type.Value
-valueOutsideList =
-    P.inContext "valueOutsideList" <|
-        P.oneOf
-            [ P.lazy (\_ -> list)
-            , int
-            , wordOutsideList
-            ]
-
-
-int : Parser Type.Value
-int =
-    P.int
-        |> P.map Type.Int
-
-
-wordOutsideList : Parser Type.Value
-wordOutsideList =
-    P.succeed Type.Word
-        |. P.symbol "\""
-        |= P.keep P.oneOrMore
-            (\c ->
-                (c /= ' ')
-                    && (c /= '[')
-                    && (c /= ']')
-                    && (c /= '(')
-                    && (c /= ')')
-                    && (c /= '\n')
-            )
-
-
-list : Parser Type.Value
-list =
-    P.succeed Type.List
-        |. P.symbol "["
-        |. maybeSpaces
-        |= Helper.list { item = valueInList, separator = spaces }
-        |. maybeSpaces
-        |. P.symbol "]"
-
-
-valueInList : Parser Type.Value
-valueInList =
-    P.inContext "valueInList" <|
-        P.oneOf
-            [ P.lazy (\_ -> list)
-            , int
-            , wordInList
-            ]
-
-
-wordInList : Parser Type.Value
-wordInList =
-    P.succeed Type.Word
-        |= P.keep P.oneOrMore
-            (\c ->
-                (c /= ' ')
-                    && (c /= '[')
-                    && (c /= ']')
-                    && (c /= '(')
-                    && (c /= ')')
-                    && (c /= '\n')
-                    && (c /= '+')
-                    && (c /= '-')
-                    && (c /= '*')
-                    && (c /= '/')
-                    && (c /= '=')
-                    && (c /= '<')
-                    && (c /= '>')
-            )
-
-
-maybeSpaces : Parser ()
-maybeSpaces =
-    P.ignore P.zeroOrMore (\c -> c == ' ')
-
-
-spaces : Parser ()
-spaces =
-    P.ignore P.oneOrMore (\c -> c == ' ')
+            |= P.keep P.oneOrMore
+                (\c ->
+                    (c /= ' ')
+                        && (c /= '[')
+                        && (c /= ']')
+                        && (c /= '(')
+                        && (c /= ')')
+                        && (c /= '\n')
+                        && (c /= '+')
+                        && (c /= '-')
+                        && (c /= '*')
+                        && (c /= '/')
+                        && (c /= '=')
+                        && (c /= '<')
+                        && (c /= '>')
+                )

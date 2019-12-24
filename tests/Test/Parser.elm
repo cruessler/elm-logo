@@ -2,6 +2,7 @@ module Test.Parser exposing (..)
 
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
+import Compiler.Parser.Value as Value
 import Dict
 import Expect exposing (Expectation)
 import Parser
@@ -14,22 +15,22 @@ value : Test
 value =
     let
         integer =
-            Parser.run Parser.value "1234"
+            Parser.run Value.value "1234"
 
         word =
-            Parser.run Parser.value "\"word"
+            Parser.run Value.value "\"word"
 
         list =
-            Parser.run Parser.value "[ 1234 word ]"
+            Parser.run Value.value "[ 1234 word ]"
 
         nestedList =
-            Parser.run Parser.value "[ 1234 [ 1234 ] ]"
+            Parser.run Value.value "[ 1234 [ 1234 ] ]"
 
         emptyList =
-            Parser.run Parser.value "[ ]"
+            Parser.run Value.value "[ ]"
 
         fail =
-            Parser.run Parser.value " [ 1 2"
+            Parser.run Value.value " [ 1 2"
     in
         describe "parse simple values" <|
             [ test "parse integer" <|

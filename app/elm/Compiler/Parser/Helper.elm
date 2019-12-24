@@ -1,5 +1,13 @@
-module Compiler.Parser.Helper exposing (list, repeatExactly)
+module Compiler.Parser.Helper
+    exposing
+        ( list
+        , repeatExactly
+        , functionName
+        , spaces
+        , maybeSpaces
+        )
 
+import Char
 import Parser
     exposing
         ( Parser
@@ -8,6 +16,7 @@ import Parser
         , (|=)
         , succeed
         , zeroOrMore
+        , oneOrMore
         , oneOf
         , andThen
         , delayedCommit
@@ -49,3 +58,30 @@ repeatExactly count { item, separator } =
             item |> andThen rest
         else
             succeed []
+
+
+functionName : Parser String
+functionName =
+    Parser.source <|
+        ignore (Exactly 1)
+            (\c ->
+                (c /= '[')
+                    && (c /= ']')
+                    && (c /= '(')
+                    && (c /= ')')
+                    && (c /= ':')
+                    && (c /= '"')
+                    && (c /= '\n')
+                    && (not <| Char.isDigit c)
+            )
+            |. ignore zeroOrMore (\c -> c /= ' ' && c /= '\n')
+
+
+maybeSpaces : Parser ()
+maybeSpaces =
+    ignore zeroOrMore (\c -> c == ' ')
+
+
+spaces : Parser ()
+spaces =
+    ignore oneOrMore (\c -> c == ' ')
