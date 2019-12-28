@@ -214,7 +214,6 @@ statement state =
             , functionCall state
             , templateVariable
             , variable
-            , P.lazy (\_ -> primitive state)
             , Value.value
             ]
 
@@ -387,114 +386,6 @@ variableFunctionCall_ state name arguments =
     Callable.find state.userDefinedFunctions name
         |> Maybe.map (Callable.makeNode arguments)
         |> Maybe.withDefault (P.fail <| "could not parse call to function " ++ name)
-
-
-commandWithArguments : State -> Command.Command -> Parser Ast.Node
-commandWithArguments state command =
-    let
-        numberOfArguments =
-            Command.arguments command
-
-        makeNode : List Ast.Node -> Parser Ast.Node
-        makeNode result =
-            case ( command, result ) of
-                ( Command.Command1 command1, [ first ] ) ->
-                    P.succeed <| Ast.Command1 command1 first
-
-                _ ->
-                    P.fail "could not parse function call"
-    in
-        arguments state numberOfArguments
-            |> P.andThen makeNode
-
-
-functionWithArguments : State -> FunctionDeclaration -> Parser Ast.Node
-functionWithArguments state function =
-    let
-        numberOfArguments =
-            function.requiredArguments
-
-        makeNode : List Ast.Node -> Parser Ast.Node
-        makeNode result =
-            P.succeed <| Ast.Call function.name result
-    in
-        arguments state numberOfArguments
-            |> P.andThen makeNode
-
-
-primitive : State -> Parser Ast.Node
-primitive state =
-    P.inContext "primitive" <|
-        (call
-            |> P.andThen (\name -> P.lazy (\_ -> primitive_ state name))
-        )
-
-
-primitive_ : State -> String -> Parser Ast.Node
-primitive_ state name =
-    let
-        primitive =
-            Primitive.find name
-
-        introspect =
-            Introspect.find name
-    in
-        case ( primitive, introspect ) of
-            ( Just primitive, _ ) ->
-                primitiveWithArguments state primitive
-
-            ( _, Just introspect ) ->
-                introspectWithArguments state introspect
-
-            _ ->
-                P.fail "could not parse function call"
-
-
-introspectWithArguments : State -> Introspect.Introspect -> Parser Ast.Node
-introspectWithArguments state introspect =
-    let
-        numberOfArguments =
-            Introspect.arguments introspect
-
-        makeNode : List Ast.Node -> Parser Ast.Node
-        makeNode result =
-            case ( introspect, result ) of
-                ( Introspect.Introspect1 introspect1, [ first ] ) ->
-                    P.succeed <| Ast.Introspect1 introspect1 first
-
-                ( Introspect.Introspect0 introspect0, [] ) ->
-                    P.succeed <| Ast.Introspect0 introspect0
-
-                _ ->
-                    P.fail "could not parse function call"
-    in
-        if numberOfArguments == 0 then
-            makeNode []
-        else
-            arguments state numberOfArguments
-                |> P.andThen makeNode
-
-
-primitiveWithArguments : State -> Primitive.Primitive -> Parser Ast.Node
-primitiveWithArguments state primitive =
-    let
-        numberOfArguments =
-            Primitive.arguments primitive
-
-        makeNode : List Ast.Node -> Parser Ast.Node
-        makeNode result =
-            case ( primitive, result ) of
-                ( Primitive.Primitive2 primitive2, [ first, second ] ) ->
-                    P.succeed <| Ast.Primitive2 primitive2 first second
-
-                ( Primitive.Primitive1 primitive1, [ first ] ) ->
-                    P.succeed <| Ast.Primitive1 primitive1 first
-
-                _ ->
-                    P.fail "could not parse function call"
-    in
-        arguments state numberOfArguments
-            |> P.andThen makeNode
 
 
 templateVariable : Parser Ast.Node
