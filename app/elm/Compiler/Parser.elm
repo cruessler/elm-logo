@@ -249,11 +249,17 @@ controlStructure state { keyword, constructor } =
             |. P.symbol " "
             |= statement state
             |. Helper.spaces
-            |. P.symbol "["
-            |. Helper.maybeSpaces
-            |= statements state
-            |. Helper.maybeSpaces
-            |. P.symbol "]"
+            |= instructionList state
+
+
+instructionList : State -> Parser (List Ast.Node)
+instructionList state =
+    P.succeed identity
+        |. P.symbol "["
+        |. Helper.maybeSpaces
+        |= statements state
+        |. Helper.maybeSpaces
+        |. P.symbol "]"
 
 
 if_ : State -> Parser Ast.Node
