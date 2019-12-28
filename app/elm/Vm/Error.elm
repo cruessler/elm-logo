@@ -1,9 +1,9 @@
-module Vm.Error exposing (Error(..), Internal(..))
+module Vm.Error exposing (Error(..), Internal(..), toString)
 
 {-| This module provides types for representing errors and invalid states.
 -}
 
-import Vm.Exception exposing (Exception)
+import Vm.Exception as Exception exposing (Exception)
 import Vm.Scope as Scope
 import Vm.Type as Type
 
@@ -33,3 +33,22 @@ type Error
     | NoOutput String String
     | Internal Internal
     | Exception Exception
+
+
+toString : Error -> String
+toString error =
+    case error of
+        WrongInput caller input ->
+            caller ++ " doesn’t like " ++ input ++ " as input"
+
+        NoUseOfValue value ->
+            "You don’t say what to do with " ++ value
+
+        NoOutput caller callee ->
+            callee ++ " did not output to " ++ caller
+
+        Exception exception ->
+            Exception.toString exception
+
+        _ ->
+            Debug.crash "unimplemented"

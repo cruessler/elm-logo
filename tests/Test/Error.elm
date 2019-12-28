@@ -5,42 +5,36 @@ import Compiler.Parser as Parser
 import Expect exposing (Expectation)
 import Parser
 import Test exposing (Test, describe, test)
-import Vm.Error
-import Vm.Exception as Exception
+import Vm.Error as Error
 import Vm.Vm as Vm
 
 
-type Error
-    = Parse Parser.Error
-    | Runtime Vm.Error.Error
-
-
-match : Result Error Vm.Vm -> Error -> Expectation
+match : Result String Vm.Vm -> String -> Expectation
 match result expected =
     case result of
         Ok { environment } ->
             Expect.fail <|
                 "Expected to fail with error `"
-                    ++ (toString expected)
+                    ++ expected
                     ++ "`, but program ran successfully"
 
         Err actual ->
             Expect.equal actual expected
 
 
-failsWithMessage : String -> Error -> Test
+failsWithMessage : String -> String -> Test
 failsWithMessage program actual =
     let
         result =
             program
                 |> Parser.run Parser.root
-                |> Result.mapError Parse
+                |> Result.mapError toString
                 |> Result.map Ast.compileProgram
                 |> Result.map
                     (\{ instructions, functionTable, startAddress } ->
                         Vm.initialize instructions functionTable startAddress
                     )
-                |> Result.andThen (Vm.run >> Result.mapError Runtime)
+                |> Result.andThen (Vm.run >> Result.mapError Error.toString)
     in
         test program <|
             \_ -> match result actual
@@ -49,17 +43,17 @@ failsWithMessage program actual =
 repeatWithInvalidArguments : Test
 repeatWithInvalidArguments =
     describe "repeat fails given non-integer argument" <|
-        [ failsWithMessage "repeat \"foo []" <| Runtime <| Vm.Error.WrongInput "repeat" "foo"
+        [ failsWithMessage "repeat \"foo []" "repeat doesn’t like foo as input"
         ]
 
 
 functionsWithInvalidArguments : Test
 functionsWithInvalidArguments =
     describe "functions fail given argument of wrong type" <|
-        [ failsWithMessage "print butfirst []" <| Runtime <| Vm.Error.WrongInput "butfirst" ""
-        , failsWithMessage "print first []" <| Runtime <| Vm.Error.WrongInput "first" ""
-        , failsWithMessage "print first butfirst \"a" <| Runtime <| Vm.Error.WrongInput "first" ""
-        , failsWithMessage "print lessp \"word \"word" <| Runtime <| Vm.Error.WrongInput "lessp" "word"
+        [ failsWithMessage "print butfirst []" "butfirst doesn’t like  as input"
+        , failsWithMessage "print first []" "first doesn’t like  as input"
+        , failsWithMessage "print first butfirst \"a" "first doesn’t like  as input"
+        , failsWithMessage "print lessp \"word \"word" "lessp doesn’t like word as input"
         ]
 
 
@@ -69,18 +63,18 @@ noOutput =
         [ failsWithMessage """to foo :bar
 print "bar
 end
-print foo "baz""" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "foo"
+print foo "baz""" "foo did not output to print"
         , failsWithMessage """to foo :bar
 repeat 4 [ print 4 ]
 end
-print foo "baz""" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "foo"
-        , failsWithMessage "print print 3" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "print"
-        , failsWithMessage "print print print 3" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "print"
-        , failsWithMessage "if print 3 [ print 3 ]" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "if" "print"
-        , failsWithMessage "print if \"true []" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "if"
-        , failsWithMessage "print repeat 1 [ print 1 ]" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "repeat"
-        , failsWithMessage "print foreach 1 [ print 1 ]" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "foreach"
-        , failsWithMessage """print make "foo "bar""" <| Runtime <| Vm.Error.Exception <| Exception.NoOutput "print" "make"
+print foo "baz""" "foo did not output to print"
+        , failsWithMessage "print print 3" "print did not output to print"
+        , failsWithMessage "print print print 3" "print did not output to print"
+        , failsWithMessage "if print 3 [ print 3 ]" "print did not output to if"
+        , failsWithMessage "print if \"true []" "if did not output to print"
+        , failsWithMessage "print repeat 1 [ print 1 ]" "repeat did not output to print"
+        , failsWithMessage "print foreach 1 [ print 1 ]" "foreach did not output to print"
+        , failsWithMessage """print make "foo "bar""" "make did not output to print"
         ]
 
 
@@ -90,17 +84,17 @@ outputOutsideProcedure =
         [ failsWithMessage """to foo :bar [:baz output 5]
 print :bar
 end
-foo "bar""" <| Runtime <| Vm.Error.Exception <| Exception.OutputOutsideFunction
-        , failsWithMessage "output 5" <| Runtime <| Vm.Error.Exception <| Exception.OutputOutsideFunction
+foo "bar""" "Can only use output inside a procedure"
+        , failsWithMessage "output 5" "Can only use output inside a procedure"
         ]
 
 
 noUseOfValue : Test
 noUseOfValue =
     describe "prints error if value is not passed to function" <|
-        [ failsWithMessage "3" <| Runtime <| Vm.Error.NoUseOfValue "3"
-        , failsWithMessage "repcount" <| Runtime <| Vm.Error.NoUseOfValue "-1"
-        , failsWithMessage "foreach 1 [ 5 ]" <| Runtime <| Vm.Error.NoUseOfValue "5"
-        , failsWithMessage "repeat 1 [ 5 ]" <| Runtime <| Vm.Error.NoUseOfValue "5"
-        , failsWithMessage "if \"true [ 5 ]" <| Runtime <| Vm.Error.NoUseOfValue "5"
+        [ failsWithMessage "3" "You don’t say what to do with 3"
+        , failsWithMessage "repcount" "You don’t say what to do with -1"
+        , failsWithMessage "foreach 1 [ 5 ]" "You don’t say what to do with 5"
+        , failsWithMessage "repeat 1 [ 5 ]" "You don’t say what to do with 5"
+        , failsWithMessage "if \"true [ 5 ]" "You don’t say what to do with 5"
         ]
