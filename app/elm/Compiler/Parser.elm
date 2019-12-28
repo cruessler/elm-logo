@@ -240,14 +240,9 @@ stop =
 
 controlStructure :
     State
-    -> String
-    ->
-        (Ast.Node
-         -> List Ast.Node
-         -> Ast.Node
-        )
+    -> { keyword : String, constructor : Ast.Node -> List Ast.Node -> Ast.Node }
     -> Parser Ast.Node
-controlStructure state keyword constructor =
+controlStructure state { keyword, constructor } =
     P.inContext keyword <|
         P.succeed constructor
             |. P.keyword keyword
@@ -263,17 +258,17 @@ controlStructure state keyword constructor =
 
 if_ : State -> Parser Ast.Node
 if_ state =
-    controlStructure state "if" Ast.If
+    controlStructure state { keyword = "if", constructor = Ast.If }
 
 
 foreach : State -> Parser Ast.Node
 foreach state =
-    P.lazy (\_ -> controlStructure state "foreach" Ast.Foreach)
+    P.lazy (\_ -> controlStructure state { keyword = "foreach", constructor = Ast.Foreach })
 
 
 repeat : State -> Parser Ast.Node
 repeat state =
-    controlStructure state "repeat" Ast.Repeat
+    controlStructure state { keyword = "repeat", constructor = Ast.Repeat }
 
 
 functionCall : State -> Parser Ast.Node
