@@ -206,7 +206,7 @@ pushVariable name vm =
                 ({ vm | stack = Stack.Value value :: vm.stack } |> incrementProgramCounter)
 
         _ ->
-            Err <| Internal <| Error.VariableUndefined name
+            Err <| Error.VariableUndefined name
 
 
 storeVariable : String -> Vm -> Result Error Vm

@@ -15,7 +15,6 @@ calls to undefined functions.
 type Internal
     = EmptyStack
     | InvalidStack
-    | VariableUndefined String
     | FunctionUndefined String
     | Scope Scope.Error
     | Type Type.Error
@@ -31,6 +30,7 @@ type Error
     | WrongInput String String
     | NoUseOfValue String
     | NoOutput String String
+    | VariableUndefined String
     | Internal Internal
     | Exception Exception
 
@@ -49,6 +49,9 @@ toString error =
 
         Exception exception ->
             Exception.toString exception
+
+        VariableUndefined name ->
+            name ++ " has no value"
 
         _ ->
             Debug.crash "unimplemented"

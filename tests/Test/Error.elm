@@ -99,3 +99,11 @@ noUseOfValue =
         , failsWithMessage "repeat 1 [ 5 ]" "You don’t say what to do with 5"
         , failsWithMessage "if \"true [ 5 ]" "You don’t say what to do with 5"
         ]
+
+
+undefinedVariable : Test
+undefinedVariable =
+    describe "prints error if undefined variable is used" <|
+        [ failsWithMessage "print :variable" "variable has no value"
+        , failsWithMessage ":variable" "variable has no value"
+        ]
