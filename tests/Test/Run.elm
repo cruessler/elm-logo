@@ -211,6 +211,18 @@ end
         ]
 
 
+localmake : Test
+localmake =
+    describe "variable defined by localmake is available in called function" <|
+        [ printsLines
+            """to foo :recurse
+ifelse :recurse [ localmake "variable "word foo "false ] [ print :variable ]
+end
+foo "true"""
+            [ "word" ]
+        ]
+
+
 optionalArguments : Test
 optionalArguments =
     describe "define function with default value for optional parameter" <|

@@ -209,6 +209,7 @@ statement state =
             , P.lazy (\_ -> if_ state)
             , P.lazy (\_ -> output state)
             , stop
+            , localmake state
             , make state
             , functionCall state
             , templateVariable
@@ -531,6 +532,29 @@ call =
                     && (not <| Char.isDigit c)
             )
             |. P.ignore P.zeroOrMore (\c -> c /= ' ' && c /= '\n')
+
+
+localmake : State -> Parser Ast.Node
+localmake state =
+    let
+        makeNode : ( Type.Value, Ast.Node ) -> Parser Ast.Node
+        makeNode ( name, node ) =
+            case name of
+                Type.Word name ->
+                    P.succeed <| Ast.Sequence [ Ast.Local name ] (Ast.Make name node)
+
+                _ ->
+                    P.fail "localmake expects the first argument to be a word"
+    in
+        P.inContext "localmake" <|
+            (P.succeed (,)
+                |. P.keyword "localmake"
+                |. Helper.spaces
+                |= Value.wordOutsideList
+                |. Helper.spaces
+                |= P.lazy (\_ -> statement state)
+                |> P.andThen makeNode
+            )
 
 
 make : State -> Parser Ast.Node

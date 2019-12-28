@@ -49,7 +49,8 @@ type alias CompiledFunction =
 
 
 type Node
-    = Repeat Node (List Node)
+    = Sequence (List Node) Node
+    | Repeat Node (List Node)
     | Foreach Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
@@ -61,6 +62,7 @@ type Node
     | Call String (List Node)
     | Return (Maybe Node)
     | Make String Node
+    | Local String
     | Variable String
     | Value Type.Value
     | Raise Exception
@@ -124,6 +126,9 @@ Return `DoesNotApply` if a node does not represent a call or a value.
 typeOfCallee : Node -> Callee
 typeOfCallee node =
     case node of
+        Sequence _ last ->
+            typeOfCallee last
+
         Repeat _ _ ->
             Command { name = "repeat" }
 
@@ -167,6 +172,9 @@ typeOfCallee node =
             DoesNotApply
 
         Raise _ ->
+            DoesNotApply
+
+        Local _ ->
             DoesNotApply
 
 
@@ -284,6 +292,10 @@ compileInContext context node =
 compile : Context -> Node -> List Instruction
 compile context node =
     case node of
+        Sequence rest last ->
+            List.concatMap (compileInContext context) rest
+                ++ compileInContext context last
+
         Repeat times children ->
             let
                 compiledTimes =
@@ -435,6 +447,9 @@ compile context node =
             , [ StoreVariable name ]
             ]
                 |> List.concat
+
+        Local name ->
+            [ LocalVariable name ]
 
         Variable name ->
             [ PushVariable name ]
