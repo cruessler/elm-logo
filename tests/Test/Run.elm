@@ -89,6 +89,16 @@ if_ =
         ]
 
 
+ifElse : Test
+ifElse =
+    describe "ifelse" <|
+        [ printsLines "ifelse \"true [ print 1234 ] [ print 5678 ]" [ "1234" ]
+        , printsLines "ifelse \"false [ print 1234 ] [ print 5678 ]" [ "5678" ]
+        , printsLines "print ifelse \"true [ 1234 ] [ 5678 ]" [ "1234" ]
+        , printsLines "print ifelse \"false [ 1234 ] [ 5678 ]" [ "5678" ]
+        ]
+
+
 repeat : Test
 repeat =
     describe "repeat" <|

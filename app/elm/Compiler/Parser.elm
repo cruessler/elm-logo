@@ -203,6 +203,7 @@ statement state =
     P.inContext "statement" <|
         P.oneOf
             [ variableFunctionCall state
+            , P.lazy (\_ -> ifElse state)
             , P.lazy (\_ -> foreach state)
             , P.lazy (\_ -> repeat state)
             , P.lazy (\_ -> if_ state)
@@ -252,6 +253,25 @@ controlStructure state { keyword, constructor } =
             |= instructionList state
 
 
+controlStructure2 :
+    State
+    ->
+        { keyword : String
+        , constructor : Ast.Node -> List Ast.Node -> List Ast.Node -> Ast.Node
+        }
+    -> Parser Ast.Node
+controlStructure2 state { keyword, constructor } =
+    P.inContext keyword <|
+        P.succeed constructor
+            |. P.keyword keyword
+            |. Helper.spaces
+            |= statement state
+            |. Helper.spaces
+            |= instructionList state
+            |. Helper.maybeSpaces
+            |= instructionList state
+
+
 instructionList : State -> Parser (List Ast.Node)
 instructionList state =
     P.succeed identity
@@ -275,6 +295,11 @@ foreach state =
 repeat : State -> Parser Ast.Node
 repeat state =
     controlStructure state { keyword = "repeat", constructor = Ast.Repeat }
+
+
+ifElse : State -> Parser Ast.Node
+ifElse state =
+    controlStructure2 state { keyword = "ifelse", constructor = Ast.IfElse }
 
 
 functionCall : State -> Parser Ast.Node

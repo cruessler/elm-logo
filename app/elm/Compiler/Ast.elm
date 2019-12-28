@@ -52,6 +52,7 @@ type Node
     = Repeat Node (List Node)
     | Foreach Node (List Node)
     | If Node (List Node)
+    | IfElse Node (List Node) (List Node)
     | Command1 C.Command1 Node
     | Primitive1 P.Primitive1 Node
     | Primitive2 P.Primitive2 Node Node
@@ -157,6 +158,9 @@ typeOfCallee node =
             Primitive { name = "value" }
 
         If _ _ ->
+            DoesNotApply
+
+        IfElse _ _ _ ->
             DoesNotApply
 
         Return _ ->
@@ -346,6 +350,30 @@ compile context node =
                   , JumpIfFalse ((List.length compiledChildren) + 1)
                   ]
                 , compiledChildren
+                ]
+                    |> List.concat
+
+        IfElse condition ifBranch elseBranch ->
+            let
+                compiledCondition =
+                    compileInContext (Expression { caller = "ifelse" }) condition
+
+                compiledIfBranch =
+                    compileBranch "ifelse" context ifBranch
+
+                compiledElseBranch =
+                    compileBranch "ifelse" context elseBranch
+            in
+                [ compiledCondition
+                , [ Duplicate
+                  , Eval1 { name = "boolp", f = P.boolp }
+                  , JumpIfTrue 2
+                  , Vm.Vm.Raise (Exception.WrongInput "ifelse")
+                  , JumpIfFalse ((List.length compiledIfBranch) + 2)
+                  ]
+                , compiledIfBranch
+                , [ Jump ((List.length compiledElseBranch) + 1) ]
+                , compiledElseBranch
                 ]
                     |> List.concat
 
