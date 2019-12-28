@@ -83,4 +83,12 @@ primitives =
                 \_ ->
                     Expect.equal (P.integerp <| T.Word <| "word") (Ok <| T.false)
             ]
+        , describe "boolp"
+            [ test "works with a string" <|
+                \_ -> Expect.equal (P.boolp <| T.Word <| "word") (Ok <| T.false)
+            , test "works with \"true" <|
+                \_ -> Expect.equal (P.boolp <| T.Word <| "true") (Ok <| T.true)
+            , test "works with an integer" <|
+                \_ -> Expect.equal (P.boolp <| T.Int <| 10) (Ok <| T.false)
+            ]
         ]

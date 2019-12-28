@@ -339,7 +339,11 @@ compile context node =
                     compileBranch "if" context children
             in
                 [ compiledCondition
-                , [ JumpIfFalse ((List.length compiledChildren) + 1)
+                , [ Duplicate
+                  , Eval1 { name = "boolp", f = P.boolp }
+                  , JumpIfTrue 2
+                  , Vm.Vm.Raise (Exception.WrongInput "if")
+                  , JumpIfFalse ((List.length compiledChildren) + 1)
                   ]
                 , compiledChildren
                 ]

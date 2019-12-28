@@ -9,6 +9,7 @@ module Vm.Primitive
         , emptyp
         , sentence
         , integerp
+        , boolp
         )
 
 {-| This module contains types and functions related to Logo’s builtin
@@ -223,6 +224,27 @@ integerp value =
 
                 Err _ ->
                     Ok Type.false
+
+        _ ->
+            Ok Type.false
+
+
+{-| Check whether a given `Value` is a boolean.
+
+    boolp (Word "false") == Word "true"
+    boolp (Word "TRUE") == Word "true"
+    boolp (Word "a") == Word "false"
+    boolp (Int 10) == Word "false"
+
+-}
+boolp : Type.Value -> Result Error Type.Value
+boolp value =
+    case value of
+        Type.Word word ->
+            if String.toLower word == "true" || String.toLower word == "false" then
+                Ok Type.true
+            else
+                Ok Type.false
 
         _ ->
             Ok Type.false
