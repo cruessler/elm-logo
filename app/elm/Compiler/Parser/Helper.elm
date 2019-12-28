@@ -71,6 +71,7 @@ functionName =
                     && (c /= ')')
                     && (c /= ':')
                     && (c /= '"')
+                    && (c /= '?')
                     && (c /= '\n')
                     && (not <| Char.isDigit c)
             )

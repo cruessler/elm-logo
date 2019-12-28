@@ -305,7 +305,7 @@ ifElse state =
 functionCall : State -> Parser Ast.Node
 functionCall state =
     P.inContext "functionCall" <|
-        (call
+        (Helper.functionName
             |> P.andThen
                 (\name ->
                     P.succeed identity
@@ -364,7 +364,7 @@ variableFunctionCall state =
     P.delayedCommit (P.symbol "(") <|
         ((P.succeed (,)
             |. Helper.maybeSpaces
-            |= call
+            |= Helper.functionName
             |= P.oneOf
                 [ P.succeed identity
                     |. Helper.spaces
@@ -405,24 +405,6 @@ templateVariable =
                 |. P.symbol "?"
                 |. Helper.maybeSpaces
                 |= P.oneOf [ P.source <| P.keyword "rest", digits, P.succeed "1" ]
-
-
-call : Parser String
-call =
-    P.source <|
-        P.ignore (Exactly 1)
-            (\c ->
-                (c /= '[')
-                    && (c /= ']')
-                    && (c /= '(')
-                    && (c /= ')')
-                    && (c /= ':')
-                    && (c /= '"')
-                    && (c /= '?')
-                    && (c /= '\n')
-                    && (not <| Char.isDigit c)
-            )
-            |. P.ignore P.zeroOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 localmake : State -> Parser Ast.Node
