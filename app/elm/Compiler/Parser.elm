@@ -100,7 +100,7 @@ functionHeader : State -> Parser Ast.Function
 functionHeader state =
     P.delayedCommit (P.keyword "to" |. Helper.spaces) <|
         (P.succeed Ast.Function
-            |= functionName
+            |= Helper.functionName
             |= (P.oneOf
                     [ P.delayedCommit Helper.spaces <| requiredArguments
                     , P.succeed []
@@ -115,11 +115,6 @@ functionHeader state =
             |. P.symbol "\n"
             |= P.succeed []
         )
-
-
-functionName : Parser String
-functionName =
-    P.keep P.oneOrMore (\c -> c /= ' ' && c /= '\n')
 
 
 requiredArguments : Parser (List String)
@@ -304,14 +299,9 @@ ifElse state =
 
 functionCall : State -> Parser Ast.Node
 functionCall state =
-    P.inContext "functionCall" <|
+    P.inContext "function call" <|
         (Helper.functionName
-            |> P.andThen
-                (\name ->
-                    P.succeed identity
-                        |. Helper.maybeSpaces
-                        |= functionCall_ state name
-                )
+            |> P.andThen (\name -> P.lazy (\_ -> functionCall_ state name))
         )
 
 
