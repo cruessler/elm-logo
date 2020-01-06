@@ -91,4 +91,10 @@ primitives =
             , test "works with an integer" <|
                 \_ -> Expect.equal (P.boolp <| T.Int <| 10) (Ok <| T.false)
             ]
+        , describe "remainder"
+            [ test "works if result is 0" <|
+                \_ -> Expect.equal (P.remainder (T.Word "20") (T.Word "5")) (Ok <| T.Int 0)
+            , test "works if result is not 0" <|
+                \_ -> Expect.equal (P.remainder (T.Word "20") (T.Word "3")) (Ok <| T.Int 2)
+            ]
         ]

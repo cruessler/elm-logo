@@ -7,6 +7,8 @@ module Vm.Primitive
         , count
         , lessp
         , emptyp
+        , equalp
+        , remainder
         , sentence
         , integerp
         , boolp
@@ -175,6 +177,94 @@ emptyp value =
 
         _ ->
             Ok (Type.Word "false")
+
+
+{-| Helper function to check whether two `Value`s are equal.
+-}
+equalp_ : Type.Value -> Type.Value -> Bool
+equalp_ value1 value2 =
+    let
+        compareLists list1 list2 =
+            if List.length list1 == List.length list2 then
+                List.map2 (,) list1 list2
+                    |> List.all (\( a, b ) -> equalp_ a b)
+            else
+                False
+    in
+        case ( value1, value2 ) of
+            ( Type.Int int1, Type.Int int2 ) ->
+                int1 == int2
+
+            ( Type.Int int, Type.Float float ) ->
+                toFloat int == float
+
+            ( Type.Float float, Type.Int int ) ->
+                toFloat int == float
+
+            ( Type.Float float1, Type.Float float2 ) ->
+                float1 == float2
+
+            ( Type.List list1, Type.List list2 ) ->
+                compareLists list1 list2
+
+            ( Type.List list1, _ ) ->
+                False
+
+            ( _, Type.List list2 ) ->
+                False
+
+            ( Type.Word word1, Type.Word word2 ) ->
+                word1 == word2
+
+            ( Type.Word word, Type.Int int ) ->
+                word == toString int
+
+            ( Type.Int int, Type.Word word ) ->
+                word == toString int
+
+            ( Type.Float float, Type.Word word ) ->
+                word == toString float
+
+            ( Type.Word word, Type.Float float ) ->
+                word == toString float
+
+
+{-| Check whether two `Value`s are equal.
+
+    equalp (Int 10) (Int 10) == Word "true"
+    equalp (Float 10.0) (Int 10) == Word "true"
+    equalp (Word "10") (Int 10) == Word "true"
+    equalp (List []) (List []) == Word "true"
+
+-}
+equalp : Type.Value -> Type.Value -> Result Error Type.Value
+equalp value1 value2 =
+    equalp_ value1 value2 |> Type.fromBool |> Ok
+
+
+{-| Calculate the remainder when dividing `value1` by `value2`.
+
+    remainder (Int 20) (Int 3) == Int 2
+    remainder (Int 20) (Int 4) == Int 0
+
+-}
+remainder : Type.Value -> Type.Value -> Result Error Type.Value
+remainder value1 value2 =
+    let
+        result1 =
+            Type.toInt value1
+                |> Result.mapError (\_ -> WrongInput "remainder" (Type.toString value1))
+
+        result2 =
+            Type.toInt value2
+                |> Result.mapError (\_ -> WrongInput "remainder" (Type.toString value2))
+    in
+        case ( result1, result2 ) of
+            ( Ok _, Ok 0 ) ->
+                Err <| WrongInput "remainder" (Type.toString value2)
+
+            _ ->
+                Result.map2 (\int1 int2 -> Type.Int <| rem int1 int2) result1 result2
 
 
 {-| Join two values into a list. One level of nesting will be flattened.

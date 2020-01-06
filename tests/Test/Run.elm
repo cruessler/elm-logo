@@ -272,3 +272,20 @@ choices [[small medium large] [vanilla [ultra chocolate] lychee [rum raisin] gin
             , "large ginger cup"
             ]
         ]
+
+
+equality : Test
+equality =
+    describe "equality" <|
+        [ printsLines "print equalp \"word \"word" [ "true" ]
+        , printsLines "print equalp 10 10" [ "true" ]
+        , printsLines "print equalp 10.0 10" [ "true" ]
+        , printsLines "print equalp 3.14159 3.14159" [ "true" ]
+        , printsLines "print equalp [] []" [ "true" ]
+        , printsLines "print equalp [ word ] [ word ]" [ "true" ]
+        , printsLines "print equalp [ [] ] [ [] ]" [ "true" ]
+        , printsLines "print equalp 10 \"word" [ "false" ]
+        , printsLines "print equalp 10 9" [ "false" ]
+        , printsLines "print equalp 10 []" [ "false" ]
+        , printsLines "print equalp [] [ \"word ]" [ "false" ]
+        ]

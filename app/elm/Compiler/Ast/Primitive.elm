@@ -21,7 +21,9 @@ all =
     , Primitive1 { name = "emptyp", f = P.emptyp }
     , Primitive1 { name = "first", f = P.first }
     , Primitive1 { name = "integerp", f = P.integerp }
+    , Primitive2 { name = "equalp", f = P.equalp }
     , Primitive2 { name = "lessp", f = P.lessp }
+    , Primitive2 { name = "remainder", f = P.remainder }
     , Primitive2 { name = "sentence", f = P.sentence }
     ]
 
