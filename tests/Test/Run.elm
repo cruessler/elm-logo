@@ -289,3 +289,29 @@ equality =
         , printsLines "print equalp 10 []" [ "false" ]
         , printsLines "print equalp [] [ \"word ]" [ "false" ]
         ]
+
+
+fizzbuzzWithFunctions : Test
+fizzbuzzWithFunctions =
+    describe "fizzbuzz" <|
+        [ printsLines """to fizzbuzz :times
+repeat :times [ ifelse equalp 0 remainder repcount 15 [ print "fizzbuzz ] [ ifelse equalp 0 remainder repcount 5 [ print "buzz ] [ ifelse equalp 0 remainder repcount 3 [ print "fizz ] [ print repcount ] ] ] ]
+end
+fizzbuzz 15"""
+            [ "1"
+            , "2"
+            , "fizz"
+            , "4"
+            , "buzz"
+            , "fizz"
+            , "7"
+            , "8"
+            , "fizz"
+            , "buzz"
+            , "11"
+            , "fizz"
+            , "13"
+            , "14"
+            , "fizzbuzz"
+            ]
+        ]
