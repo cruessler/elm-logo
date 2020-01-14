@@ -1,6 +1,7 @@
 module Compiler.Parser
     exposing
-        ( root
+        ( State
+        , root
         , functionDefinition
         )
 
@@ -29,85 +30,71 @@ import Vm.Type as Type
 
 type alias State =
     { userDefinedFunctions : Dict String Ast.Function
+    , parsedBody : List Ast.Node
     , inFunction : Bool
     }
-
-
-type alias FunctionDeclaration =
-    { name : String
-    , requiredArguments : Int
-    , optionalArguments : Int
-    }
-
-
-mapFunctionDeclarations : List Ast.Function -> Dict String Ast.Function
-mapFunctionDeclarations functions =
-    functions
-        |> List.map (\function -> ( function.name, function ))
-        |> Dict.fromList
 
 
 root : Parser Ast.Program
 root =
     let
         state =
-            { inFunction = False, userDefinedFunctions = Dict.empty }
+            { userDefinedFunctions = Dict.empty
+            , parsedBody = []
+            , inFunction = False
+            }
     in
         P.inContext "root" <|
-            toplevel state { functions = [], body = [] }
+            toplevel state
 
 
-toplevel : State -> Ast.Program -> Parser Ast.Program
-toplevel state program =
-    P.inContext "toplevel" <|
-        (P.oneOf
-            [ P.end
-                |> P.map (always program)
-            , toplevel_ state program
-                |> P.andThen
-                    (\( newState, newProgram ) ->
-                        toplevel newState newProgram
-                    )
-            ]
-        )
+toplevel : State -> Parser Ast.Program
+toplevel state =
+    let
+        program =
+            { functions = Dict.values state.userDefinedFunctions
+            , body = state.parsedBody
+            }
+    in
+        P.inContext "toplevel" <|
+            (P.oneOf
+                [ P.end
+                    |> P.map (always program)
+                , toplevel_ state
+                    |> P.andThen toplevel
+                ]
+            )
 
 
-toplevel_ : State -> Ast.Program -> Parser ( State, Ast.Program )
-toplevel_ state program =
+toplevel_ : State -> Parser State
+toplevel_ state =
     P.succeed identity
         |. Helper.maybeSpaces
         |= P.oneOf
-            [ function state program
-            , toplevelStatements state program
-            , P.succeed ( state, program )
+            [ function state
+            , toplevelStatements state
+            , P.succeed state
             ]
 
 
-function : State -> Ast.Program -> Parser ( State, Ast.Program )
-function state program =
+function : State -> Parser State
+function state =
     functionDefinition state
         |> P.map
             (\function ->
                 let
-                    newProgram =
-                        { program | functions = function :: program.functions }
-
                     userDefinedFunctions =
-                        mapFunctionDeclarations newProgram.functions
+                        Dict.insert function.name function state.userDefinedFunctions
                 in
-                    ( { state | userDefinedFunctions = userDefinedFunctions }, newProgram )
+                    { state | userDefinedFunctions = userDefinedFunctions }
             )
 
 
-toplevelStatements : State -> Ast.Program -> Parser ( State, Ast.Program )
-toplevelStatements state program =
+toplevelStatements : State -> Parser State
+toplevelStatements state =
     let
         appendNodes nodes =
-            let
-                newProgram =
-                    { program | body = program.body ++ nodes }
-            in
-                ( state, newProgram )
+            { state | parsedBody = state.parsedBody ++ nodes }
     in
         P.succeed appendNodes
             |= statements state
@@ -122,13 +109,13 @@ functionDefinition state =
             |> P.andThen
                 (\({ name, requiredArguments, optionalArguments } as function) ->
                     let
-                        userDefinedFunctions_ =
+                        userDefinedFunctions =
                             Dict.insert name function state.userDefinedFunctions
                     in
                         functionBody
                             { state
-                                | inFunction = True
-                                , userDefinedFunctions = userDefinedFunctions_
+                                | userDefinedFunctions = userDefinedFunctions
+                                , inFunction = True
                             }
                             |> P.map
                                 (Ast.Function name

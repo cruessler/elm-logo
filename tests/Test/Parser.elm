@@ -11,6 +11,14 @@ import Vm.Command as C
 import Vm.Type as Type
 
 
+defaultState : Parser.State
+defaultState =
+    { userDefinedFunctions = Dict.empty
+    , parsedBody = []
+    , inFunction = False
+    }
+
+
 value : Test
 value =
     let
@@ -60,11 +68,8 @@ value =
 parsesFunction : String -> Ast.Function -> Expectation
 parsesFunction source function =
     let
-        state =
-            { inFunction = False, userDefinedFunctions = Dict.empty }
-
         result =
-            Parser.run (Parser.functionDefinition state) source
+            Parser.run (Parser.functionDefinition defaultState) source
     in
         Expect.equal result (Ok function)
 
