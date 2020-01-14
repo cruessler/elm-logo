@@ -184,6 +184,25 @@ print "bar
 end
 foo []"""
             [ "baz", "bar", "bar" ]
+        , printsLines
+            """  to foo :bar
+print "baz
+end
+foo "bar"""
+            [ "baz" ]
+        , printsLines
+            """print "baz
+to foo
+print "baz
+end
+foo"""
+            [ "baz", "baz" ]
+        , printsLines
+            """  to foo
+print "baz
+end
+foo"""
+            [ "baz" ]
         ]
 
 

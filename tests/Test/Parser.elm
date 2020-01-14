@@ -107,4 +107,12 @@ functionDefinition =
                             (Ast.Variable "bar")
                         ]
                     }
+        , test "without arguments" <|
+            \_ ->
+                parsesFunction "to foo\nend\n"
+                    { name = "foo"
+                    , requiredArguments = []
+                    , optionalArguments = []
+                    , body = []
+                    }
         ]

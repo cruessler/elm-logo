@@ -54,22 +54,65 @@ root =
             { inFunction = False, userDefinedFunctions = Dict.empty }
     in
         P.inContext "root" <|
-            (P.repeat P.zeroOrMore (functionDefinition state)
-                |> P.andThen body
+            toplevel state { functions = [], body = [] }
+
+
+toplevel : State -> Ast.Program -> Parser Ast.Program
+toplevel state program =
+    P.inContext "toplevel" <|
+        (P.oneOf
+            [ P.end
+                |> P.map (always program)
+            , toplevel_ state program
+                |> P.andThen
+                    (\( newState, newProgram ) ->
+                        toplevel newState newProgram
+                    )
+            ]
+        )
+
+
+toplevel_ : State -> Ast.Program -> Parser ( State, Ast.Program )
+toplevel_ state program =
+    P.succeed identity
+        |. Helper.maybeSpaces
+        |= P.oneOf
+            [ function state program
+            , toplevelStatements state program
+            , P.succeed ( state, program )
+            ]
+
+
+function : State -> Ast.Program -> Parser ( State, Ast.Program )
+function state program =
+    functionDefinition state
+        |> P.map
+            (\function ->
+                let
+                    newProgram =
+                        { program | functions = function :: program.functions }
+
+                    userDefinedFunctions =
+                        mapFunctionDeclarations newProgram.functions
+                in
+                    ( { state | userDefinedFunctions = userDefinedFunctions }, newProgram )
             )
 
 
-body : List Ast.Function -> Parser Ast.Program
-body functions =
+toplevelStatements : State -> Ast.Program -> Parser ( State, Ast.Program )
+toplevelStatements state program =
     let
-        userDefinedFunctions =
-            mapFunctionDeclarations functions
+        appendNodes nodes =
+            let
+                newProgram =
+                    { program | body = program.body ++ nodes }
+            in
+                ( state, newProgram )
     in
-        statements
-            { inFunction = False
-            , userDefinedFunctions = userDefinedFunctions
-            }
-            |> P.map (Ast.Program functions)
+        P.succeed appendNodes
+            |= statements state
+            |. Helper.maybeSpaces
+            |. P.oneOf [ P.symbol "\n", P.end ]
 
 
 functionDefinition : State -> Parser Ast.Function
@@ -149,16 +192,16 @@ optionalArgument state =
 functionBody : State -> Parser (List Ast.Node)
 functionBody state =
     P.inContext "functionBody" <|
-        (nextLine state [])
+        (functionBody_ state [])
 
 
-nextLine : State -> List Ast.Node -> Parser (List Ast.Node)
-nextLine state acc =
+functionBody_ : State -> List Ast.Node -> Parser (List Ast.Node)
+functionBody_ state acc =
     P.oneOf
         [ P.keyword "end\n"
-            |> P.andThen (\_ -> P.succeed acc)
+            |> P.map (always acc)
         , line state
-            |> P.andThen (\line -> nextLine state (List.concat [ acc, line ]))
+            |> P.andThen (\line -> functionBody_ state (acc ++ line))
         ]
 
 
