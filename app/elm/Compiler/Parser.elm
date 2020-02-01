@@ -227,7 +227,7 @@ statement : State -> Parser Ast.Node
 statement state =
     P.inContext "statement" <|
         P.oneOf
-            [ variableFunctionCall state
+            [ inParentheses state
             , P.lazy (\_ -> ifElse state)
             , P.lazy (\_ -> foreach state)
             , P.lazy (\_ -> repeat state)
@@ -363,6 +363,20 @@ arguments state count =
         P.succeed []
 
 
+inParentheses : State -> Parser Ast.Node
+inParentheses state =
+    P.inContext "in parentheses" <|
+        P.delayedCommit (P.symbol "(") <|
+            P.succeed identity
+                |. Helper.maybeSpaces
+                |= P.oneOf
+                    [ P.lazy (\_ -> functionCallInParentheses state)
+                    , P.lazy (\_ -> statement state)
+                    ]
+                |. Helper.maybeSpaces
+                |. P.symbol ")"
+
+
 {-| In case a function can take a variable number of arguments, you have to use
 parentheses around a function call if it does not take the default number of
 arguments.
@@ -378,31 +392,31 @@ otherwise the parser cannot know how many arguments you want to supply.
     print "hello "world ; can’t be used without parentheses
     (print "hello "world) ; has to be used with parentheses
 
+The parser only commits if the first thing that follows the opening parenthesis
+is a valid function name.
+
 -}
-variableFunctionCall : State -> Parser Ast.Node
-variableFunctionCall state =
-    P.delayedCommit (P.symbol "(") <|
-        ((P.succeed (,)
-            |. Helper.maybeSpaces
-            |= Helper.functionName
-            |= P.oneOf
+functionCallInParentheses : State -> Parser Ast.Node
+functionCallInParentheses state =
+    let
+        zeroOrMoreArguments : Parser (List Ast.Node)
+        zeroOrMoreArguments =
+            P.oneOf
                 [ P.succeed identity
                     |. Helper.spaces
                     |= Helper.list
-                        { item = P.lazy (\_ -> statement state)
+                        { item = statement state
                         , separator = Helper.spaces
                         }
                 , P.succeed []
                 ]
-            |. Helper.maybeSpaces
-            |. P.symbol ")"
-         )
-            |> P.andThen (\( a, b ) -> variableFunctionCall_ state a b)
-        )
+    in
+        P.delayedCommitMap (,) Helper.functionName zeroOrMoreArguments
+            |> P.andThen (\( a, b ) -> variableFunctionCall state a b)
 
 
-variableFunctionCall_ : State -> String -> List Ast.Node -> Parser Ast.Node
-variableFunctionCall_ state name arguments =
+variableFunctionCall : State -> String -> List Ast.Node -> Parser Ast.Node
+variableFunctionCall state name arguments =
     Callable.find state.userDefinedFunctions name
         |> Maybe.map (Callable.makeNode arguments)
         |> Maybe.withDefault (P.fail <| "could not parse call to function " ++ name)

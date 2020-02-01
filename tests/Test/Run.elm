@@ -230,6 +230,14 @@ end
         ]
 
 
+parenthesesIndicatingPreference : Test
+parenthesesIndicatingPreference =
+    describe "parentheses can indicate preference" <|
+        [ printsLines "print (\"bar)" [ "bar" ]
+        , printsLines "print ((\"bar))" [ "bar" ]
+        ]
+
+
 localmake : Test
 localmake =
     describe "variable defined by localmake is available in called function" <|
