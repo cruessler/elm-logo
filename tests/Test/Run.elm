@@ -77,6 +77,7 @@ statement : Test
 statement =
     describe "call Logo command" <|
         [ printsLines "print \"word" [ "word" ]
+        , printsLines "print \"" [ "" ]
         , printsLines "print 1234" [ "1234" ]
         ]
 

@@ -61,7 +61,7 @@ wordOutsideList : Parser Type.Value
 wordOutsideList =
     succeed Type.Word
         |. symbol "\""
-        |= keep oneOrMore
+        |= keep zeroOrMore
             (\c ->
                 (c /= ' ')
                     && (c /= '[')
