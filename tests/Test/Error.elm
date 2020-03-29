@@ -54,6 +54,7 @@ functionsWithInvalidArguments =
         , failsWithMessage "print first []" "first doesn’t like  as input"
         , failsWithMessage "print first butfirst \"a" "first doesn’t like  as input"
         , failsWithMessage "print lessp \"word \"word" "lessp doesn’t like word as input"
+        , failsWithMessage "print lessp \"word []" "lessp doesn’t like word as input"
         , failsWithMessage "if \"word [ print \"word ]" "if doesn’t like word as input"
         ]
 

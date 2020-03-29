@@ -163,7 +163,7 @@ lessp value1 value2 =
                     Err <| WrongInput "lessp" (Type.toString value2)
 
         Err _ ->
-            Err <| WrongInput "lessp" (Type.toString value2)
+            Err <| WrongInput "lessp" (Type.toString value1)
 
 
 {-| Convert two values to numbers and compare whether the first one is greater
