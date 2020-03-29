@@ -162,8 +162,8 @@ lessp value1 value2 =
 {-| Check whether a given `Value` is empty. Only the empty `Word` and the empty
 `List` are considered empty.
 
-    emptyp (Word "") == Word "true"
-    emptyp (Word "word") == Word "false"
+    emptyp (Word "") == Ok (Word "true")
+    emptyp (Word "word") == Ok (Word "false")
 
 -}
 emptyp : Type.Value -> Result Error Type.Value
@@ -231,10 +231,10 @@ equalp_ value1 value2 =
 
 {-| Check whether two `Value`s are equal.
 
-    equalp (Int 10) (Int 10) == Word "true"
-    equalp (Float 10.0) (Int 10) == Word "true"
-    equalp (Word "10") (Int 10) == Word "true"
-    equalp (List []) (List []) == Word "true"
+    equalp (Int 10) (Int 10) == Ok (Word "true")
+    equalp (Float 10.0) (Int 10) == Ok (Word "true")
+    equalp (Word "10") (Int 10) == Ok (Word "true")
+    equalp (List []) (List []) == Ok (Word "true")
 
 -}
 equalp : Type.Value -> Type.Value -> Result Error Type.Value
@@ -244,8 +244,8 @@ equalp value1 value2 =
 
 {-| Calculate the remainder when dividing `value1` by `value2`.
 
-    remainder (Int 20) (Int 3) == Int 2
-    remainder (Int 20) (Int 4) == Int 0
+    remainder (Int 20) (Int 3) == Ok (Int 2)
+    remainder (Int 20) (Int 4) == Ok (Int 0)
 
 -}
 remainder : Type.Value -> Type.Value -> Result Error Type.Value
@@ -269,8 +269,8 @@ remainder value1 value2 =
 
 {-| Join two values into a list. One level of nesting will be flattened.
 
-    sentence (Word "a") (Word "b) == List [ Word "a", Word "b" ]
-    sentence (Word "a") (List [ Word "b" ]) == List [ Word "a", Word "b" ]
+    sentence (Word "a") (Word "b) == Ok (List [ Word "a", Word "b" ])
+    sentence (Word "a") (List [ Word "b" ]) == Ok (List [ Word "a", Word "b" ])
 
 -}
 sentence : Type.Value -> Type.Value -> Result Error Type.Value
@@ -296,9 +296,9 @@ sentence value1 value2 =
 
 {-| Check whether a given `Value` is an integer.
 
-    integerp (Word "a") == Word "false"
-    integerp (Int 10) == Word "true"
-    integerp (Word "10") == Word "true"
+    integerp (Word "a") == Ok (Word "false")
+    integerp (Int 10) == Ok (Word "true")
+    integerp (Word "10") == Ok (Word "true")
 
 -}
 integerp : Type.Value -> Result Error Type.Value
@@ -321,10 +321,10 @@ integerp value =
 
 {-| Check whether a given `Value` is a boolean.
 
-    boolp (Word "false") == Word "true"
-    boolp (Word "TRUE") == Word "true"
-    boolp (Word "a") == Word "false"
-    boolp (Int 10) == Word "false"
+    boolp (Word "false") == Ok (Word "true")
+    boolp (Word "TRUE") == Ok (Word "true")
+    boolp (Word "a") == Ok (Word "false")
+    boolp (Int 10) == Ok (Word "false")
 
 -}
 boolp : Type.Value -> Result Error Type.Value
