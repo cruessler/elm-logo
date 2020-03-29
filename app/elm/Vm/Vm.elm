@@ -28,6 +28,7 @@ type Instruction
     | Introspect1 (I.Introspect1 Vm)
     | Eval1 P.Primitive1
     | Eval2 P.Primitive2
+    | Command0 C.Command0
     | Command1 C.Command1
     | Command2 C.Command2
     | PushLoopScope
@@ -122,6 +123,18 @@ eval2 primitive vm =
 
         _ ->
             Err <| NotEnoughInputs <| primitive.name
+
+
+{-| Run a command that takes no argument.
+-}
+command0 : C.Command0 -> Vm -> Result Error Vm
+command0 command vm =
+    command.f vm.environment
+        |> Result.map
+            (\environment ->
+                { vm | environment = environment }
+                    |> incrementProgramCounter
+            )
 
 
 {-| Run a command that takes one argument.
@@ -511,6 +524,9 @@ execute instruction vm =
 
         Eval2 primitive ->
             eval2 primitive vm
+
+        Command0 command ->
+            command0 command vm
 
         Command1 command ->
             command1 command vm

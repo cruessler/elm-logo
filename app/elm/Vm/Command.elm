@@ -1,6 +1,7 @@
 module Vm.Command
     exposing
-        ( Command1
+        ( Command0
+        , Command1
         , Command2
         , print
         )
@@ -12,6 +13,15 @@ commands. A command can take arguments and returns no value.
 import Environment as E exposing (Environment)
 import Vm.Error exposing (Error)
 import Vm.Type as Type
+
+
+{-| Represent a builtin command that takes no argument.
+-}
+type alias Command0 =
+    { name : String
+    , f :
+        Environment -> Result Error Environment
+    }
 
 
 {-| Represent a builtin command that takes one argument.

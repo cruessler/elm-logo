@@ -54,7 +54,9 @@ type Node
     | Foreach Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
+    | Command0 C.Command0
     | Command1 C.Command1 Node
+    | Command2 C.Command2 Node Node
     | Primitive1 P.Primitive1 Node
     | Primitive2 P.Primitive2 Node Node
     | Introspect0 (I.Introspect0 Vm)
@@ -135,7 +137,13 @@ typeOfCallee node =
         Foreach _ _ ->
             Command { name = "foreach" }
 
+        Command0 c ->
+            Command { name = c.name }
+
         Command1 c _ ->
+            Command { name = c.name }
+
+        Command2 c _ _ ->
             Command { name = c.name }
 
         Primitive1 p _ ->
@@ -389,9 +397,19 @@ compile context node =
                 ]
                     |> List.concat
 
+        Command0 c ->
+            [ Vm.Vm.Command0 c ]
+
         Command1 c node ->
             [ (compileInContext (Expression { caller = c.name }) node)
             , [ Vm.Vm.Command1 c ]
+            ]
+                |> List.concat
+
+        Command2 c first second ->
+            [ (compileInContext (Expression { caller = c.name }) second)
+            , (compileInContext (Expression { caller = c.name }) first)
+            , [ Vm.Vm.Command2 c ]
             ]
                 |> List.concat
 
