@@ -75,6 +75,19 @@ primitives =
                     in
                         Expect.equal (P.count <| T.Word <| string) (Ok <| T.Word <| toString length)
             ]
+        , describe "equalp"
+            [ test "works with numbers" <|
+                \_ -> Expect.equal (Ok <| T.Word "true") (P.equalp (T.Int 5) (T.Int 5))
+            , test "works with lists" <|
+                \_ ->
+                    let
+                        list =
+                            T.List [ T.List [], T.Word "foo" ]
+                    in
+                        Expect.equal (Ok <| T.Word "true") (P.equalp list list)
+            , test "returns false" <|
+                \_ -> Expect.equal (Ok <| T.false) (P.equalp (T.Int 5) (T.Int 3))
+            ]
         , describe "integerp"
             [ test "works with an integer" <|
                 \_ ->
