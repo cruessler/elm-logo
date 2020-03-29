@@ -2,6 +2,10 @@ module Compiler.Parser
     exposing
         ( State
         , root
+        , output
+        , booleanExpression
+        , arithmeticExpression
+        , term
         , functionDefinition
         )
 
@@ -10,9 +14,7 @@ module Compiler.Parser
 
 import Char
 import Compiler.Ast as Ast
-import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
-import Compiler.Ast.Primitive as Primitive
 import Compiler.Parser.Callable as Callable
 import Compiler.Parser.Helper as Helper
 import Compiler.Parser.Value as Value
@@ -111,17 +113,15 @@ functionDefinition state =
                     let
                         userDefinedFunctions =
                             Dict.insert name function state.userDefinedFunctions
-                    in
-                        functionBody
+
+                        newState =
                             { state
                                 | userDefinedFunctions = userDefinedFunctions
                                 , inFunction = True
                             }
-                            |> P.map
-                                (Ast.Function name
-                                    requiredArguments
-                                    optionalArguments
-                                )
+                    in
+                        functionBody newState
+                            |> P.map (\body -> { function | body = body })
                 )
         )
 
@@ -171,7 +171,7 @@ optionalArgument state =
         |. Helper.maybeSpaces
         |= requiredArgument
         |. Helper.spaces
-        |= statement state
+        |= booleanExpression state
         |. Helper.maybeSpaces
         |. P.symbol "]"
 
@@ -202,12 +202,19 @@ line state =
             |. P.symbol "\n"
 
 
+{-| Parse anything that’s valid where statements are expected.
+
+See comment to `statement` for details on why `statements` consists of
+expressions.
+
+-}
 statements : State -> Parser (List Ast.Node)
 statements state =
-    Helper.list
-        { item = P.lazy (\_ -> statement state)
-        , separator = Helper.spaces
-        }
+    P.inContext "statements" <|
+        Helper.list
+            { item = P.lazy (\_ -> booleanExpression state)
+            , separator = Helper.spaces
+            }
 
 
 {-| Parse anything that’s valid where a statement is expected.
@@ -236,9 +243,9 @@ statement state =
             , stop
             , localmake state
             , make state
-            , functionCall state
             , templateVariable
             , variable
+            , P.lazy (\_ -> functionCall state)
             , Value.value
             ]
 
@@ -256,7 +263,7 @@ output state =
             P.succeed makeNode
                 |. P.keyword "output"
                 |. Helper.spaces
-                |= statement state
+                |= booleanExpression state
 
 
 stop : Parser Ast.Node
@@ -273,7 +280,7 @@ controlStructure state { keyword, constructor } =
         P.succeed constructor
             |. P.keyword keyword
             |. P.symbol " "
-            |= statement state
+            |= booleanExpression state
             |. Helper.spaces
             |= instructionList state
 
@@ -290,7 +297,7 @@ controlStructure2 state { keyword, constructor } =
         P.succeed constructor
             |. P.keyword keyword
             |. Helper.spaces
-            |= statement state
+            |= booleanExpression state
             |. Helper.spaces
             |= instructionList state
             |. Helper.maybeSpaces
@@ -356,7 +363,7 @@ arguments state count =
         P.inContext "arguments" <|
             P.delayedCommit Helper.maybeSpaces <|
                 Helper.repeatExactly count
-                    { item = statement state
+                    { item = booleanExpression state
                     , separator = Helper.spaces
                     }
     else
@@ -371,7 +378,7 @@ inParentheses state =
                 |. Helper.maybeSpaces
                 |= P.oneOf
                     [ P.lazy (\_ -> functionCallInParentheses state)
-                    , P.lazy (\_ -> statement state)
+                    , booleanExpression state
                     ]
                 |. Helper.maybeSpaces
                 |. P.symbol ")"
@@ -405,7 +412,7 @@ functionCallInParentheses state =
                 [ P.succeed identity
                     |. Helper.spaces
                     |= Helper.list
-                        { item = statement state
+                        { item = booleanExpression state
                         , separator = Helper.spaces
                         }
                 , P.succeed []
@@ -420,6 +427,106 @@ variableFunctionCall state name arguments =
     Callable.find state.userDefinedFunctions name
         |> Maybe.map (Callable.makeNode arguments)
         |> Maybe.withDefault (P.fail <| "could not parse call to function " ++ name)
+
+
+type alias BinaryOperator =
+    { operator : Parser ()
+    , constructor : Ast.Node -> Ast.Node -> Ast.Node
+    }
+
+
+type alias BinaryOperation =
+    { operators : List BinaryOperator
+    , operand : State -> Parser Ast.Node
+    }
+
+
+leftAssociative : BinaryOperation -> State -> Parser Ast.Node
+leftAssociative op state =
+    P.lazy (\_ -> op.operand state)
+        |> P.andThen
+            (\left ->
+                leftAssociative_ op state left
+            )
+
+
+{-| Parse subsequent child expressions of a binary expression such as addition.
+
+The way this parser is constructed makes sure that `a + b - c` gets parsed as
+`(a + b) - c`. The parser first parses the left-most child. If it then
+encounters an operator, it constructs a new node and again looks for an
+operator and more expressions. See the links for more details.
+
+This is not the most efficient parser because it constructs parsers on the fly.
+
+<https://www.cs.rochester.edu/~nelson/courses/csc_173/grammars/parsetrees.html>
+<http://www.cs.cornell.edu/courses/cs211/2006fa/Sections/S3/grammars.html>
+
+-}
+leftAssociative_ : BinaryOperation -> State -> Ast.Node -> Parser Ast.Node
+leftAssociative_ op state left =
+    let
+        right : BinaryOperator -> Parser Ast.Node
+        right { operator, constructor } =
+            (P.delayedCommit (Helper.maybeSpaces |. operator) <|
+                P.succeed (constructor left)
+                    |. Helper.maybeSpaces
+                    |= op.operand state
+            )
+                |> P.andThen (\node -> leftAssociative_ op state node)
+
+        rights : List (Parser Ast.Node)
+        rights =
+            List.map right op.operators
+    in
+        P.oneOf <| rights ++ [ P.succeed left ]
+
+
+{-| Parse boolean expressions. A boolean expression is the most toplevel
+expression.
+
+Operator precedence is encoded in the hierarchy of different parsers. Operators
+that bind stronger are parsed by lower parsers.
+
+This means that the AST correctly mirrors the structure of boolean and
+arithmetic expressions.
+
+-}
+booleanExpression : State -> Parser Ast.Node
+booleanExpression state =
+    leftAssociative
+        { operators =
+            [ BinaryOperator (P.keyword "=") Ast.Equal
+            , BinaryOperator (P.keyword "<>") Ast.NotEqual
+            , BinaryOperator (P.keyword ">") Ast.GreaterThan
+            ]
+        , operand = arithmeticExpression
+        }
+        state
+
+
+arithmeticExpression : State -> Parser Ast.Node
+arithmeticExpression state =
+    leftAssociative
+        { operators =
+            [ BinaryOperator (P.keyword "+") Ast.Add
+            , BinaryOperator (P.keyword "-") Ast.Subtract
+            ]
+        , operand = term
+        }
+        state
+
+
+term : State -> Parser Ast.Node
+term state =
+    leftAssociative
+        { operators =
+            [ BinaryOperator (P.keyword "*") Ast.Multiply
+            , BinaryOperator (P.keyword "/") Ast.Divide
+            ]
+        , operand = statement
+        }
+        state
 
 
 templateVariable : Parser Ast.Node
@@ -459,7 +566,7 @@ localmake state =
                 |. Helper.spaces
                 |= Value.wordOutsideList
                 |. Helper.spaces
-                |= P.lazy (\_ -> statement state)
+                |= booleanExpression state
                 |> P.andThen makeNode
             )
 
@@ -482,7 +589,7 @@ make state =
                 |. Helper.spaces
                 |= Value.wordOutsideList
                 |. Helper.spaces
-                |= P.lazy (\_ -> statement state)
+                |= booleanExpression state
                 |> P.andThen makeNode
             )
 

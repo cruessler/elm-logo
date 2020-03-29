@@ -14,6 +14,7 @@ module Compiler.Ast
 
 import Dict exposing (Dict)
 import Vm.Command as C
+import Vm.Error exposing (Error(..))
 import Vm.Exception as Exception exposing (Exception)
 import Vm.Introspect as I
 import Vm.Primitive as P
@@ -54,6 +55,9 @@ type Node
     | Foreach Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
+    | Equal Node Node
+    | NotEqual Node Node
+    | GreaterThan Node Node
     | Command0 C.Command0
     | Command1 C.Command1 Node
     | Command2 C.Command2 Node Node
@@ -66,6 +70,10 @@ type Node
     | Make String Node
     | Local String
     | Variable String
+    | Add Node Node
+    | Subtract Node Node
+    | Multiply Node Node
+    | Divide Node Node
     | Value Type.Value
     | Raise Exception
 
@@ -137,6 +145,15 @@ typeOfCallee node =
         Foreach _ _ ->
             Command { name = "foreach" }
 
+        Equal _ _ ->
+            Primitive { name = "=" }
+
+        NotEqual _ _ ->
+            Primitive { name = "<>" }
+
+        GreaterThan _ _ ->
+            Primitive { name = ">" }
+
         Command0 c ->
             Command { name = c.name }
 
@@ -166,6 +183,18 @@ typeOfCallee node =
 
         Variable name ->
             Primitive { name = name }
+
+        Add _ _ ->
+            Primitive { name = "+" }
+
+        Subtract _ _ ->
+            Primitive { name = "-" }
+
+        Multiply _ _ ->
+            Primitive { name = "*" }
+
+        Divide _ _ ->
+            Primitive { name = "/" }
 
         Value _ ->
             Primitive { name = "value" }
@@ -397,6 +426,27 @@ compile context node =
                 ]
                     |> List.concat
 
+        Equal first second ->
+            [ (compileInContext (Expression { caller = "=" }) second)
+            , (compileInContext (Expression { caller = "=" }) first)
+            , [ Eval2 { name = "=", f = P.equalp } ]
+            ]
+                |> List.concat
+
+        NotEqual first second ->
+            [ (compileInContext (Expression { caller = "<>" }) second)
+            , (compileInContext (Expression { caller = "<>" }) first)
+            , [ Eval2 { name = "<>", f = P.notequalp } ]
+            ]
+                |> List.concat
+
+        GreaterThan first second ->
+            [ (compileInContext (Expression { caller = ">" }) second)
+            , (compileInContext (Expression { caller = ">" }) first)
+            , [ Eval2 { name = ">", f = P.greaterp } ]
+            ]
+                |> List.concat
+
         Command0 c ->
             [ Vm.Vm.Command0 c ]
 
@@ -438,7 +488,7 @@ compile context node =
         Call name arguments ->
             let
                 mangledName =
-                    name ++ (toString <| List.length arguments)
+                    mangleName name (List.length arguments)
             in
                 [ List.reverse arguments
                     |> List.concatMap (compileInContext (Expression { caller = name }))
@@ -471,6 +521,34 @@ compile context node =
 
         Variable name ->
             [ PushVariable name ]
+
+        Add first second ->
+            [ compileInContext (Expression { caller = "+" }) second
+            , compileInContext (Expression { caller = "+" }) first
+            , [ Eval2 { name = "+", f = P.sum } ]
+            ]
+                |> List.concat
+
+        Subtract first second ->
+            [ compileInContext (Expression { caller = "-" }) second
+            , compileInContext (Expression { caller = "-" }) first
+            , [ Eval2 { name = "-", f = P.difference } ]
+            ]
+                |> List.concat
+
+        Multiply first second ->
+            [ compileInContext (Expression { caller = "*" }) second
+            , compileInContext (Expression { caller = "*" }) first
+            , [ Eval2 { name = "*", f = P.product } ]
+            ]
+                |> List.concat
+
+        Divide first second ->
+            [ compileInContext (Expression { caller = "/" }) second
+            , compileInContext (Expression { caller = "/" }) first
+            , [ Eval2 { name = "/", f = P.quotient } ]
+            ]
+                |> List.concat
 
         Value value ->
             [ PushValue value ]
@@ -557,7 +635,8 @@ compileFunction { name, requiredArguments, optionalArguments, body } =
             List.map (Tuple.first >> compileRequiredArgument) optionalArguments
 
         {- Instructions if an optional argument is compiled as optional
-           argument. In this case, the value for the argument is computed by the callee itself.
+           argument. In this case, the value for the argument is computed by
+           the callee itself.
         -}
         instructionsOptional =
             List.map (compileOptionalArgument (Expression { caller = name })) optionalArguments

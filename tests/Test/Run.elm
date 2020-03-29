@@ -87,6 +87,8 @@ if_ =
     describe "if" <|
         [ printsLines "if \"true [ print 1234 ]" [ "1234" ]
         , printsLines "if \"false [ print 1234 ]" []
+        , printsLines "if \"false []" []
+        , printsLines "if \"true []" []
         ]
 
 
@@ -316,12 +318,28 @@ equality =
         , printsLines "print equalp 10 9" [ "false" ]
         , printsLines "print equalp 10 []" [ "false" ]
         , printsLines "print equalp [] [ \"word ]" [ "false" ]
+        , printsLines """print "1 = 1""" [ "true" ]
+        , printsLines "print 1 = 2 / 2" [ "true" ]
+        , printsLines "print 2 * 2 = 8 / 2" [ "true" ]
+        ]
+
+
+associativity : Test
+associativity =
+    describe "associativity" <|
+        [ printsLines "print 3 - 2 - 1 = 3 - (2 - 1)" [ "false" ]
+        , printsLines "print 3 - 2 - 1" [ "0" ]
+        , printsLines "print 3 - (2 - 1)" [ "2" ]
+        , printsLines "print 3 + 2 + 1 = 3 + (2 + 1)" [ "true" ]
+        , printsLines """print "true = "true = "true""" [ "true" ]
+        , printsLines """print "false <> "true = "true""" [ "true" ]
+        , printsLines """print "false = "true = "true""" [ "false" ]
         ]
 
 
 fizzbuzzWithFunctions : Test
 fizzbuzzWithFunctions =
-    describe "fizzbuzz" <|
+    describe "fizzbuzz with functions" <|
         [ printsLines """to fizzbuzz :times
 repeat :times [ ifelse equalp 0 remainder repcount 15 [ print "fizzbuzz ] [ ifelse equalp 0 remainder repcount 5 [ print "buzz ] [ ifelse equalp 0 remainder repcount 3 [ print "fizz ] [ print repcount ] ] ] ]
 end
@@ -342,4 +360,41 @@ fizzbuzz 15"""
             , "14"
             , "fizzbuzz"
             ]
+        ]
+
+
+fizzbuzzWithBooleanOperators : Test
+fizzbuzzWithBooleanOperators =
+    describe "fizzbuzz with boolean operators" <|
+        [ printsLines """to fizzbuzz :times
+repeat :times [ ifelse 0 = remainder repcount 15 [ print "fizzbuzz ] [ ifelse 0 = remainder repcount 5 [ print "buzz ] [ ifelse 0 = remainder repcount 3 [ print "fizz ] [ print repcount ] ] ] ]
+end
+fizzbuzz 15"""
+            [ "1"
+            , "2"
+            , "fizz"
+            , "4"
+            , "buzz"
+            , "fizz"
+            , "7"
+            , "8"
+            , "fizz"
+            , "buzz"
+            , "11"
+            , "fizz"
+            , "13"
+            , "14"
+            , "fizzbuzz"
+            ]
+        ]
+
+
+returnValue : Test
+returnValue =
+    describe "uses output to return a value to the caller" <|
+        [ printsLines """to foo :bar
+output :bar
+end
+print foo "baz"""
+            [ "baz" ]
         ]

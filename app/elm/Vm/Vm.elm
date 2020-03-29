@@ -104,6 +104,26 @@ eval1 primitive vm =
             Err <| NotEnoughInputs <| primitive.name
 
 
+{-| Boolean and arithmetic operators can be called in two ways, for example:
+
+    1 > 0
+    greaterp 1 0
+
+Both use the same implementation under the hood, in this case `P.greaterp`,
+which always gives the error `WrongInput "greaterp" _`. Since we know the name
+of the actual caller, we can correct the error if necessary.
+
+-}
+mapWrongInput : String -> Error -> Error
+mapWrongInput name error =
+    case error of
+        WrongInput _ input ->
+            WrongInput name input
+
+        otherwise ->
+            otherwise
+
+
 {-| Evaluate a primitive that takes 2 arguments and put the result on top of
 the stack.
 -}
@@ -117,6 +137,7 @@ eval2 primitive vm =
                         { vm | stack = (Stack.Value value :: rest) }
                             |> incrementProgramCounter
                     )
+                |> Result.mapError (mapWrongInput primitive.name)
 
         _ :: _ :: rest ->
             Err <| Internal InvalidStack

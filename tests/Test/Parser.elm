@@ -121,3 +121,91 @@ functionDefinition =
                     , body = []
                     }
         ]
+
+
+parsesArithmeticExpression : String -> Test
+parsesArithmeticExpression expression =
+    let
+        match : Result Parser.Error Ast.Node -> Expectation
+        match result =
+            case result of
+                Ok _ ->
+                    Expect.pass
+
+                Err error ->
+                    Expect.fail (toString error)
+    in
+        test expression <|
+            \_ ->
+                match
+                    (Parser.run
+                        (Parser.arithmeticExpression defaultState)
+                        expression
+                    )
+
+
+arithmetic : Test
+arithmetic =
+    describe "arithmetic" <|
+        [ parsesArithmeticExpression "5 * 5"
+        , parsesArithmeticExpression "(5 * 5)"
+        , parsesArithmeticExpression "((5 * 5))"
+        , parsesArithmeticExpression "5"
+        , parsesArithmeticExpression "4 - 4"
+        , parsesArithmeticExpression "4 - 4 + 4 - 4"
+        , parsesArithmeticExpression "5 / 10"
+        , parsesArithmeticExpression "5 / 10 + 10"
+        , parsesArithmeticExpression "10 + 10 * 10"
+        , parsesArithmeticExpression "10 + 10 + 10"
+        , parsesArithmeticExpression "((10 + 10) + 10)"
+        , parsesArithmeticExpression "(10 + 10 + 10)"
+        , parsesArithmeticExpression "10 * 10 * 10"
+        , parsesArithmeticExpression "(10 * 10 * 10)"
+        , parsesArithmeticExpression "((10 * 10) * 10)"
+        , parsesArithmeticExpression ":depth - 1"
+        , parsesArithmeticExpression ":depth / 1"
+        , parsesArithmeticExpression "(:depth - 1)"
+        , parsesArithmeticExpression "(sum 1 1)"
+        , parsesArithmeticExpression "(? 1)"
+        , parsesArithmeticExpression "(minus :size/2) + 5"
+        , parsesArithmeticExpression "(minus :size+2) + 5"
+        , parsesArithmeticExpression "(:zr + :az*:az)"
+        , parsesArithmeticExpression "(:az*:az - :bz*:bz)"
+        , parsesArithmeticExpression "(:zr + :az*:az - :bz*:bz)"
+        , parsesArithmeticExpression "(sum :zr :zi)"
+        , parsesArithmeticExpression "(sum :zr (1))"
+        , parsesArithmeticExpression "(sum :zr (sum 1 1))"
+        , parsesArithmeticExpression "(sum :zr (1 + 1))"
+        , parsesArithmeticExpression "(sum :zr (:count + 1))"
+        , parsesArithmeticExpression "(sum (:count + 1) (:zi + 2*:bar))"
+        ]
+
+
+parsesBooleanExpression : String -> Test
+parsesBooleanExpression expression =
+    let
+        match : Result Parser.Error Ast.Node -> Expectation
+        match result =
+            case result of
+                Ok _ ->
+                    Expect.pass
+
+                Err error ->
+                    Expect.fail (toString error)
+    in
+        test expression <|
+            \_ ->
+                match
+                    (Parser.run
+                        (Parser.booleanExpression defaultState)
+                        expression
+                    )
+
+
+booleanAlgebra : Test
+booleanAlgebra =
+    describe "boolean algebra" <|
+        [ parsesBooleanExpression "1 + 1 = 1"
+        , parsesBooleanExpression "1 <> 1"
+        , parsesBooleanExpression "2 * (3 + 1) = (4 + 4) * 7"
+        ]

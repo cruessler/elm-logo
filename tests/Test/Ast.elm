@@ -53,7 +53,7 @@ repeat =
                 let
                     ast =
                         Ast.Repeat intLiteral [ print emptyp ]
-                            |> Ast.compile (Ast.Expression { caller = "" })
+                            |> Ast.compile Ast.Statement
                 in
                     Expect.equal ast
                         [ PushValue (Type.Int 10)
