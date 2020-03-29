@@ -22,6 +22,13 @@ all =
     , Primitive1 { name = "first", f = P.first }
     , Primitive1 { name = "integerp", f = P.integerp }
     , Primitive2 { name = "equalp", f = P.equalp }
+    , Primitive2 { name = "notequalp", f = P.notequalp }
+    , Primitive1 { name = "minus", f = P.minus }
+    , Primitive2 { name = "sum", f = P.sum }
+    , Primitive2 { name = "difference", f = P.difference }
+    , Primitive2 { name = "product", f = P.product }
+    , Primitive2 { name = "quotient", f = P.quotient }
+    , Primitive2 { name = "greaterp", f = P.greaterp }
     , Primitive2 { name = "lessp", f = P.lessp }
     , Primitive2 { name = "remainder", f = P.remainder }
     , Primitive2 { name = "sentence", f = P.sentence }

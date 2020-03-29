@@ -6,9 +6,16 @@ module Vm.Primitive
         , butfirst
         , count
         , lessp
+        , greaterp
         , emptyp
         , equalp
+        , notequalp
         , remainder
+        , sum
+        , difference
+        , product
+        , quotient
+        , minus
         , sentence
         , integerp
         , boolp
@@ -24,7 +31,7 @@ manual][ucb-manual].
 
 -}
 
-import Vm.Error as Error exposing (Error(..))
+import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Type as Type
 
 
@@ -159,6 +166,31 @@ lessp value1 value2 =
             Err <| WrongInput "lessp" (Type.toString value2)
 
 
+{-| Convert two values to numbers and compare whether the first one is greater
+than the second one.
+
+    greaterp (Word "1") (Word "0") == Ok (Word "true")
+    greaterp (Word "0") (Word "1") == Ok (Word "false")
+    greaterp (Word "1") (Word "1") == Ok (Word "false")
+    greaterp (Word "a") (Word "1") == Err _
+
+-}
+greaterp : Type.Value -> Type.Value -> Result Error Type.Value
+greaterp value1 value2 =
+    case ( Type.toFloat value1, Type.toFloat value2 ) of
+        ( Ok float1, Ok float2 ) ->
+            if float1 > float2 then
+                Ok (Type.Word "true")
+            else
+                Ok (Type.Word "false")
+
+        ( Err _, _ ) ->
+            Err <| WrongInput "greaterp" (Type.toString value1)
+
+        ( _, Err _ ) ->
+            Err <| WrongInput "greaterp" (Type.toString value2)
+
+
 {-| Check whether a given `Value` is empty. Only the empty `Word` and the empty
 `List` are considered empty.
 
@@ -242,6 +274,17 @@ equalp value1 value2 =
     equalp_ value1 value2 |> Type.fromBool |> Ok
 
 
+{-| Check whether two `Value`s are not equal.
+
+    notequalp (Int 10) (Int 11) == Ok (Word "true")
+    notequalp (Word "10") (Int 10) == Ok (Word "false")
+
+-}
+notequalp : Type.Value -> Type.Value -> Result Error Type.Value
+notequalp value1 value2 =
+    equalp_ value1 value2 |> not |> Type.fromBool |> Ok
+
+
 {-| Calculate the remainder when dividing `value1` by `value2`.
 
     remainder (Int 20) (Int 3) == Ok (Int 2)
@@ -265,6 +308,126 @@ remainder value1 value2 =
 
             _ ->
                 Result.map2 (\int1 int2 -> Type.Int <| rem int1 int2) result1 result2
+
+
+{-| Calculate the sum of `value1` and `value2`.
+
+    sum (Int 20) (Int 3) == Ok (Int 23)
+    sum (Word "20") (Int 4) == Ok (Float 24)
+
+-}
+sum : Type.Value -> Type.Value -> Result Error Type.Value
+sum value1 value2 =
+    case ( value1, value2 ) of
+        ( Type.Int int1, Type.Int int2 ) ->
+            Ok <| Type.Int (int1 + int2)
+
+        _ ->
+            case ( Type.toFloat value1, Type.toFloat value2 ) of
+                ( Ok float1, Ok float2 ) ->
+                    Ok <| Type.Float (float1 + float2)
+
+                ( Err _, _ ) ->
+                    Err <| WrongInput "sum" (Type.toString value1)
+
+                ( _, Err _ ) ->
+                    Err <| WrongInput "sum" (Type.toString value2)
+
+
+{-| Calculate the difference of `value1` and `value2`.
+
+    difference (Int 20) (Int 3) == Ok (Int 17)
+    difference (Word "20") (Int 4) == Ok (Float 16)
+
+-}
+difference : Type.Value -> Type.Value -> Result Error Type.Value
+difference value1 value2 =
+    case ( value1, value2 ) of
+        ( Type.Int int1, Type.Int int2 ) ->
+            Ok <| Type.Int (int1 - int2)
+
+        _ ->
+            case ( Type.toFloat value1, Type.toFloat value2 ) of
+                ( Ok float1, Ok float2 ) ->
+                    Ok <| Type.Float (float1 - float2)
+
+                ( Err _, _ ) ->
+                    Err <| WrongInput "difference" (Type.toString value1)
+
+                ( _, Err _ ) ->
+                    Err <| WrongInput "difference" (Type.toString value2)
+
+
+{-| Calculate the product of `value1` and `value2`.
+
+    product (Int 20) (Int 3) == Ok (Int 60)
+    product (Word "20") (Int 4) == Ok (Float 80)
+
+-}
+product : Type.Value -> Type.Value -> Result Error Type.Value
+product value1 value2 =
+    case ( value1, value2 ) of
+        ( Type.Int int1, Type.Int int2 ) ->
+            Ok <| Type.Int (int1 * int2)
+
+        _ ->
+            case ( Type.toFloat value1, Type.toFloat value2 ) of
+                ( Ok float1, Ok float2 ) ->
+                    Ok <| Type.Float (float1 * float2)
+
+                ( Err _, _ ) ->
+                    Err <| WrongInput "product" (Type.toString value1)
+
+                ( _, Err _ ) ->
+                    Err <| WrongInput "product" (Type.toString value2)
+
+
+{-| Calculate the quotient of `value1` and `value2`.
+
+    quotient (Int 20) (Int 4) == Ok (Int 5)
+    quotient (Word "20") (Int 4) == Ok (Float 5)
+    quotient (Int 20) (Int 0) == Err _
+    quotient (Int 20) (Word "0") == Err _
+
+-}
+quotient : Type.Value -> Type.Value -> Result Error Type.Value
+quotient value1 value2 =
+    case ( value1, value2 ) of
+        ( _, Type.Int 0 ) ->
+            Err <| WrongInput "quotient" "0"
+
+        ( Type.Int int1, Type.Int int2 ) ->
+            if rem int1 int2 == 0 then
+                Ok <| Type.Int (int1 // int2)
+            else
+                Ok <| Type.Float <| (toFloat int1) / (toFloat int2)
+
+        _ ->
+            case ( Type.toFloat value1, Type.toFloat value2 ) of
+                ( Ok _, Ok 0 ) ->
+                    Err <| WrongInput "quotient" "0"
+
+                ( Ok float1, Ok float2 ) ->
+                    Ok <| Type.Float <| float1 / float2
+
+                ( Err _, _ ) ->
+                    Err <| WrongInput "quotient" (Type.toString value1)
+
+                ( _, Err _ ) ->
+                    Err <| WrongInput "quotient" (Type.toString value2)
+
+
+{-| Negate `value`.
+
+    negate (Int 10) == Ok (Float -10)
+    negate (Word "10") == Ok (Float -10)
+
+-}
+minus : Type.Value -> Result Error Type.Value
+minus value =
+    Type.toFloat value
+        |> Result.map (negate >> Type.fromFloat)
+        |> Result.mapError (always <| WrongInput "minus" (Type.toString value))
 
 
 {-| Join two values into a list. One level of nesting will be flattened.

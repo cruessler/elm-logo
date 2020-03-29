@@ -5,8 +5,10 @@ module Vm.Type
         , fromBool
         , toString
         , toInt
+        , toFloat
         , true
         , false
+        , fromFloat
         )
 
 {-| This module contains types and functions related to Logo types.

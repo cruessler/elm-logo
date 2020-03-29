@@ -3,6 +3,7 @@ module Test.Primitive exposing (..)
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
+import Vm.Error as Error exposing (Error)
 import Vm.Primitive as P
 import Vm.Type as T
 
@@ -87,6 +88,40 @@ primitives =
                         Expect.equal (Ok <| T.Word "true") (P.equalp list list)
             , test "returns false" <|
                 \_ -> Expect.equal (Ok <| T.false) (P.equalp (T.Int 5) (T.Int 3))
+            ]
+        , describe "sum"
+            [ test "works with number" <|
+                \_ -> Expect.equal (Ok <| T.Int 23) (P.sum (T.Int 20) (T.Int 3))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Float 23) (P.sum (T.Word "20") (T.Word "3"))
+            ]
+        , describe "difference"
+            [ test "works with number" <|
+                \_ -> Expect.equal (Ok <| T.Int 17) (P.difference (T.Int 20) (T.Int 3))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Float 17) (P.difference (T.Word "20") (T.Word "3"))
+            ]
+        , describe "product"
+            [ test "works with number" <|
+                \_ -> Expect.equal (Ok <| T.Int 60) (P.product (T.Int 20) (T.Int 3))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Float 60) (P.product (T.Word "20") (T.Word "3"))
+            ]
+        , describe "quotient"
+            [ test "works with number" <|
+                \_ -> Expect.equal (Ok <| T.Int 5) (P.quotient (T.Int 20) (T.Int 4))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Float 5) (P.quotient (T.Word "20") (T.Word "4"))
+            , test "errors if division by zero (numbers)" <|
+                \_ -> Expect.equal (Err <| Error.WrongInput "quotient" "0") (P.quotient (T.Int 20) (T.Int 0))
+            , test "errors if division by zero (words)" <|
+                \_ -> Expect.equal (Err <| Error.WrongInput "quotient" "0") (P.quotient (T.Word "20") (T.Word "0"))
+            ]
+        , describe "minus"
+            [ test "works with number" <|
+                \_ -> Expect.equal (Ok <| T.Float -20) (P.minus (T.Int 20))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Float -20) (P.minus (T.Word "20"))
             ]
         , describe "integerp"
             [ test "works with an integer" <|
