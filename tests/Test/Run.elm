@@ -1,48 +1,46 @@
 module Test.Run exposing (..)
 
 import Array
-import Compiler.Ast as Ast
 import Compiler.Parser as Parser
+import Environment.History exposing (Entry(..))
 import Expect exposing (Expectation)
+import Logo exposing (Logo)
 import Parser
 import Test exposing (Test, describe, test)
-import Vm.Type as Type
-import Vm.Vm
 
 
 printsLines : String -> List String -> Test
 printsLines program lines =
     let
-        result =
-            program
-                |> Parser.run Parser.root
-                |> Result.mapError
-                    (\error ->
-                        "Error parsing `"
-                            ++ program
-                            ++ "`. The error was: "
-                            ++ (toString error)
-                    )
-                |> Result.map Ast.compileProgram
-                |> Result.map
-                    (\{ instructions, functionTable, startAddress } ->
-                        Vm.Vm.initialize instructions functionTable startAddress
-                    )
-                |> Result.andThen (Vm.Vm.run >> Result.mapError toString)
+        isOutput : Entry -> Bool
+        isOutput entry =
+            case entry of
+                Output _ ->
+                    True
 
-        match : Result String Vm.Vm.Vm -> Expectation
-        match result =
-            case result of
-                Ok { environment } ->
-                    Expect.equal
-                        (lines |> Array.fromList)
-                        environment.lines
-
-                Err message ->
-                    Expect.fail message
+                _ ->
+                    False
     in
         test program <|
-            \_ -> match result
+            \_ ->
+                let
+                    logo =
+                        Logo.run program Logo.empty
+
+                    history =
+                        Logo.getHistory logo
+
+                    last =
+                        List.head history
+                in
+                    case last of
+                        Just (Error message) ->
+                            Expect.fail message
+
+                        _ ->
+                            Expect.equal
+                                (lines |> List.map Output |> List.reverse)
+                                (List.filter isOutput history)
 
 
 failsParsing : String -> String -> Test

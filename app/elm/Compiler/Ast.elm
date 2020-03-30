@@ -1,6 +1,7 @@
 module Compiler.Ast
     exposing
         ( Node(..)
+        , CompiledProgram
         , Program
         , Function
         , Context(..)

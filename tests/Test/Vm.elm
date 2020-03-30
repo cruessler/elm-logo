@@ -3,6 +3,7 @@ module Test.Vm exposing (..)
 import Array
 import Dict
 import Environment
+import Environment.History exposing (Entry(..))
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Vm.Command as C
@@ -26,21 +27,22 @@ emptyVm =
     }
 
 
-{-| Run a `Vm`. In case an error occurs, it is swallowed and an empty `Vm` is
-returned instead.
+{-| Run a `Vm`.
 
 When using this function, tests don’t have to match on the whole state of the
-`Vm` (as in `Expect.equal vm Ok { vm | programCounter = 1}`), but can compare
-its individual pieces to expected values (as in `Expect.equal vm.programCounter
-1`). This way, test can be written with a higher granularity.
+`Vm` (as in `Expect.equal vm Done { vm | programCounter = 1}`), but can
+compare its individual pieces to expected values (as in `Expect.equal
+vm.programCounter 1`). This way, test can be written with a higher granularity.
 
 -}
 runAndUnwrap : Vm -> Vm
 runAndUnwrap vm =
-    vm
-        |> run
-        |> Result.mapError (Debug.log "running the VM produced an error")
-        |> Result.withDefault emptyVm
+    case run vm of
+        Done vm ->
+            vm
+
+        Paused vm ->
+            vm
 
 
 vmWithTwoInstructions : Test
@@ -128,7 +130,7 @@ vmWithConditionalPrint =
                     Expect.equal vm.stack []
             , test "environment contains printed line" <|
                 \_ ->
-                    Expect.equal vm.environment.lines <| Array.fromList [ "first" ]
+                    Expect.equal vm.environment.history <| [ Output "first" ]
             ]
 
 
@@ -161,7 +163,7 @@ vmWithPrintLoop =
             , test "stack is empty" <|
                 \_ -> Expect.equal vm.stack []
             , test "environment contains printed lines" <|
-                \_ -> Expect.equal vm.environment.lines (Array.repeat 10 "word")
+                \_ -> Expect.equal vm.environment.history (List.repeat 10 <| Output "word")
             ]
 
 
@@ -187,7 +189,9 @@ vmWithTemplateLoop =
     in
         describe "with print in a template loop" <|
             [ test "environment contains printed lines" <|
-                \_ -> Expect.equal vm.environment.lines (Array.fromList [ "w", "o", "r", "d" ])
+                \_ ->
+                    Expect.equal vm.environment.history
+                        (List.map Output [ "w", "o", "r", "d" ] |> List.reverse)
             ]
 
 
@@ -212,7 +216,7 @@ vmWithLocalScope =
     in
         describe "with print in a local scope" <|
             [ test "environment contains printed lines" <|
-                \_ -> Expect.equal vm.environment.lines (Array.fromList [ "value" ])
+                \_ -> Expect.equal vm.environment.history [ Output "value" ]
             ]
 
 
@@ -321,8 +325,8 @@ vmWithSampleProgram =
                     Expect.equal vm.programCounter 31
             , test "environment contains printed lines" <|
                 \_ ->
-                    Expect.equal vm.environment.lines
-                        (Array.fromList
+                    Expect.equal vm.environment.history
+                        (List.map Output
                             [ "small vanilla cone"
                             , "small vanilla cup"
                             , "small ultra chocolate cone"
@@ -354,5 +358,6 @@ vmWithSampleProgram =
                             , "large ginger cone"
                             , "large ginger cup"
                             ]
+                            |> List.reverse
                         )
             ]

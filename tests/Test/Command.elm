@@ -2,11 +2,17 @@ module Test.Command exposing (..)
 
 import Array
 import Environment exposing (Environment)
+import Environment.History exposing (Entry(..))
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Type as Type
+
+
+empty : Environment
+empty =
+    Environment.empty
 
 
 commands : Test
@@ -17,12 +23,13 @@ commands =
                 \string ->
                     let
                         result =
-                            Environment.empty
+                            empty
                                 |> C.print (Type.Word string)
                     in
                         Expect.equal result
                             (Ok
-                                { lines = Array.fromList [ string ]
+                                { empty
+                                    | history = [ Output string ]
                                 }
                             )
             ]

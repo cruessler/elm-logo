@@ -1,4 +1,14 @@
-module Vm.Vm exposing (..)
+module Vm.Vm
+    exposing
+        ( Vm
+        , State(..)
+        , Instruction(..)
+        , empty
+        , initialize
+        , setEnvironment
+        , run
+        , step
+        )
 
 {-| This module provides types and data structures for representing a virtual
 machine as well as functions for running it.
@@ -63,6 +73,13 @@ type alias Vm =
     }
 
 
+{-| Initialize an empty `Vm`.
+-}
+empty : Vm
+empty =
+    initialize [] Dict.empty 0
+
+
 {-| Initialize a `Vm` with a list of instructions and a program counter.
 -}
 initialize : List Instruction -> Dict String Int -> Int -> Vm
@@ -74,6 +91,11 @@ initialize instructions functionTable programCounter =
     , environment = Environment.empty
     , functionTable = functionTable
     }
+
+
+setEnvironment : Environment -> Vm -> Vm
+setEnvironment env vm =
+    { vm | environment = env }
 
 
 {-| Increment the program counter of a `Vm`.
@@ -647,14 +669,35 @@ step vm =
             (\instruction -> execute instruction vm)
 
 
-{-| Run a `Vm` until the program counter points to an invalid instruction.
--}
-run : Vm -> Result Error Vm
-run vm =
-    case Array.get vm.programCounter vm.instructions of
-        Just instruction ->
-            execute instruction vm
-                |> Result.andThen (\vm -> run vm)
+type State
+    = Paused Vm
+    | Done Vm
 
-        _ ->
-            Ok vm
+
+{-| Run a `Vm` until the program counter points to an invalid instruction.
+
+This version gets tail-call optimized by using a helper function that either
+returns a value or calls itself.
+
+-}
+run : Vm -> State
+run vm =
+    let
+        run_ result =
+            case result of
+                Ok vm ->
+                    let
+                        instruction =
+                            Array.get vm.programCounter vm.instructions
+                    in
+                        case instruction of
+                            Just instruction ->
+                                run_ (execute instruction vm)
+
+                            _ ->
+                                Done vm
+
+                Err error ->
+                    Done { vm | environment = Environment.error (Error.toString error) vm.environment }
+    in
+        run_ (Ok vm)
