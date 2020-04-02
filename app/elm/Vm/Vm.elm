@@ -525,7 +525,7 @@ raise exception vm =
         Exception.WrongInput function ->
             case vm.stack of
                 (Stack.Value first) :: rest ->
-                    Err <| WrongInput function (Type.toString first)
+                    Err <| WrongInput function (Type.toDebugString first)
 
                 _ ->
                     Err <| Internal EmptyStack
@@ -533,7 +533,7 @@ raise exception vm =
         Exception.NoUseOfValue ->
             case vm.stack of
                 (Stack.Value first) :: rest ->
-                    Err <| NoUseOfValue (Type.toString first)
+                    Err <| NoUseOfValue (Type.toDebugString first)
 
                 _ ->
                     Err <| Internal EmptyStack

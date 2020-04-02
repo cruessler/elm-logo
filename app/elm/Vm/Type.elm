@@ -4,6 +4,7 @@ module Vm.Type exposing
     , false
     , fromBool
     , fromFloat
+    , toDebugString
     , toFloat
     , toInt
     , toString
@@ -77,6 +78,25 @@ toString value =
             list
                 |> List.map inList
                 |> String.join " "
+
+
+{-| Create a string representation of a `Value` for use in debug messages.
+
+    butfirst [ 1 ] ; You don’t say what to do with []
+    butfirst "a ; You don’t say what to do with ||
+
+-}
+toDebugString : Value -> String
+toDebugString value =
+    case value of
+        Word "" ->
+            "||"
+
+        List [] ->
+            "[]"
+
+        _ ->
+            toString value
 
 
 {-| Parse `Value` as an integer.

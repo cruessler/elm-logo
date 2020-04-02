@@ -65,7 +65,7 @@ first : Type.Value -> Result Error Type.Value
 first value =
     case value of
         Type.Word "" ->
-            Err <| WrongInput "first" (Type.toString value)
+            Err <| WrongInput "first" (Type.toDebugString value)
 
         Type.Word str ->
             Ok <| Type.Word <| String.left 1 str
@@ -80,7 +80,7 @@ first value =
             Ok first_
 
         Type.List [] ->
-            Err <| WrongInput "first" (Type.toString value)
+            Err <| WrongInput "first" (Type.toDebugString value)
 
 
 {-| Get all but the first element of a `Value`.
@@ -96,7 +96,7 @@ butfirst : Type.Value -> Result Error Type.Value
 butfirst value =
     case value of
         Type.Word "" ->
-            Err <| WrongInput "butfirst" (Type.toString value)
+            Err <| WrongInput "butfirst" (Type.toDebugString value)
 
         Type.Word str ->
             Ok <| Type.Word <| String.dropLeft 1 str
@@ -111,7 +111,7 @@ butfirst value =
             Ok <| Type.List rest
 
         Type.List [] ->
-            Err <| WrongInput "butfirst" (Type.toString value)
+            Err <| WrongInput "butfirst" (Type.toDebugString value)
 
 
 {-| Count the number of characters in a `Word` or the number of elements in a
@@ -163,10 +163,10 @@ lessp value1 value2 =
                         Ok (Type.Word "false")
 
                 Err _ ->
-                    Err <| WrongInput "lessp" (Type.toString value2)
+                    Err <| WrongInput "lessp" (Type.toDebugString value2)
 
         Err _ ->
-            Err <| WrongInput "lessp" (Type.toString value1)
+            Err <| WrongInput "lessp" (Type.toDebugString value1)
 
 
 {-| Convert two values to numbers and compare whether the first one is greater
@@ -189,10 +189,10 @@ greaterp value1 value2 =
                 Ok (Type.Word "false")
 
         ( Err _, _ ) ->
-            Err <| WrongInput "greaterp" (Type.toString value1)
+            Err <| WrongInput "greaterp" (Type.toDebugString value1)
 
         ( _, Err _ ) ->
-            Err <| WrongInput "greaterp" (Type.toString value2)
+            Err <| WrongInput "greaterp" (Type.toDebugString value2)
 
 
 {-| Check whether a given `Value` is empty. Only the empty `Word` and the empty
@@ -307,15 +307,15 @@ remainder value1 value2 =
     let
         result1 =
             Type.toInt value1
-                |> Result.mapError (\_ -> WrongInput "remainder" (Type.toString value1))
+                |> Result.mapError (\_ -> WrongInput "remainder" (Type.toDebugString value1))
 
         result2 =
             Type.toInt value2
-                |> Result.mapError (\_ -> WrongInput "remainder" (Type.toString value2))
+                |> Result.mapError (\_ -> WrongInput "remainder" (Type.toDebugString value2))
     in
     case ( result1, result2 ) of
         ( Ok _, Ok 0 ) ->
-            Err <| WrongInput "remainder" (Type.toString value2)
+            Err <| WrongInput "remainder" (Type.toDebugString value2)
 
         _ ->
             Result.map2 (\int1 int2 -> Type.Int <| remainderBy int2 int1) result1 result2
@@ -340,10 +340,10 @@ sum value1 value2 =
                     Ok <| Type.Float (float1 + float2)
 
                 ( Err _, _ ) ->
-                    Err <| WrongInput "sum" (Type.toString value1)
+                    Err <| WrongInput "sum" (Type.toDebugString value1)
 
                 ( _, Err _ ) ->
-                    Err <| WrongInput "sum" (Type.toString value2)
+                    Err <| WrongInput "sum" (Type.toDebugString value2)
 
 
 {-| Calculate the difference of `value1` and `value2`.
@@ -365,10 +365,10 @@ difference value1 value2 =
                     Ok <| Type.Float (float1 - float2)
 
                 ( Err _, _ ) ->
-                    Err <| WrongInput "difference" (Type.toString value1)
+                    Err <| WrongInput "difference" (Type.toDebugString value1)
 
                 ( _, Err _ ) ->
-                    Err <| WrongInput "difference" (Type.toString value2)
+                    Err <| WrongInput "difference" (Type.toDebugString value2)
 
 
 {-| Calculate the product of `value1` and `value2`.
@@ -390,10 +390,10 @@ product value1 value2 =
                     Ok <| Type.Float (float1 * float2)
 
                 ( Err _, _ ) ->
-                    Err <| WrongInput "product" (Type.toString value1)
+                    Err <| WrongInput "product" (Type.toDebugString value1)
 
                 ( _, Err _ ) ->
-                    Err <| WrongInput "product" (Type.toString value2)
+                    Err <| WrongInput "product" (Type.toDebugString value2)
 
 
 {-| Calculate the quotient of `value1` and `value2`.
@@ -427,10 +427,10 @@ quotient value1 value2 =
                         Ok <| Type.Float <| float1 / float2
 
                 ( Err _, _ ) ->
-                    Err <| WrongInput "quotient" (Type.toString value1)
+                    Err <| WrongInput "quotient" (Type.toDebugString value1)
 
                 ( _, Err _ ) ->
-                    Err <| WrongInput "quotient" (Type.toString value2)
+                    Err <| WrongInput "quotient" (Type.toDebugString value2)
 
 
 {-| Negate `value`.
@@ -444,7 +444,7 @@ minus : Type.Value -> Result Error Type.Value
 minus value =
     Type.toFloat value
         |> Result.map (negate >> Type.fromFloat)
-        |> Result.mapError (always <| WrongInput "minus" (Type.toString value))
+        |> Result.mapError (always <| WrongInput "minus" (Type.toDebugString value))
 
 
 {-| Join two values into a list. One level of nesting will be flattened.

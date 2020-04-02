@@ -38,23 +38,24 @@ repeatWithInvalidArguments =
 functionsWithInvalidArguments : Test
 functionsWithInvalidArguments =
     describe "functions fail given argument of wrong type" <|
-        [ printsError "print butfirst []" "butfirst doesn’t like  as input"
-        , printsError "print first []" "first doesn’t like  as input"
-        , printsError "print first butfirst \"a" "first doesn’t like  as input"
+        [ printsError "print butfirst []" "butfirst doesn’t like [] as input"
+        , printsError "print first []" "first doesn’t like [] as input"
+        , printsError "print first butfirst \"a" "first doesn’t like || as input"
+        , printsError "first butfirst \"a" "first doesn’t like || as input"
         , printsError "print lessp \"word \"word" "lessp doesn’t like word as input"
         , printsError "print lessp \"word []" "lessp doesn’t like word as input"
         , printsError "if \"word [ print \"word ]" "if doesn’t like word as input"
-        , printsError "print 1 > []" "> doesn’t like  as input"
-        , printsError "print greaterp 1 []" "greaterp doesn’t like  as input"
-        , printsError "print 1 + []" "+ doesn’t like  as input"
-        , printsError "print sum 1 []" "sum doesn’t like  as input"
-        , printsError "print 1 - []" "- doesn’t like  as input"
-        , printsError "print difference 1 []" "difference doesn’t like  as input"
-        , printsError "print 1 * []" "* doesn’t like  as input"
-        , printsError "print product 1 []" "product doesn’t like  as input"
-        , printsError "print 1 / []" "/ doesn’t like  as input"
-        , printsError "print quotient 1 []" "quotient doesn’t like  as input"
-        , printsError "print minus []" "minus doesn’t like  as input"
+        , printsError "print 1 > []" "> doesn’t like [] as input"
+        , printsError "print greaterp 1 []" "greaterp doesn’t like [] as input"
+        , printsError "print 1 + []" "+ doesn’t like [] as input"
+        , printsError "print sum 1 []" "sum doesn’t like [] as input"
+        , printsError "print 1 - []" "- doesn’t like [] as input"
+        , printsError "print difference 1 []" "difference doesn’t like [] as input"
+        , printsError "print 1 * []" "* doesn’t like [] as input"
+        , printsError "print product 1 []" "product doesn’t like [] as input"
+        , printsError "print 1 / []" "/ doesn’t like [] as input"
+        , printsError "print quotient 1 []" "quotient doesn’t like [] as input"
+        , printsError "print minus []" "minus doesn’t like [] as input"
         ]
 
 
@@ -119,6 +120,7 @@ foo "baz"""
         , printsError "sum 3 3" "You don’t say what to do with 6"
         , printsError "if 1 = 1 [ minus 1 ]" "You don’t say what to do with -1"
         , printsError "ifelse \"true [ 5 ] [ 6 ]" "You don’t say what to do with 5"
+        , printsError "butfirst [ 1 ]" "You don’t say what to do with []"
         ]
 
 
