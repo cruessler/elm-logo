@@ -1,8 +1,7 @@
-module Vm.Stack
-    exposing
-        ( Stack
-        , Value(..)
-        )
+module Vm.Stack exposing
+    ( Stack
+    , Value(..)
+    )
 
 import Vm.Type as Type
 

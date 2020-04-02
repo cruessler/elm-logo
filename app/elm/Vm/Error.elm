@@ -54,4 +54,4 @@ toString error =
             name ++ " has no value"
 
         _ ->
-            Debug.crash "unimplemented"
+            Debug.todo "unimplemented"

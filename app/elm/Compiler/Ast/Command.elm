@@ -1,10 +1,10 @@
-module Compiler.Ast.Command
-    exposing
-        ( Command(..)
-        , all
-        , find
-        , arguments
-        )
+module Compiler.Ast.Command exposing
+    ( Command(..)
+    , all
+    , arguments
+    , find
+    , name
+    )
 
 import Vm.Command as C
 
@@ -29,11 +29,11 @@ find name_ =
 name : Command -> String
 name command =
     case command of
-        Command1 { name } ->
-            name
+        Command1 command1 ->
+            command1.name
 
-        Command2 { name } ->
-            name
+        Command2 command2 ->
+            command2.name
 
 
 arguments : Command -> Int

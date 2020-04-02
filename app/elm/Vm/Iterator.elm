@@ -1,9 +1,8 @@
-module Vm.Iterator
-    exposing
-        ( Iterator
-        , initialize
-        , step
-        )
+module Vm.Iterator exposing
+    ( Iterator
+    , initialize
+    , step
+    )
 
 {-| This module contains types and functions used in template-based iteration.
 -}
@@ -40,11 +39,11 @@ step iter =
         Type.Int int ->
             let
                 word =
-                    toString int
+                    String.fromInt int
             in
-                { current = Just <| Type.Word <| String.left 1 word
-                , rest = Type.Word <| String.dropLeft 1 word
-                }
+            { current = Just <| Type.Word <| String.left 1 word
+            , rest = Type.Word <| String.dropLeft 1 word
+            }
 
         Type.List (first :: rest) ->
             { current = Just first
@@ -61,6 +60,6 @@ step iter =
                 word =
                     Type.toString iter.rest
             in
-                { current = Just <| Type.Word <| String.left 1 word
-                , rest = Type.Word <| String.dropLeft 1 word
-                }
+            { current = Just <| Type.Word <| String.left 1 word
+            , rest = Type.Word <| String.dropLeft 1 word
+            }

@@ -1,11 +1,11 @@
-module Compiler.Ast.Introspect
-    exposing
-        ( Introspect(..)
-        , all
-        , find
-        , arguments
-        , templateVariable
-        )
+module Compiler.Ast.Introspect exposing
+    ( Introspect(..)
+    , all
+    , arguments
+    , find
+    , name
+    , templateVariable
+    )
 
 import Vm.Introspect as I
 import Vm.Vm exposing (Vm)
@@ -29,18 +29,18 @@ find name_ =
 
 
 name : Introspect -> String
-name command =
-    case command of
-        Introspect0 { name } ->
-            name
+name introspect =
+    case introspect of
+        Introspect0 introspect1 ->
+            introspect1.name
 
-        Introspect1 { name } ->
-            name
+        Introspect1 introspect2 ->
+            introspect2.name
 
 
 arguments : Introspect -> Int
-arguments command =
-    case command of
+arguments introspect =
+    case introspect of
         Introspect0 _ ->
             0
 

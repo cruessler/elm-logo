@@ -1,32 +1,31 @@
-module Logo
-    exposing
-        ( Logo
-        , empty
-        , step
-        , run
-        , continue
-        , done
-        , getEnvironment
-        , getHistory
-        , getVm
-        )
+module Logo exposing
+    ( Logo
+    , continue
+    , done
+    , empty
+    , getEnvironment
+    , getHistory
+    , getVm
+    , run
+    , step
+    )
 
 import Array exposing (Array)
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
 import Environment exposing (Environment)
 import Environment.History exposing (Entry)
-import Parser
-import Vm.Vm as Vm exposing (Vm, Instruction, State(..))
+import Parser.Advanced as Parser exposing (DeadEnd)
 import Vm.Error as Error
+import Vm.Vm as Vm exposing (Instruction, State(..), Vm)
 
 
 type Logo
     = Logo State
 
 
-type Error
-    = ParseError Parser.Error
+type Error context problem
+    = ParseError (List (DeadEnd context problem))
 
 
 empty : Logo
@@ -66,8 +65,8 @@ compile program logo =
                 env =
                     Environment.input program vm.environment
             in
-                Vm.initialize instructions functionTable startAddress
-                    |> Vm.setEnvironment env
+            Vm.initialize instructions functionTable startAddress
+                |> Vm.setEnvironment env
 
         result =
             program
@@ -76,12 +75,12 @@ compile program logo =
                 |> Result.map Ast.compileProgram
                 |> Result.map loadProgram
     in
-        case result of
-            Ok newVm ->
-                Logo <| Paused newVm
+    case result of
+        Ok newVm ->
+            Logo <| Paused newVm
 
-            Err error ->
-                Logo <| Done { vm | environment = Environment.error (toString error) vm.environment }
+        Err error ->
+            Logo <| Done { vm | environment = Environment.error (Debug.toString error) vm.environment }
 
 
 step : Logo -> Logo

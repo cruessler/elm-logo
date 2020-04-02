@@ -2,10 +2,11 @@ module Test.Parser exposing (..)
 
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
+import Compiler.Parser.Helper as Helper
 import Compiler.Parser.Value as Value
 import Dict
 import Expect exposing (Expectation)
-import Parser
+import Parser.Advanced as Parser exposing (DeadEnd)
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Type as Type
@@ -40,29 +41,29 @@ value =
         fail =
             Parser.run Value.value " [ 1 2"
     in
-        describe "parse simple values" <|
-            [ test "parse integer" <|
-                \_ -> Expect.equal integer (Ok <| Ast.Value <| Type.Int 1234)
-            , test "parse word" <|
-                \_ -> Expect.equal word (Ok <| Ast.Value <| Type.Word "word")
-            , test "parse list" <|
-                \_ ->
-                    Expect.equal list
-                        (Ok <| Ast.Value <| Type.List [ Type.Int 1234, Type.Word "word" ])
-            , test "parse nested list" <|
-                \_ ->
-                    Expect.equal nestedList
-                        (Ok <|
-                            Ast.Value <|
-                                Type.List [ Type.Int 1234, Type.List [ Type.Int 1234 ] ]
-                        )
-            , test "parse empty list" <|
-                \_ ->
-                    Expect.equal emptyList
-                        (Ok <| Ast.Value <| Type.List [])
-            , test "fail when given string cannot be parsed" <|
-                \_ -> Expect.err fail
-            ]
+    describe "parse simple values" <|
+        [ test "parse integer" <|
+            \_ -> Expect.equal integer (Ok <| Ast.Value <| Type.Int 1234)
+        , test "parse word" <|
+            \_ -> Expect.equal word (Ok <| Ast.Value <| Type.Word "word")
+        , test "parse list" <|
+            \_ ->
+                Expect.equal list
+                    (Ok <| Ast.Value <| Type.List [ Type.Int 1234, Type.Word "word" ])
+        , test "parse nested list" <|
+            \_ ->
+                Expect.equal nestedList
+                    (Ok <|
+                        Ast.Value <|
+                            Type.List [ Type.Int 1234, Type.List [ Type.Int 1234 ] ]
+                    )
+        , test "parse empty list" <|
+            \_ ->
+                Expect.equal emptyList
+                    (Ok <| Ast.Value <| Type.List [])
+        , test "fail when given string cannot be parsed" <|
+            \_ -> Expect.err fail
+        ]
 
 
 parsesFunction : String -> Ast.Function -> Expectation
@@ -71,7 +72,7 @@ parsesFunction source function =
         result =
             Parser.run (Parser.functionDefinition defaultState) source
     in
-        Expect.equal result (Ok function)
+    Expect.equal result (Ok function)
 
 
 functionDefinition : Test
@@ -126,29 +127,31 @@ functionDefinition =
 parsesArithmeticExpression : String -> Test
 parsesArithmeticExpression expression =
     let
-        match : Result Parser.Error Ast.Node -> Expectation
+        match : Result (List (DeadEnd context problem)) Ast.Node -> Expectation
         match result =
             case result of
                 Ok _ ->
                     Expect.pass
 
                 Err error ->
-                    Expect.fail (toString error)
+                    Expect.fail (Debug.toString error)
     in
-        test expression <|
-            \_ ->
-                match
-                    (Parser.run
-                        (Parser.arithmeticExpression defaultState)
-                        expression
-                    )
+    test expression <|
+        \_ ->
+            match
+                (Parser.run
+                    (Parser.arithmeticExpression defaultState)
+                    expression
+                )
 
 
 arithmetic : Test
 arithmetic =
     describe "arithmetic" <|
         [ parsesArithmeticExpression "5 * 5"
+        , parsesArithmeticExpression "5*5"
         , parsesArithmeticExpression "(5 * 5)"
+        , parsesArithmeticExpression "(5*5)"
         , parsesArithmeticExpression "((5 * 5))"
         , parsesArithmeticExpression "5"
         , parsesArithmeticExpression "4 - 4"
@@ -184,22 +187,22 @@ arithmetic =
 parsesBooleanExpression : String -> Test
 parsesBooleanExpression expression =
     let
-        match : Result Parser.Error Ast.Node -> Expectation
+        match : Result (List (DeadEnd context problem)) Ast.Node -> Expectation
         match result =
             case result of
                 Ok _ ->
                     Expect.pass
 
                 Err error ->
-                    Expect.fail (toString error)
+                    Expect.fail (Debug.toString error)
     in
-        test expression <|
-            \_ ->
-                match
-                    (Parser.run
-                        (Parser.booleanExpression defaultState)
-                        expression
-                    )
+    test expression <|
+        \_ ->
+            match
+                (Parser.run
+                    (Parser.booleanExpression defaultState)
+                    expression
+                )
 
 
 booleanAlgebra : Test

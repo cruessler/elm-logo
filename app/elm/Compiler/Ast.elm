@@ -1,14 +1,13 @@
-module Compiler.Ast
-    exposing
-        ( Node(..)
-        , CompiledProgram
-        , Program
-        , Function
-        , Context(..)
-        , compileProgram
-        , compileFunction
-        , compile
-        )
+module Compiler.Ast exposing
+    ( CompiledProgram
+    , Context(..)
+    , Function
+    , Node(..)
+    , Program
+    , compile
+    , compileFunction
+    , compileProgram
+    )
 
 {-| This module provides types and functions for working with Logo ASTs.
 -}
@@ -20,7 +19,7 @@ import Vm.Exception as Exception exposing (Exception)
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
-import Vm.Vm exposing (Vm, Instruction(..))
+import Vm.Vm exposing (Instruction(..), Vm)
 
 
 type alias Program =
@@ -94,7 +93,7 @@ respectively.
 -}
 mangleName : String -> Int -> String
 mangleName name arguments =
-    name ++ (toString arguments)
+    name ++ String.fromInt arguments
 
 
 {-| Represents the context an AST node can be compiled in.
@@ -279,6 +278,7 @@ If it can statically be determined whether the caller expects a value, the
 instruction for raising an exception can be inserted without a check.
 
     print print 5
+
     3
 
 -}
@@ -288,41 +288,41 @@ compileInContext context node =
         instructions =
             compile context node
     in
-        case context of
-            Statement ->
-                case typeOfCallee node of
-                    UserDefinedFunction _ ->
-                        instructions
-                            ++ [ CheckReturn
-                               , JumpIfFalse 2
-                               , Vm.Vm.Raise Exception.NoUseOfValue
-                               ]
+    case context of
+        Statement ->
+            case typeOfCallee node of
+                UserDefinedFunction _ ->
+                    instructions
+                        ++ [ CheckReturn
+                           , JumpIfFalse 2
+                           , Vm.Vm.Raise Exception.NoUseOfValue
+                           ]
 
-                    Primitive _ ->
-                        instructions
-                            ++ [ Vm.Vm.Raise Exception.NoUseOfValue ]
+                Primitive _ ->
+                    instructions
+                        ++ [ Vm.Vm.Raise Exception.NoUseOfValue ]
 
-                    _ ->
-                        instructions
+                _ ->
+                    instructions
 
-            Expression { caller } ->
-                case typeOfCallee node of
-                    UserDefinedFunction { name } ->
-                        instructions
-                            ++ [ CheckReturn
-                               , JumpIfTrue 2
-                               , Vm.Vm.Raise (Exception.NoOutput caller name)
-                               ]
+        Expression { caller } ->
+            case typeOfCallee node of
+                UserDefinedFunction { name } ->
+                    instructions
+                        ++ [ CheckReturn
+                           , JumpIfTrue 2
+                           , Vm.Vm.Raise (Exception.NoOutput caller name)
+                           ]
 
-                    Primitive _ ->
-                        instructions
+                Primitive _ ->
+                    instructions
 
-                    Command { name } ->
-                        instructions
-                            ++ [ Vm.Vm.Raise (Exception.NoOutput caller name) ]
+                Command { name } ->
+                    instructions
+                        ++ [ Vm.Vm.Raise (Exception.NoOutput caller name) ]
 
-                    DoesNotApply ->
-                        instructions
+                DoesNotApply ->
+                    instructions
 
 
 {-| Compile an AST node to a list of VM instructions.
@@ -345,24 +345,24 @@ compile context node =
                 body =
                     [ [ PushLoopScope
                       , EnterLoopScope
-                      , JumpIfTrue ((List.length compiledChildren) + 2)
+                      , JumpIfTrue (List.length compiledChildren + 2)
                       ]
                     , compiledChildren
-                    , [ Jump ((List.length compiledChildren) + 2 |> negate)
+                    , [ Jump (List.length compiledChildren + 2 |> negate)
                       , PopLoopScope
                       ]
                     ]
                         |> List.concat
             in
-                [ compiledTimes
-                , [ Duplicate
-                  , Eval1 { name = "integerp", f = P.integerp }
-                  , JumpIfTrue 2
-                  , Vm.Vm.Raise (Exception.WrongInput "repeat")
-                  ]
-                , body
-                ]
-                    |> List.concat
+            [ compiledTimes
+            , [ Duplicate
+              , Eval1 { name = "integerp", f = P.integerp }
+              , JumpIfTrue 2
+              , Vm.Vm.Raise (Exception.WrongInput "repeat")
+              ]
+            , body
+            ]
+                |> List.concat
 
         Foreach iterator children ->
             let
@@ -372,17 +372,17 @@ compile context node =
                 compiledChildren =
                     List.concatMap (compileInContext Statement) children
             in
-                [ compiledIterator
-                , [ PushTemplateScope
-                  , EnterTemplateScope
-                  , JumpIfTrue ((List.length compiledChildren) + 2)
-                  ]
-                , compiledChildren
-                , [ Jump ((List.length compiledChildren) + 2 |> negate)
-                  , PopTemplateScope
-                  ]
-                ]
-                    |> List.concat
+            [ compiledIterator
+            , [ PushTemplateScope
+              , EnterTemplateScope
+              , JumpIfTrue (List.length compiledChildren + 2)
+              ]
+            , compiledChildren
+            , [ Jump (List.length compiledChildren + 2 |> negate)
+              , PopTemplateScope
+              ]
+            ]
+                |> List.concat
 
         If condition children ->
             let
@@ -392,16 +392,16 @@ compile context node =
                 compiledChildren =
                     compileBranch "if" context children
             in
-                [ compiledCondition
-                , [ Duplicate
-                  , Eval1 { name = "boolp", f = P.boolp }
-                  , JumpIfTrue 2
-                  , Vm.Vm.Raise (Exception.WrongInput "if")
-                  , JumpIfFalse ((List.length compiledChildren) + 1)
-                  ]
-                , compiledChildren
-                ]
-                    |> List.concat
+            [ compiledCondition
+            , [ Duplicate
+              , Eval1 { name = "boolp", f = P.boolp }
+              , JumpIfTrue 2
+              , Vm.Vm.Raise (Exception.WrongInput "if")
+              , JumpIfFalse (List.length compiledChildren + 1)
+              ]
+            , compiledChildren
+            ]
+                |> List.concat
 
         IfElse condition ifBranch elseBranch ->
             let
@@ -414,36 +414,36 @@ compile context node =
                 compiledElseBranch =
                     compileBranch "ifelse" context elseBranch
             in
-                [ compiledCondition
-                , [ Duplicate
-                  , Eval1 { name = "boolp", f = P.boolp }
-                  , JumpIfTrue 2
-                  , Vm.Vm.Raise (Exception.WrongInput "ifelse")
-                  , JumpIfFalse ((List.length compiledIfBranch) + 2)
-                  ]
-                , compiledIfBranch
-                , [ Jump ((List.length compiledElseBranch) + 1) ]
-                , compiledElseBranch
-                ]
-                    |> List.concat
+            [ compiledCondition
+            , [ Duplicate
+              , Eval1 { name = "boolp", f = P.boolp }
+              , JumpIfTrue 2
+              , Vm.Vm.Raise (Exception.WrongInput "ifelse")
+              , JumpIfFalse (List.length compiledIfBranch + 2)
+              ]
+            , compiledIfBranch
+            , [ Jump (List.length compiledElseBranch + 1) ]
+            , compiledElseBranch
+            ]
+                |> List.concat
 
         Equal first second ->
-            [ (compileInContext (Expression { caller = "=" }) second)
-            , (compileInContext (Expression { caller = "=" }) first)
+            [ compileInContext (Expression { caller = "=" }) second
+            , compileInContext (Expression { caller = "=" }) first
             , [ Eval2 { name = "=", f = P.equalp } ]
             ]
                 |> List.concat
 
         NotEqual first second ->
-            [ (compileInContext (Expression { caller = "<>" }) second)
-            , (compileInContext (Expression { caller = "<>" }) first)
+            [ compileInContext (Expression { caller = "<>" }) second
+            , compileInContext (Expression { caller = "<>" }) first
             , [ Eval2 { name = "<>", f = P.notequalp } ]
             ]
                 |> List.concat
 
         GreaterThan first second ->
-            [ (compileInContext (Expression { caller = ">" }) second)
-            , (compileInContext (Expression { caller = ">" }) first)
+            [ compileInContext (Expression { caller = ">" }) second
+            , compileInContext (Expression { caller = ">" }) first
             , [ Eval2 { name = ">", f = P.greaterp } ]
             ]
                 |> List.concat
@@ -451,28 +451,28 @@ compile context node =
         Command0 c ->
             [ Vm.Vm.Command0 c ]
 
-        Command1 c node ->
-            [ (compileInContext (Expression { caller = c.name }) node)
+        Command1 c node_ ->
+            [ compileInContext (Expression { caller = c.name }) node_
             , [ Vm.Vm.Command1 c ]
             ]
                 |> List.concat
 
         Command2 c first second ->
-            [ (compileInContext (Expression { caller = c.name }) second)
-            , (compileInContext (Expression { caller = c.name }) first)
+            [ compileInContext (Expression { caller = c.name }) second
+            , compileInContext (Expression { caller = c.name }) first
             , [ Vm.Vm.Command2 c ]
             ]
                 |> List.concat
 
-        Primitive1 p node ->
-            [ (compileInContext (Expression { caller = p.name }) node)
+        Primitive1 p node_ ->
+            [ compileInContext (Expression { caller = p.name }) node_
             , [ Eval1 p ]
             ]
                 |> List.concat
 
         Primitive2 p first second ->
-            [ (compileInContext (Expression { caller = p.name }) second)
-            , (compileInContext (Expression { caller = p.name }) first)
+            [ compileInContext (Expression { caller = p.name }) second
+            , compileInContext (Expression { caller = p.name }) first
             , [ Eval2 p ]
             ]
                 |> List.concat
@@ -480,8 +480,8 @@ compile context node =
         Introspect0 i ->
             [ Vm.Vm.Introspect0 i ]
 
-        Introspect1 i node ->
-            [ compileInContext (Expression { caller = i.name }) node
+        Introspect1 i node_ ->
+            [ compileInContext (Expression { caller = i.name }) node_
             , [ Vm.Vm.Introspect1 i ]
             ]
                 |> List.concat
@@ -491,14 +491,14 @@ compile context node =
                 mangledName =
                     mangleName name (List.length arguments)
             in
-                [ List.reverse arguments
-                    |> List.concatMap (compileInContext (Expression { caller = name }))
-                , [ Vm.Vm.CallByName mangledName ]
-                ]
-                    |> List.concat
+            [ List.reverse arguments
+                |> List.concatMap (compileInContext (Expression { caller = name }))
+            , [ Vm.Vm.CallByName mangledName ]
+            ]
+                |> List.concat
 
-        Return (Just node) ->
-            [ (compileInContext (Expression { caller = "output" })) node
+        Return (Just node_) ->
+            [ compileInContext (Expression { caller = "output" }) node_
             , [ PopLocalScope
               , Vm.Vm.Return
               ]
@@ -511,8 +511,8 @@ compile context node =
             , Vm.Vm.Return
             ]
 
-        Make name node ->
-            [ compileInContext (Expression { caller = "make" }) node
+        Make name node_ ->
+            [ compileInContext (Expression { caller = "make" }) node_
             , [ StoreVariable name ]
             ]
                 |> List.concat
@@ -579,10 +579,10 @@ compileProgram { functions, body } =
                 (List.concatMap .body compiledFunctions)
                 (List.concatMap (compileInContext Statement) body)
     in
-        { instructions = instructions
-        , functionTable = functionTable
-        , startAddress = startAddress
-        }
+    { instructions = instructions
+    , functionTable = functionTable
+    , startAddress = startAddress
+    }
 
 
 compileRequiredArgument : String -> List Instruction
@@ -649,29 +649,28 @@ compileFunction { name, requiredArguments, optionalArguments, body } =
         compileBody i =
             let
                 instructions =
-                    (List.take i instructionsRequired)
-                        ++ (List.drop i instructionsOptional)
+                    List.take i instructionsRequired
+                        ++ List.drop i instructionsOptional
                         |> List.concat
             in
-                [ instructionsForRequiredArguments
-                , instructions
-                , instructionsForBody
-                ]
-                    |> List.concat
+            [ instructionsForRequiredArguments
+            , instructions
+            , instructionsForBody
+            ]
+                |> List.concat
     in
-        {- Compile the function for each number of arguments. If, e. g., a
-           function takes 1 required and 2 optional arguments, the list
-           returned by this function will contain a function for each of the
-           following cases:
+    {- Compile the function for each number of arguments. If, e. g., a
+       function takes 1 required and 2 optional arguments, the list returned by
+       this function will contain a function for each of the following cases:
 
-             - 1 required argument, 2 optional arguments,
-             - 2 required arguments, 1 optional argument,
-             - 3 required arguments.
-        -}
-        List.map
-            (\i ->
-                { name = mangleName name (numberOfRequiredArguments + i)
-                , body = compileBody i
-                }
-            )
-            (List.range 0 numberOfOptionalArguments |> List.reverse)
+         - 1 required argument, 2 optional arguments,
+         - 2 required arguments, 1 optional argument,
+         - 3 required arguments.
+    -}
+    List.map
+        (\i ->
+            { name = mangleName name (numberOfRequiredArguments + i)
+            , body = compileBody i
+            }
+        )
+        (List.range 0 numberOfOptionalArguments |> List.reverse)

@@ -1,25 +1,24 @@
-module Vm.Primitive
-    exposing
-        ( Primitive1
-        , Primitive2
-        , first
-        , butfirst
-        , count
-        , lessp
-        , greaterp
-        , emptyp
-        , equalp
-        , notequalp
-        , remainder
-        , sum
-        , difference
-        , product
-        , quotient
-        , minus
-        , sentence
-        , integerp
-        , boolp
-        )
+module Vm.Primitive exposing
+    ( Primitive1
+    , Primitive2
+    , boolp
+    , butfirst
+    , count
+    , difference
+    , emptyp
+    , equalp
+    , first
+    , greaterp
+    , integerp
+    , lessp
+    , minus
+    , notequalp
+    , product
+    , quotient
+    , remainder
+    , sentence
+    , sum
+    )
 
 {-| This module contains types and functions related to Logo’s builtin
 functions.
@@ -56,6 +55,7 @@ type alias Primitive2 =
 {-| Get the first element of a `Value`.
 
     first (Word "word") == Ok (Word "w")
+
     first (List [ Word "word" ]) == Ok (Word "word")
 
 Return `Err ...` for empty inputs.
@@ -71,13 +71,13 @@ first value =
             Ok <| Type.Word <| String.left 1 str
 
         Type.Int int ->
-            Ok <| Type.Word <| String.left 1 <| toString int
+            Ok <| Type.Word <| String.left 1 <| String.fromInt int
 
         Type.Float float ->
-            Ok <| Type.Word <| String.left 1 <| toString float
+            Ok <| Type.Word <| String.left 1 <| String.fromFloat float
 
-        Type.List (first :: rest) ->
-            Ok first
+        Type.List (first_ :: _) ->
+            Ok first_
 
         Type.List [] ->
             Err <| WrongInput "first" (Type.toString value)
@@ -86,6 +86,7 @@ first value =
 {-| Get all but the first element of a `Value`.
 
     butfirst (Word "word") == Ok (Word "ord")
+
     butfirst (List [ Word "word" ]) == Ok (List [])
 
 Return `Err ...` for empty inputs.
@@ -101,12 +102,12 @@ butfirst value =
             Ok <| Type.Word <| String.dropLeft 1 str
 
         Type.Int int ->
-            Ok <| Type.Word <| String.dropLeft 1 <| toString int
+            Ok <| Type.Word <| String.dropLeft 1 <| String.fromInt int
 
         Type.Float float ->
-            Ok <| Type.Word <| String.dropLeft 1 <| toString float
+            Ok <| Type.Word <| String.dropLeft 1 <| String.fromFloat float
 
-        Type.List (first :: rest) ->
+        Type.List (_ :: rest) ->
             Ok <| Type.List rest
 
         Type.List [] ->
@@ -117,6 +118,7 @@ butfirst value =
 `List`.
 
     count (Word "word") == Ok (Word "4")
+
     count (List [ Word "word" ]) == Ok (Word "1")
 
 -}
@@ -129,15 +131,15 @@ count value =
                     String.length word
 
                 Type.Int int ->
-                    int |> toString |> String.length
+                    int |> String.fromInt |> String.length
 
                 Type.Float float ->
-                    float |> toString |> String.length
+                    float |> String.fromFloat |> String.length
 
                 Type.List list ->
                     List.length list
     in
-        length |> toString |> Type.Word |> Ok
+    length |> String.fromInt |> Type.Word |> Ok
 
 
 {-| Convert two values to numbers and compare whether the first one is less
@@ -156,6 +158,7 @@ lessp value1 value2 =
                 Ok int2 ->
                     if int1 < int2 then
                         Ok (Type.Word "true")
+
                     else
                         Ok (Type.Word "false")
 
@@ -181,6 +184,7 @@ greaterp value1 value2 =
         ( Ok float1, Ok float2 ) ->
             if float1 > float2 then
                 Ok (Type.Word "true")
+
             else
                 Ok (Type.Word "false")
 
@@ -195,6 +199,7 @@ greaterp value1 value2 =
 `List` are considered empty.
 
     emptyp (Word "") == Ok (Word "true")
+
     emptyp (Word "word") == Ok (Word "false")
 
 -}
@@ -218,54 +223,58 @@ equalp_ value1 value2 =
     let
         compareLists list1 list2 =
             if List.length list1 == List.length list2 then
-                List.map2 (,) list1 list2
+                List.map2 (\a b -> ( a, b )) list1 list2
                     |> List.all (\( a, b ) -> equalp_ a b)
+
             else
                 False
     in
-        case ( value1, value2 ) of
-            ( Type.Int int1, Type.Int int2 ) ->
-                int1 == int2
+    case ( value1, value2 ) of
+        ( Type.Int int1, Type.Int int2 ) ->
+            int1 == int2
 
-            ( Type.Int int, Type.Float float ) ->
-                toFloat int == float
+        ( Type.Int int, Type.Float float ) ->
+            toFloat int == float
 
-            ( Type.Float float, Type.Int int ) ->
-                toFloat int == float
+        ( Type.Float float, Type.Int int ) ->
+            toFloat int == float
 
-            ( Type.Float float1, Type.Float float2 ) ->
-                float1 == float2
+        ( Type.Float float1, Type.Float float2 ) ->
+            float1 == float2
 
-            ( Type.List list1, Type.List list2 ) ->
-                compareLists list1 list2
+        ( Type.List list1, Type.List list2 ) ->
+            compareLists list1 list2
 
-            ( Type.List list1, _ ) ->
-                False
+        ( Type.List list1, _ ) ->
+            False
 
-            ( _, Type.List list2 ) ->
-                False
+        ( _, Type.List list2 ) ->
+            False
 
-            ( Type.Word word1, Type.Word word2 ) ->
-                word1 == word2
+        ( Type.Word word1, Type.Word word2 ) ->
+            word1 == word2
 
-            ( Type.Word word, Type.Int int ) ->
-                word == toString int
+        ( Type.Word word, Type.Int int ) ->
+            word == String.fromInt int
 
-            ( Type.Int int, Type.Word word ) ->
-                word == toString int
+        ( Type.Int int, Type.Word word ) ->
+            word == String.fromInt int
 
-            ( Type.Float float, Type.Word word ) ->
-                word == toString float
+        ( Type.Float float, Type.Word word ) ->
+            word == String.fromFloat float
 
-            ( Type.Word word, Type.Float float ) ->
-                word == toString float
+        ( Type.Word word, Type.Float float ) ->
+            word == String.fromFloat float
 
 
 {-| Check whether two `Value`s are equal.
 
     equalp (Int 10) (Int 10) == Ok (Word "true")
+
     equalp (Float 10.0) (Int 10) == Ok (Word "true")
+
     equalp (Word "10") (Int 10) == Ok (Word "true")
+
     equalp (List []) (List []) == Ok (Word "true")
 
 -}
@@ -277,6 +286,7 @@ equalp value1 value2 =
 {-| Check whether two `Value`s are not equal.
 
     notequalp (Int 10) (Int 11) == Ok (Word "true")
+
     notequalp (Word "10") (Int 10) == Ok (Word "false")
 
 -}
@@ -288,6 +298,7 @@ notequalp value1 value2 =
 {-| Calculate the remainder when dividing `value1` by `value2`.
 
     remainder (Int 20) (Int 3) == Ok (Int 2)
+
     remainder (Int 20) (Int 4) == Ok (Int 0)
 
 -}
@@ -302,17 +313,18 @@ remainder value1 value2 =
             Type.toInt value2
                 |> Result.mapError (\_ -> WrongInput "remainder" (Type.toString value2))
     in
-        case ( result1, result2 ) of
-            ( Ok _, Ok 0 ) ->
-                Err <| WrongInput "remainder" (Type.toString value2)
+    case ( result1, result2 ) of
+        ( Ok _, Ok 0 ) ->
+            Err <| WrongInput "remainder" (Type.toString value2)
 
-            _ ->
-                Result.map2 (\int1 int2 -> Type.Int <| rem int1 int2) result1 result2
+        _ ->
+            Result.map2 (\int1 int2 -> Type.Int <| remainderBy int2 int1) result1 result2
 
 
 {-| Calculate the sum of `value1` and `value2`.
 
     sum (Int 20) (Int 3) == Ok (Int 23)
+
     sum (Word "20") (Int 4) == Ok (Float 24)
 
 -}
@@ -337,6 +349,7 @@ sum value1 value2 =
 {-| Calculate the difference of `value1` and `value2`.
 
     difference (Int 20) (Int 3) == Ok (Int 17)
+
     difference (Word "20") (Int 4) == Ok (Float 16)
 
 -}
@@ -361,6 +374,7 @@ difference value1 value2 =
 {-| Calculate the product of `value1` and `value2`.
 
     product (Int 20) (Int 3) == Ok (Int 60)
+
     product (Word "20") (Int 4) == Ok (Float 80)
 
 -}
@@ -397,18 +411,20 @@ quotient value1 value2 =
             Err <| WrongInput "quotient" "0"
 
         ( Type.Int int1, Type.Int int2 ) ->
-            if rem int1 int2 == 0 then
+            if remainderBy int2 int1 == 0 then
                 Ok <| Type.Int (int1 // int2)
+
             else
-                Ok <| Type.Float <| (toFloat int1) / (toFloat int2)
+                Ok <| Type.Float <| toFloat int1 / toFloat int2
 
         _ ->
             case ( Type.toFloat value1, Type.toFloat value2 ) of
-                ( Ok _, Ok 0 ) ->
-                    Err <| WrongInput "quotient" "0"
-
                 ( Ok float1, Ok float2 ) ->
-                    Ok <| Type.Float <| float1 / float2
+                    if float2 == 0.0 then
+                        Err <| WrongInput "quotient" "0"
+
+                    else
+                        Ok <| Type.Float <| float1 / float2
 
                 ( Err _, _ ) ->
                     Err <| WrongInput "quotient" (Type.toString value1)
@@ -420,6 +436,7 @@ quotient value1 value2 =
 {-| Negate `value`.
 
     negate (Int 10) == Ok (Float -10)
+
     negate (Word "10") == Ok (Float -10)
 
 -}
@@ -454,13 +471,15 @@ sentence value1 value2 =
         list2 =
             toList value2
     in
-        Ok <| Type.List <| List.append list1 list2
+    Ok <| Type.List <| List.append list1 list2
 
 
 {-| Check whether a given `Value` is an integer.
 
     integerp (Word "a") == Ok (Word "false")
+
     integerp (Int 10) == Ok (Word "true")
+
     integerp (Word "10") == Ok (Word "true")
 
 -}
@@ -472,10 +491,10 @@ integerp value =
 
         Type.Word word ->
             case String.toInt word of
-                Ok _ ->
+                Just _ ->
                     Ok Type.true
 
-                Err _ ->
+                Nothing ->
                     Ok Type.false
 
         _ ->
@@ -485,8 +504,11 @@ integerp value =
 {-| Check whether a given `Value` is a boolean.
 
     boolp (Word "false") == Ok (Word "true")
+
     boolp (Word "TRUE") == Ok (Word "true")
+
     boolp (Word "a") == Ok (Word "false")
+
     boolp (Int 10) == Ok (Word "false")
 
 -}
@@ -496,6 +518,7 @@ boolp value =
         Type.Word word ->
             if String.toLower word == "true" || String.toLower word == "false" then
                 Ok Type.true
+
             else
                 Ok Type.false
 

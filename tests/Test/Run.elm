@@ -2,10 +2,11 @@ module Test.Run exposing (..)
 
 import Array
 import Compiler.Parser as Parser
+import Compiler.Parser.Problem as Problem
 import Environment.History exposing (Entry(..))
 import Expect exposing (Expectation)
 import Logo exposing (Logo)
-import Parser
+import Parser.Advanced as Parser
 import Test exposing (Test, describe, test)
 
 
@@ -21,38 +22,35 @@ printsLines program lines =
                 _ ->
                     False
     in
-        test program <|
-            \_ ->
-                let
-                    logo =
-                        Logo.run program Logo.empty
+    test program <|
+        \_ ->
+            let
+                logo =
+                    Logo.run program Logo.empty
 
-                    history =
-                        Logo.getHistory logo
+                history =
+                    Logo.getHistory logo
 
-                    last =
-                        List.head history
-                in
-                    case last of
-                        Just (Error message) ->
-                            Expect.fail message
+                last =
+                    List.head history
+            in
+            case last of
+                Just (Error message) ->
+                    Expect.fail message
 
-                        _ ->
-                            Expect.equal
-                                (lines |> List.map Output |> List.reverse)
-                                (List.filter isOutput history)
+                _ ->
+                    Expect.equal
+                        (lines |> List.map Output |> List.reverse)
+                        (List.filter isOutput history)
 
 
 failsParsing : String -> String -> Test
 failsParsing program message =
     let
-        result =
-            Parser.run Parser.root program
-
         match result =
             case result of
-                Err error ->
-                    Expect.equal error.problem (Parser.Fail message)
+                Err (first :: _) ->
+                    Expect.equal (Problem.toString first.problem) message
 
                 _ ->
                     Expect.fail <|
@@ -60,8 +58,8 @@ failsParsing program message =
                             ++ message
                             ++ "`, but parsed program successfully"
     in
-        test program <|
-            \_ -> match result
+    test program <|
+        \_ -> match (Parser.run Parser.root program)
 
 
 statements : Test

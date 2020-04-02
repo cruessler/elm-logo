@@ -1,10 +1,9 @@
-module Vm.Command
-    exposing
-        ( Command0
-        , Command1
-        , Command2
-        , print
-        )
+module Vm.Command exposing
+    ( Command0
+    , Command1
+    , Command2
+    , print
+    )
 
 {-| This module contains types and functions related to Logo’s builtin
 commands. A command can take arguments and returns no value.

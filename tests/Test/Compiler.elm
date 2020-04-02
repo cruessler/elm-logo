@@ -23,32 +23,32 @@ compileFunction =
                     compiledFunctions =
                         Ast.compileFunction function
                 in
-                    Expect.equal
-                        [ { name = "foo2"
-                          , body =
-                                [ PushLocalScope
-                                , LocalVariable "bar"
-                                , StoreVariable "bar"
-                                , LocalVariable "baz"
-                                , StoreVariable "baz"
-                                , PushVoid
-                                , PopLocalScope
-                                , Vm.Return
-                                ]
-                          }
-                        , { name = "foo1"
-                          , body =
-                                [ PushLocalScope
-                                , LocalVariable "bar"
-                                , StoreVariable "bar"
-                                , LocalVariable "baz"
-                                , PushValue (Type.Word "baz")
-                                , StoreVariable "baz"
-                                , PushVoid
-                                , PopLocalScope
-                                , Vm.Return
-                                ]
-                          }
-                        ]
-                        compiledFunctions
+                Expect.equal
+                    [ { name = "foo2"
+                      , body =
+                            [ PushLocalScope
+                            , LocalVariable "bar"
+                            , StoreVariable "bar"
+                            , LocalVariable "baz"
+                            , StoreVariable "baz"
+                            , PushVoid
+                            , PopLocalScope
+                            , Vm.Return
+                            ]
+                      }
+                    , { name = "foo1"
+                      , body =
+                            [ PushLocalScope
+                            , LocalVariable "bar"
+                            , StoreVariable "bar"
+                            , LocalVariable "baz"
+                            , PushValue (Type.Word "baz")
+                            , StoreVariable "baz"
+                            , PushVoid
+                            , PopLocalScope
+                            , Vm.Return
+                            ]
+                      }
+                    ]
+                    compiledFunctions
         ]

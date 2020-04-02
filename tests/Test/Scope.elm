@@ -5,8 +5,8 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Test exposing (..)
 import Vm.Scope as Scope
     exposing
-        ( Scope
-        , Binding(..)
+        ( Binding(..)
+        , Scope
         )
 import Vm.Type as Type
 
@@ -22,9 +22,9 @@ scopes =
                             Scope.empty
                                 |> Scope.make "x" (Type.Word "word")
                     in
-                        scope
-                            |> Scope.thing "x"
-                            |> Expect.equal (Just <| Defined <| Type.Word "word")
+                    scope
+                        |> Scope.thing "x"
+                        |> Expect.equal (Just <| Defined <| Type.Word "word")
             ]
         , describe "local"
             [ test "sets variable in local scope" <|
@@ -35,9 +35,9 @@ scopes =
                                 |> Scope.pushLocalScope 0
                                 |> Scope.local "x"
                     in
-                        scope
-                            |> Scope.thing "x"
-                            |> Expect.equal (Just Undefined)
+                    scope
+                        |> Scope.thing "x"
+                        |> Expect.equal (Just Undefined)
             ]
         , describe "popLocalScope"
             [ test "does not pop root scope" <|
@@ -46,17 +46,17 @@ scopes =
                         scope =
                             Scope.empty
                     in
-                        Expect.err (Scope.popLocalScope scope)
+                    Expect.err (Scope.popLocalScope scope)
             , test "pops until local scope is popped" <|
                 \_ ->
                     let
                         scope =
                             Scope.empty
                     in
-                        scope
-                            |> Scope.pushLocalScope 0
-                            |> Scope.pushLoopScope 10
-                            |> Scope.popLocalScope
-                            |> Expect.equal (Ok ( 0, scope ))
+                    scope
+                        |> Scope.pushLocalScope 0
+                        |> Scope.pushLoopScope 10
+                        |> Scope.popLocalScope
+                        |> Expect.equal (Ok ( 0, scope ))
             ]
         ]

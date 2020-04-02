@@ -1,15 +1,14 @@
-module Vm.Type
-    exposing
-        ( Error
-        , Value(..)
-        , fromBool
-        , toString
-        , toInt
-        , toFloat
-        , true
-        , false
-        , fromFloat
-        )
+module Vm.Type exposing
+    ( Error
+    , Value(..)
+    , false
+    , fromBool
+    , fromFloat
+    , toFloat
+    , toInt
+    , toString
+    , true
+    )
 
 {-| This module contains types and functions related to Logo types.
 -}
@@ -59,25 +58,25 @@ toString value =
                                 |> List.map inList
                                 |> String.join " "
                     in
-                        "[" ++ string ++ "]"
+                    "[" ++ string ++ "]"
 
                 _ ->
                     toString v
     in
-        case value of
-            Word word ->
-                word
+    case value of
+        Word word ->
+            word
 
-            Int int ->
-                Basics.toString int
+        Int int ->
+            String.fromInt int
 
-            Float float ->
-                Basics.toString float
+        Float float ->
+            String.fromFloat float
 
-            List list ->
-                list
-                    |> List.map inList
-                    |> String.join " "
+        List list ->
+            list
+                |> List.map inList
+                |> String.join " "
 
 
 {-| Parse `Value` as an integer.
@@ -86,7 +85,7 @@ toInt : Value -> Result Error Int
 toInt value =
     case value of
         Word word ->
-            String.toInt word |> Result.mapError (always NoInt word)
+            String.toInt word |> Result.fromMaybe (NoInt word)
 
         Int int ->
             Ok int
@@ -101,7 +100,7 @@ toFloat : Value -> Result Error Float
 toFloat value =
     case value of
         Word word ->
-            String.toFloat word |> Result.mapError (always NoFloat word)
+            String.toFloat word |> Result.fromMaybe (NoFloat word)
 
         Int int ->
             Ok (Basics.toFloat int)
@@ -156,5 +155,6 @@ fromBool : Bool -> Value
 fromBool bool =
     if bool then
         true
+
     else
         false

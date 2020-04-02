@@ -38,11 +38,11 @@ vm.programCounter 1`). This way, test can be written with a higher granularity.
 runAndUnwrap : Vm -> Vm
 runAndUnwrap vm =
     case run vm of
-        Done vm ->
-            vm
+        Done vm_ ->
+            vm_
 
-        Paused vm ->
-            vm
+        Paused vm_ ->
+            vm_
 
 
 vmWithTwoInstructions : Test
@@ -58,14 +58,14 @@ vmWithTwoInstructions =
             }
                 |> runAndUnwrap
     in
-        describe "with two instructions" <|
-            [ test "program counter gets incremented" <|
-                \_ ->
-                    Expect.equal vm.programCounter 2
-            , test "stack gets changed" <|
-                \_ ->
-                    Expect.equal vm.stack [ Stack.Value <| Type.Word "w" ]
-            ]
+    describe "with two instructions" <|
+        [ test "program counter gets incremented" <|
+            \_ ->
+                Expect.equal vm.programCounter 2
+        , test "stack gets changed" <|
+            \_ ->
+                Expect.equal vm.stack [ Stack.Value <| Type.Word "w" ]
+        ]
 
 
 vmWithVariables : Test
@@ -82,9 +82,9 @@ vmWithVariables =
             }
                 |> runAndUnwrap
     in
-        test "setting and getting a variable" <|
-            \_ ->
-                Expect.equal vm.stack [ Stack.Value <| Type.Word "word" ]
+    test "setting and getting a variable" <|
+        \_ ->
+            Expect.equal vm.stack [ Stack.Value <| Type.Word "word" ]
 
 
 vmWithIntrospection : Test
@@ -98,9 +98,9 @@ vmWithIntrospection =
             }
                 |> runAndUnwrap
     in
-        test "calling repcount outside a loop" <|
-            \_ ->
-                Expect.equal vm.stack [ Stack.Value <| Type.Word "-1" ]
+    test "calling repcount outside a loop" <|
+        \_ ->
+            Expect.equal vm.stack [ Stack.Value <| Type.Word "-1" ]
 
 
 vmWithConditionalPrint : Test
@@ -121,17 +121,17 @@ vmWithConditionalPrint =
             }
                 |> runAndUnwrap
     in
-        describe "with conditional print" <|
-            [ test "program counter gets incremented" <|
-                \_ ->
-                    Expect.equal vm.programCounter 7
-            , test "stack is empty" <|
-                \_ ->
-                    Expect.equal vm.stack []
-            , test "environment contains printed line" <|
-                \_ ->
-                    Expect.equal vm.environment.history <| [ Output "first" ]
-            ]
+    describe "with conditional print" <|
+        [ test "program counter gets incremented" <|
+            \_ ->
+                Expect.equal vm.programCounter 7
+        , test "stack is empty" <|
+            \_ ->
+                Expect.equal vm.stack []
+        , test "environment contains printed line" <|
+            \_ ->
+                Expect.equal vm.environment.history <| [ Output "first" ]
+        ]
 
 
 vmWithPrintLoop : Test
@@ -157,14 +157,14 @@ vmWithPrintLoop =
             }
                 |> runAndUnwrap
     in
-        describe "with print loop" <|
-            [ test "program counter gets incremented" <|
-                \_ -> Expect.equal vm.programCounter 12
-            , test "stack is empty" <|
-                \_ -> Expect.equal vm.stack []
-            , test "environment contains printed lines" <|
-                \_ -> Expect.equal vm.environment.history (List.repeat 10 <| Output "word")
-            ]
+    describe "with print loop" <|
+        [ test "program counter gets incremented" <|
+            \_ -> Expect.equal vm.programCounter 12
+        , test "stack is empty" <|
+            \_ -> Expect.equal vm.stack []
+        , test "environment contains printed lines" <|
+            \_ -> Expect.equal vm.environment.history (List.repeat 10 <| Output "word")
+        ]
 
 
 vmWithTemplateLoop : Test
@@ -187,12 +187,12 @@ vmWithTemplateLoop =
             }
                 |> runAndUnwrap
     in
-        describe "with print in a template loop" <|
-            [ test "environment contains printed lines" <|
-                \_ ->
-                    Expect.equal vm.environment.history
-                        (List.map Output [ "w", "o", "r", "d" ] |> List.reverse)
-            ]
+    describe "with print in a template loop" <|
+        [ test "environment contains printed lines" <|
+            \_ ->
+                Expect.equal vm.environment.history
+                    (List.map Output [ "w", "o", "r", "d" ] |> List.reverse)
+        ]
 
 
 vmWithLocalScope : Test
@@ -214,10 +214,10 @@ vmWithLocalScope =
             }
                 |> runAndUnwrap
     in
-        describe "with print in a local scope" <|
-            [ test "environment contains printed lines" <|
-                \_ -> Expect.equal vm.environment.history [ Output "value" ]
-            ]
+    describe "with print in a local scope" <|
+        [ test "environment contains printed lines" <|
+            \_ -> Expect.equal vm.environment.history [ Output "value" ]
+        ]
 
 
 vmWithSampleProgram : Test
@@ -319,45 +319,45 @@ vmWithSampleProgram =
             }
                 |> runAndUnwrap
     in
-        describe "with print and recursive function calls" <|
-            [ test "program counter is beyond the last instruction" <|
-                \_ ->
-                    Expect.equal vm.programCounter 31
-            , test "environment contains printed lines" <|
-                \_ ->
-                    Expect.equal vm.environment.history
-                        (List.map Output
-                            [ "small vanilla cone"
-                            , "small vanilla cup"
-                            , "small ultra chocolate cone"
-                            , "small ultra chocolate cup"
-                            , "small lychee cone"
-                            , "small lychee cup"
-                            , "small rum raisin cone"
-                            , "small rum raisin cup"
-                            , "small ginger cone"
-                            , "small ginger cup"
-                            , "medium vanilla cone"
-                            , "medium vanilla cup"
-                            , "medium ultra chocolate cone"
-                            , "medium ultra chocolate cup"
-                            , "medium lychee cone"
-                            , "medium lychee cup"
-                            , "medium rum raisin cone"
-                            , "medium rum raisin cup"
-                            , "medium ginger cone"
-                            , "medium ginger cup"
-                            , "large vanilla cone"
-                            , "large vanilla cup"
-                            , "large ultra chocolate cone"
-                            , "large ultra chocolate cup"
-                            , "large lychee cone"
-                            , "large lychee cup"
-                            , "large rum raisin cone"
-                            , "large rum raisin cup"
-                            , "large ginger cone"
-                            , "large ginger cup"
-                            ]
-                            |> List.reverse
-                        )
-            ]
+    describe "with print and recursive function calls" <|
+        [ test "program counter is beyond the last instruction" <|
+            \_ ->
+                Expect.equal vm.programCounter 31
+        , test "environment contains printed lines" <|
+            \_ ->
+                Expect.equal vm.environment.history
+                    (List.map Output
+                        [ "small vanilla cone"
+                        , "small vanilla cup"
+                        , "small ultra chocolate cone"
+                        , "small ultra chocolate cup"
+                        , "small lychee cone"
+                        , "small lychee cup"
+                        , "small rum raisin cone"
+                        , "small rum raisin cup"
+                        , "small ginger cone"
+                        , "small ginger cup"
+                        , "medium vanilla cone"
+                        , "medium vanilla cup"
+                        , "medium ultra chocolate cone"
+                        , "medium ultra chocolate cup"
+                        , "medium lychee cone"
+                        , "medium lychee cup"
+                        , "medium rum raisin cone"
+                        , "medium rum raisin cup"
+                        , "medium ginger cone"
+                        , "medium ginger cup"
+                        , "large vanilla cone"
+                        , "large vanilla cup"
+                        , "large ultra chocolate cone"
+                        , "large ultra chocolate cup"
+                        , "large lychee cone"
+                        , "large lychee cup"
+                        , "large rum raisin cone"
+                        , "large rum raisin cup"
+                        , "large ginger cone"
+                        , "large ginger cup"
+                        ]
+                        |> List.reverse
+                    )
+        ]

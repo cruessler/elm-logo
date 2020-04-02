@@ -1,41 +1,40 @@
-module Compiler.Parser.Value
-    exposing
-        ( value
-        , wordOutsideList
-        )
+module Compiler.Parser.Value exposing
+    ( value
+    , wordOutsideList
+    )
 
 {-| This module provides functions for parsing Logo values.
 -}
 
 import Compiler.Ast as Ast
+import Compiler.Parser.Context exposing (Context(..))
 import Compiler.Parser.Helper as Helper
-import Parser
+import Compiler.Parser.Problem exposing (Problem(..))
+import Parser.Advanced as P
     exposing
-        ( Parser
-        , Count(..)
-        , (|.)
+        ( (|.)
         , (|=)
-        , inContext
+        , Parser
+        , chompIf
+        , chompWhile
+        , getChompedString
         , lazy
+        , map
         , oneOf
         , succeed
-        , zeroOrMore
-        , oneOrMore
-        , keep
-        , ignore
         , symbol
         )
 import Vm.Type as Type
 
 
-value : Parser Ast.Node
+value : Parser Context Problem Ast.Node
 value =
-    Parser.map Ast.Value valueOutsideList
+    P.map Ast.Value valueOutsideList
 
 
-valueOutsideList : Parser Type.Value
+valueOutsideList : Parser Context Problem Type.Value
 valueOutsideList =
-    inContext "valueOutsideList" <|
+    P.inContext ValueOutsideList <|
         oneOf
             [ lazy (\_ -> list)
             , number
@@ -43,48 +42,54 @@ valueOutsideList =
             ]
 
 
-number : Parser Type.Value
+number : Parser context Problem Type.Value
 number =
-    Parser.float
-        |> Parser.sourceMap
-            (\source float ->
-                case String.toInt source of
-                    Ok int ->
-                        Type.Int int
+    P.number
+        { int = Ok Type.Int
+        , float = Ok (Type.Word << String.fromFloat)
+        , hex = Err InvalidNumber
+        , octal = Err InvalidNumber
+        , binary = Err InvalidNumber
+        , invalid = InvalidNumber
+        , expecting = ExpectingNumber
+        }
 
-                    _ ->
-                        Type.Word <| toString float
-            )
 
-
-wordOutsideList : Parser Type.Value
+wordOutsideList : Parser context Problem Type.Value
 wordOutsideList =
+    let
+        word : Parser context Problem String
+        word =
+            succeed ()
+                |. chompWhile
+                    (\c ->
+                        (c /= ' ')
+                            && (c /= '[')
+                            && (c /= ']')
+                            && (c /= '(')
+                            && (c /= ')')
+                            && (c /= '\n')
+                    )
+                |> getChompedString
+    in
     succeed Type.Word
-        |. symbol "\""
-        |= keep zeroOrMore
-            (\c ->
-                (c /= ' ')
-                    && (c /= '[')
-                    && (c /= ']')
-                    && (c /= '(')
-                    && (c /= ')')
-                    && (c /= '\n')
-            )
+        |. Helper.symbol "\""
+        |= word
 
 
-list : Parser Type.Value
+list : Parser Context Problem Type.Value
 list =
     succeed Type.List
-        |. symbol "["
+        |. Helper.symbol "["
         |. Helper.maybeSpaces
         |= Helper.list { item = valueInList, separator = Helper.spaces }
         |. Helper.maybeSpaces
-        |. symbol "]"
+        |. Helper.symbol "]"
 
 
-valueInList : Parser Type.Value
+valueInList : Parser Context Problem Type.Value
 valueInList =
-    inContext "valueInList" <|
+    P.inContext ValueInList <|
         oneOf
             [ lazy (\_ -> list)
             , number
@@ -92,22 +97,29 @@ valueInList =
             ]
 
 
-wordInList : Parser Type.Value
+wordInList : Parser context Problem Type.Value
 wordInList =
-    succeed Type.Word
-        |= keep oneOrMore
-            (\c ->
-                (c /= ' ')
-                    && (c /= '[')
-                    && (c /= ']')
-                    && (c /= '(')
-                    && (c /= ')')
-                    && (c /= '\n')
-                    && (c /= '+')
-                    && (c /= '-')
-                    && (c /= '*')
-                    && (c /= '/')
-                    && (c /= '=')
-                    && (c /= '<')
-                    && (c /= '>')
-            )
+    let
+        isWordCharacter : Char -> Bool
+        isWordCharacter c =
+            (c /= ' ')
+                && (c /= '[')
+                && (c /= ']')
+                && (c /= '(')
+                && (c /= ')')
+                && (c /= '\n')
+                && (c /= '+')
+                && (c /= '-')
+                && (c /= '*')
+                && (c /= '/')
+                && (c /= '=')
+                && (c /= '<')
+                && (c /= '>')
+    in
+    ((succeed ()
+        |. chompIf isWordCharacter ExpectingStartOfWord
+        |. chompWhile isWordCharacter
+     )
+        |> getChompedString
+    )
+        |> map Type.Word

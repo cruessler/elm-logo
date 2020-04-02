@@ -1,10 +1,10 @@
-module Compiler.Ast.Primitive
-    exposing
-        ( Primitive(..)
-        , all
-        , find
-        , arguments
-        )
+module Compiler.Ast.Primitive exposing
+    ( Primitive(..)
+    , all
+    , arguments
+    , find
+    , name
+    )
 
 import Vm.Primitive as P
 import Vm.Vm exposing (Vm)
@@ -42,18 +42,18 @@ find name_ =
 
 
 name : Primitive -> String
-name command =
-    case command of
-        Primitive1 { name } ->
-            name
+name primitive =
+    case primitive of
+        Primitive1 primitive1 ->
+            primitive1.name
 
-        Primitive2 { name } ->
-            name
+        Primitive2 primitive2 ->
+            primitive2.name
 
 
 arguments : Primitive -> Int
-arguments command =
-    case command of
+arguments primitive =
+    case primitive of
         Primitive1 _ ->
             1
 

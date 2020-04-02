@@ -18,26 +18,27 @@ primitives =
                         result =
                             string |> T.Word |> P.first
                     in
-                        if String.length string > 0 then
-                            result
-                                |> Expect.equal (Ok <| T.Word <| String.left 1 string)
-                        else
-                            result
-                                |> Expect.err
+                    if String.length string > 0 then
+                        result
+                            |> Expect.equal (Ok <| T.Word <| String.left 1 string)
+
+                    else
+                        result
+                            |> Expect.err
             , fuzz (list string) "works with a list of strings" <|
                 \list ->
                     let
                         result =
                             list |> List.map T.Word |> T.List |> P.first
                     in
-                        case list of
-                            first :: rest ->
-                                result
-                                    |> Expect.equal (Ok <| T.Word <| first)
+                    case list of
+                        first :: rest ->
+                            result
+                                |> Expect.equal (Ok <| T.Word <| first)
 
-                            _ ->
-                                result
-                                    |> Expect.err
+                        _ ->
+                            result
+                                |> Expect.err
             ]
         , describe "butfirst"
             [ fuzz string "works with a string" <|
@@ -46,26 +47,27 @@ primitives =
                         result =
                             string |> T.Word |> P.butfirst
                     in
-                        if String.length string == 0 then
-                            result
-                                |> Expect.err
-                        else
-                            result
-                                |> Expect.equal (Ok <| T.Word <| String.dropLeft 1 string)
+                    if String.length string == 0 then
+                        result
+                            |> Expect.err
+
+                    else
+                        result
+                            |> Expect.equal (Ok <| T.Word <| String.dropLeft 1 string)
             , fuzz (list string) "works with a list of strings" <|
                 \list ->
                     let
                         result =
                             list |> List.map T.Word |> T.List |> P.butfirst
                     in
-                        case list of
-                            first :: rest ->
-                                result
-                                    |> Expect.equal (Ok <| T.List <| List.map T.Word <| rest)
+                    case list of
+                        first :: rest ->
+                            result
+                                |> Expect.equal (Ok <| T.List <| List.map T.Word <| rest)
 
-                            _ ->
-                                result
-                                    |> Expect.err
+                        _ ->
+                            result
+                                |> Expect.err
             ]
         , describe "count"
             [ fuzz string "works with a string" <|
@@ -74,7 +76,7 @@ primitives =
                         length =
                             String.length string
                     in
-                        Expect.equal (P.count <| T.Word <| string) (Ok <| T.Word <| toString length)
+                    Expect.equal (P.count <| T.Word <| string) (Ok <| T.Word <| String.fromInt length)
             ]
         , describe "equalp"
             [ test "works with numbers" <|
@@ -85,7 +87,7 @@ primitives =
                         list =
                             T.List [ T.List [], T.Word "foo" ]
                     in
-                        Expect.equal (Ok <| T.Word "true") (P.equalp list list)
+                    Expect.equal (Ok <| T.Word "true") (P.equalp list list)
             , test "returns false" <|
                 \_ -> Expect.equal (Ok <| T.false) (P.equalp (T.Int 5) (T.Int 3))
             ]

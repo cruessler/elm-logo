@@ -38,10 +38,10 @@ primitive =
                     ast =
                         emptyp |> Ast.compile (Ast.Expression { caller = "" })
                 in
-                    Expect.equal ast
-                        [ PushValue (Type.Word "")
-                        , Eval1 { name = "emptyp", f = P.emptyp }
-                        ]
+                Expect.equal ast
+                    [ PushValue (Type.Word "")
+                    , Eval1 { name = "emptyp", f = P.emptyp }
+                    ]
         ]
 
 
@@ -55,19 +55,19 @@ repeat =
                         Ast.Repeat intLiteral [ print emptyp ]
                             |> Ast.compile Ast.Statement
                 in
-                    Expect.equal ast
-                        [ PushValue (Type.Int 10)
-                        , Duplicate
-                        , Eval1 { name = "integerp", f = P.integerp }
-                        , JumpIfTrue 2
-                        , Raise (Exception.WrongInput "repeat")
-                        , PushLoopScope
-                        , EnterLoopScope
-                        , JumpIfTrue 5
-                        , PushValue (Type.Word "")
-                        , Eval1 { name = "emptyp", f = P.emptyp }
-                        , Command1 { name = "print", f = C.print }
-                        , Jump -5
-                        , PopLoopScope
-                        ]
+                Expect.equal ast
+                    [ PushValue (Type.Int 10)
+                    , Duplicate
+                    , Eval1 { name = "integerp", f = P.integerp }
+                    , JumpIfTrue 2
+                    , Raise (Exception.WrongInput "repeat")
+                    , PushLoopScope
+                    , EnterLoopScope
+                    , JumpIfTrue 5
+                    , PushValue (Type.Word "")
+                    , Eval1 { name = "emptyp", f = P.emptyp }
+                    , Command1 { name = "print", f = C.print }
+                    , Jump -5
+                    , PopLoopScope
+                    ]
         ]

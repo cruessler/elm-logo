@@ -7,35 +7,25 @@ import Test exposing (Test, describe, test)
 
 
 printsError : String -> String -> Test
-printsError program message =
-    let
-        isOutput : Entry -> Bool
-        isOutput entry =
-            case entry of
-                Output _ ->
-                    True
+printsError program expectedMessage =
+    test program <|
+        \_ ->
+            let
+                logo =
+                    Logo.run program Logo.empty
+
+                history =
+                    Logo.getHistory logo
+
+                last =
+                    List.head history
+            in
+            case last of
+                Just (Error actualMessage) ->
+                    Expect.equal expectedMessage actualMessage
 
                 _ ->
-                    False
-    in
-        test program <|
-            \_ ->
-                let
-                    logo =
-                        Logo.run program Logo.empty
-
-                    history =
-                        Logo.getHistory logo
-
-                    last =
-                        List.head history
-                in
-                    case last of
-                        Just (Error message_) ->
-                            Expect.equal message message_
-
-                        _ ->
-                            Expect.fail (toString history)
+                    Expect.fail (Debug.toString history)
 
 
 repeatWithInvalidArguments : Test

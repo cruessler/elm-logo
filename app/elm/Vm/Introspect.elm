@@ -1,10 +1,9 @@
-module Vm.Introspect
-    exposing
-        ( Introspect0
-        , Introspect1
-        , repcount
-        , templateVariable
-        )
+module Vm.Introspect exposing
+    ( Introspect0
+    , Introspect1
+    , repcount
+    , templateVariable
+    )
 
 {-| This module provides primitives for accessing the current state of the
 virtual machine.
@@ -34,7 +33,7 @@ type alias Introspect1 a =
 
 repcount : { a | scopes : List Scope } -> Result Scope.Error Type.Value
 repcount vm =
-    Ok <| Type.Word (Scope.repcount vm.scopes |> toString)
+    Ok <| Type.Word (Scope.repcount vm.scopes |> String.fromInt)
 
 
 templateVariable : Type.Value -> { a | scopes : List Scope } -> Result Scope.Error Type.Value

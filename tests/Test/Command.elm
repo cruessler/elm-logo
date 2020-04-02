@@ -26,11 +26,11 @@ commands =
                             empty
                                 |> C.print (Type.Word string)
                     in
-                        Expect.equal result
-                            (Ok
-                                { empty
-                                    | history = [ Output string ]
-                                }
-                            )
+                    Expect.equal result
+                        (Ok
+                            { empty
+                                | history = [ Output string ]
+                            }
+                        )
             ]
         ]

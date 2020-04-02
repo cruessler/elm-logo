@@ -1,23 +1,22 @@
-module Vm.Scope
-    exposing
-        ( Scope(..)
-        , Binding(..)
-        , Error(..)
-        , empty
-        , make
-        , thing
-        , pushLocalScope
-        , popLocalScope
-        , local
-        , pushLoopScope
-        , popLoopScope
-        , enterLoopScope
-        , repcount
-        , pushTemplateScope
-        , popTemplateScope
-        , enterTemplateScope
-        , templateVariable
-        )
+module Vm.Scope exposing
+    ( Binding(..)
+    , Error(..)
+    , Scope(..)
+    , empty
+    , enterLoopScope
+    , enterTemplateScope
+    , local
+    , make
+    , popLocalScope
+    , popLoopScope
+    , popTemplateScope
+    , pushLocalScope
+    , pushLoopScope
+    , pushTemplateScope
+    , repcount
+    , templateVariable
+    , thing
+    )
 
 {-| This module contains types and functions related to Logo’s handling of
 variables.
@@ -123,7 +122,8 @@ make name value scopes =
 
         first :: rest ->
             if member name first then
-                (set name value first) :: rest
+                set name value first :: rest
+
             else
                 first :: make name value rest
 
@@ -149,6 +149,7 @@ thing name scopes =
         first :: rest ->
             if member name first then
                 get name first
+
             else
                 thing name rest
 
@@ -187,7 +188,7 @@ local : String -> List Scope -> List Scope
 local name scopes =
     case scopes of
         (Local returnAddress { variables }) :: rest ->
-            Local returnAddress { variables = (Dict.insert name Undefined variables) }
+            Local returnAddress { variables = Dict.insert name Undefined variables }
                 :: rest
 
         _ ->
@@ -198,7 +199,7 @@ local name scopes =
 -}
 pushLoopScope : Int -> List Scope -> List Scope
 pushLoopScope total scopes =
-    (Loop { current = 0, total = total }) :: scopes
+    Loop { current = 0, total = total } :: scopes
 
 
 {-| Remove the topmost scope if it is a loop scope.
@@ -264,7 +265,7 @@ enterTemplateScope scopes =
                 newIter =
                     Iterator.step iter
             in
-                Ok <| ( newIter.current == Nothing, Template newIter :: rest )
+            Ok <| ( newIter.current == Nothing, Template newIter :: rest )
 
         _ ->
             Err <| WrongType LoopScope

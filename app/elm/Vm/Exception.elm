@@ -18,4 +18,4 @@ toString exception =
             callee ++ " did not output to " ++ caller
 
         _ ->
-            Debug.crash "unimplemented"
+            Debug.todo "unimplemented"

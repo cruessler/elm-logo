@@ -1,14 +1,13 @@
-module Vm.Vm
-    exposing
-        ( Vm
-        , State(..)
-        , Instruction(..)
-        , empty
-        , initialize
-        , setEnvironment
-        , run
-        , step
-        )
+module Vm.Vm exposing
+    ( Instruction(..)
+    , State(..)
+    , Vm
+    , empty
+    , initialize
+    , run
+    , setEnvironment
+    , step
+    )
 
 {-| This module provides types and data structures for representing a virtual
 machine as well as functions for running it.
@@ -22,7 +21,7 @@ import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Exception as Exception exposing (Exception)
 import Vm.Introspect as I
 import Vm.Primitive as P
-import Vm.Scope as Scope exposing (Scope, Binding(..))
+import Vm.Scope as Scope exposing (Binding(..), Scope)
 import Vm.Stack as Stack exposing (Stack)
 import Vm.Type as Type
 
@@ -115,7 +114,7 @@ eval1 primitive vm =
             primitive.f first
                 |> Result.map
                     (\value ->
-                        { vm | stack = (Stack.Value value :: rest) }
+                        { vm | stack = Stack.Value value :: rest }
                             |> incrementProgramCounter
                     )
 
@@ -129,6 +128,7 @@ eval1 primitive vm =
 {-| Boolean and arithmetic operators can be called in two ways, for example:
 
     1 > 0
+
     greaterp 1 0
 
 Both use the same implementation under the hood, in this case `P.greaterp`,
@@ -156,7 +156,7 @@ eval2 primitive vm =
             primitive.f first second
                 |> Result.map
                     (\value ->
-                        { vm | stack = (Stack.Value value :: rest) }
+                        { vm | stack = Stack.Value value :: rest }
                             |> incrementProgramCounter
                     )
                 |> Result.mapError (mapWrongInput primitive.name)
@@ -412,7 +412,7 @@ popLocalScope vm =
             (\( returnAddress, scopes ) ->
                 { vm
                     | scopes = scopes
-                    , stack = (Stack.Address returnAddress) :: vm.stack
+                    , stack = Stack.Address returnAddress :: vm.stack
                 }
                     |> incrementProgramCounter
             )
@@ -425,13 +425,15 @@ toBoolean value =
         Type.Word word ->
             if String.toLower word == "true" then
                 Ok True
+
             else if String.toLower word == "false" then
                 Ok False
+
             else
-                Err <| Internal <| NoBoolean (toString value)
+                Err <| Internal <| NoBoolean (Type.toString value)
 
         _ ->
-            Err <| Internal <| NoBoolean (toString value)
+            Err <| Internal <| NoBoolean (Type.toString value)
 
 
 jumpIfFalse : Int -> Vm -> Result Error Vm
@@ -446,6 +448,7 @@ jumpIfFalse by vm =
                                 | stack = rest
                                 , programCounter = vm.programCounter + by
                             }
+
                         else
                             { vm | stack = rest } |> incrementProgramCounter
                     )
@@ -469,6 +472,7 @@ jumpIfTrue by vm =
                                 | stack = rest
                                 , programCounter = vm.programCounter + by
                             }
+
                         else
                             { vm | stack = rest } |> incrementProgramCounter
                     )
@@ -504,8 +508,8 @@ duplicate vm =
             Ok
                 ({ vm
                     | stack =
-                        (Stack.Value first)
-                            :: (Stack.Value first)
+                        Stack.Value first
+                            :: Stack.Value first
                             :: rest
                  }
                     |> incrementProgramCounter
@@ -638,13 +642,13 @@ execute instruction vm =
             case vm.stack of
                 Stack.Void :: rest ->
                     Ok
-                        ({ vm | stack = (Stack.Value Type.false) :: rest }
+                        ({ vm | stack = Stack.Value Type.false :: rest }
                             |> incrementProgramCounter
                         )
 
                 (Stack.Value _) :: rest ->
                     Ok
-                        ({ vm | stack = (Stack.Value Type.true) :: vm.stack }
+                        ({ vm | stack = Stack.Value Type.true :: vm.stack }
                             |> incrementProgramCounter
                         )
 
@@ -685,19 +689,19 @@ run vm =
     let
         run_ result =
             case result of
-                Ok vm ->
+                Ok newVm ->
                     let
                         instruction =
-                            Array.get vm.programCounter vm.instructions
+                            Array.get newVm.programCounter newVm.instructions
                     in
-                        case instruction of
-                            Just instruction ->
-                                run_ (execute instruction vm)
+                    case instruction of
+                        Just instruction_ ->
+                            run_ (execute instruction_ newVm)
 
-                            _ ->
-                                Done vm
+                        _ ->
+                            Done newVm
 
                 Err error ->
                     Done { vm | environment = Environment.error (Error.toString error) vm.environment }
     in
-        run_ (Ok vm)
+    run_ (Ok vm)

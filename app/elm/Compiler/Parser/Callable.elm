@@ -1,11 +1,12 @@
-module Compiler.Parser.Callable exposing (find, makeNode, numberOfArguments)
+module Compiler.Parser.Callable exposing (find, makeNode, numberOfDefaultArguments)
 
 import Compiler.Ast as Ast
 import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
+import Compiler.Parser.Problem exposing (Problem(..))
 import Dict exposing (Dict)
-import Parser exposing (Parser, succeed, fail)
+import Parser.Advanced exposing (Parser, problem, succeed)
 
 
 type alias FunctionDeclaration =
@@ -22,7 +23,7 @@ type Callable
     | Function Ast.Function
 
 
-makeNode : List Ast.Node -> Callable -> Parser Ast.Node
+makeNode : List Ast.Node -> Callable -> Parser context Problem Ast.Node
 makeNode arguments callable =
     case callable of
         Command command ->
@@ -38,17 +39,17 @@ makeNode arguments callable =
             makeFunction arguments function
 
 
-makeCommand : List Ast.Node -> Command.Command -> Parser Ast.Node
+makeCommand : List Ast.Node -> Command.Command -> Parser context Problem Ast.Node
 makeCommand arguments command =
     case ( command, arguments ) of
         ( Command.Command1 command1, [ first ] ) ->
             succeed <| Ast.Command1 command1 first
 
         _ ->
-            fail <| "could not parse call to command " ++ (toString command)
+            problem <| InvalidPrimitive (Command.name command)
 
 
-makePrimitive : List Ast.Node -> Primitive.Primitive -> Parser Ast.Node
+makePrimitive : List Ast.Node -> Primitive.Primitive -> Parser context Problem Ast.Node
 makePrimitive arguments primitive =
     case ( primitive, arguments ) of
         ( Primitive.Primitive1 primitive1, [ first ] ) ->
@@ -58,10 +59,10 @@ makePrimitive arguments primitive =
             succeed <| Ast.Primitive2 primitive2 first second
 
         _ ->
-            fail <| "could not parse call to primitive " ++ (toString primitive)
+            problem <| InvalidPrimitive (Primitive.name primitive)
 
 
-makeIntrospect : List Ast.Node -> Introspect.Introspect -> Parser Ast.Node
+makeIntrospect : List Ast.Node -> Introspect.Introspect -> Parser context Problem Ast.Node
 makeIntrospect arguments introspect =
     case ( introspect, arguments ) of
         ( Introspect.Introspect0 introspect0, [] ) ->
@@ -71,10 +72,10 @@ makeIntrospect arguments introspect =
             succeed <| Ast.Introspect1 introspect1 first
 
         _ ->
-            fail <| "could not parse call to introspect " ++ (toString introspect)
+            problem <| InvalidPrimitive (Introspect.name introspect)
 
 
-makeFunction : List Ast.Node -> Ast.Function -> Parser Ast.Node
+makeFunction : List Ast.Node -> Ast.Function -> Parser context Problem Ast.Node
 makeFunction arguments function =
     let
         numberOfArguments =
@@ -86,17 +87,19 @@ makeFunction arguments function =
         optionalArguments =
             List.length function.optionalArguments
     in
-        if requiredArguments <= numberOfArguments then
-            if
-                numberOfArguments
-                    <= requiredArguments
-                    + optionalArguments
-            then
-                succeed <| Ast.Call function.name arguments
-            else
-                fail <| "too many inputs to " ++ function.name
+    if requiredArguments <= numberOfArguments then
+        if
+            numberOfArguments
+                <= requiredArguments
+                + optionalArguments
+        then
+            succeed <| Ast.Call function.name arguments
+
         else
-            fail <| "not enough inputs to " ++ function.name
+            problem <| TooManyInputs function.name
+
+    else
+        problem <| NotEnoughInputs function.name
 
 
 find : Dict String Ast.Function -> String -> Maybe Callable
@@ -114,13 +117,13 @@ find userDefinedFunctions name =
         function =
             Dict.get name userDefinedFunctions |> Maybe.map Function
     in
-        [ command, primitive, introspect, function ]
-            |> List.filterMap identity
-            |> List.head
+    [ command, primitive, introspect, function ]
+        |> List.filterMap identity
+        |> List.head
 
 
-numberOfArguments : Callable -> Int
-numberOfArguments callable =
+numberOfDefaultArguments : Callable -> Int
+numberOfDefaultArguments callable =
     case callable of
         Command command ->
             Command.arguments command
