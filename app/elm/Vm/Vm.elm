@@ -419,28 +419,11 @@ popLocalScope vm =
         |> Result.mapError (Internal << Scope)
 
 
-toBoolean : Type.Value -> Result Error Bool
-toBoolean value =
-    case value of
-        Type.Word word ->
-            if String.toLower word == "true" then
-                Ok True
-
-            else if String.toLower word == "false" then
-                Ok False
-
-            else
-                Err <| Internal <| NoBoolean (Type.toString value)
-
-        _ ->
-            Err <| Internal <| NoBoolean (Type.toString value)
-
-
 jumpIfFalse : Int -> Vm -> Result Error Vm
 jumpIfFalse by vm =
     case vm.stack of
         (Stack.Value first) :: rest ->
-            toBoolean first
+            Type.toBool first
                 |> Result.map
                     (\bool ->
                         if not bool then
@@ -452,6 +435,7 @@ jumpIfFalse by vm =
                         else
                             { vm | stack = rest } |> incrementProgramCounter
                     )
+                |> Result.mapError (Internal << Type)
 
         _ :: rest ->
             Err <| Internal InvalidStack
@@ -464,7 +448,7 @@ jumpIfTrue : Int -> Vm -> Result Error Vm
 jumpIfTrue by vm =
     case vm.stack of
         (Stack.Value first) :: rest ->
-            toBoolean first
+            Type.toBool first
                 |> Result.map
                     (\bool ->
                         if bool then
@@ -476,6 +460,7 @@ jumpIfTrue by vm =
                         else
                             { vm | stack = rest } |> incrementProgramCounter
                     )
+                |> Result.mapError (Internal << Type)
 
         _ :: rest ->
             Err <| Internal InvalidStack

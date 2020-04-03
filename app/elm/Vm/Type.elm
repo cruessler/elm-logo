@@ -4,6 +4,7 @@ module Vm.Type exposing
     , false
     , fromBool
     , fromFloat
+    , toBool
     , toDebugString
     , toFloat
     , toInt
