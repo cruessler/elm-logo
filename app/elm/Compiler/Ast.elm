@@ -70,10 +70,6 @@ type Node
     | Make String Node
     | Local String
     | Variable String
-    | Add Node Node
-    | Subtract Node Node
-    | Multiply Node Node
-    | Divide Node Node
     | Value Type.Value
     | Raise Exception
 
@@ -183,18 +179,6 @@ typeOfCallee node =
 
         Variable name ->
             Primitive { name = name }
-
-        Add _ _ ->
-            Primitive { name = "+" }
-
-        Subtract _ _ ->
-            Primitive { name = "-" }
-
-        Multiply _ _ ->
-            Primitive { name = "*" }
-
-        Divide _ _ ->
-            Primitive { name = "/" }
 
         Value _ ->
             Primitive { name = "value" }
@@ -522,34 +506,6 @@ compile context node =
 
         Variable name ->
             [ PushVariable name ]
-
-        Add first second ->
-            [ compileInContext (Expression { caller = "+" }) second
-            , compileInContext (Expression { caller = "+" }) first
-            , [ Eval2 { name = "+", f = P.sum } ]
-            ]
-                |> List.concat
-
-        Subtract first second ->
-            [ compileInContext (Expression { caller = "-" }) second
-            , compileInContext (Expression { caller = "-" }) first
-            , [ Eval2 { name = "-", f = P.difference } ]
-            ]
-                |> List.concat
-
-        Multiply first second ->
-            [ compileInContext (Expression { caller = "*" }) second
-            , compileInContext (Expression { caller = "*" }) first
-            , [ Eval2 { name = "*", f = P.product } ]
-            ]
-                |> List.concat
-
-        Divide first second ->
-            [ compileInContext (Expression { caller = "/" }) second
-            , compileInContext (Expression { caller = "/" }) first
-            , [ Eval2 { name = "/", f = P.quotient } ]
-            ]
-                |> List.concat
 
         Value value ->
             [ PushValue value ]

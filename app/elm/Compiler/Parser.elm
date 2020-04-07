@@ -27,6 +27,7 @@ import Parser.Advanced as P
         , Parser
         )
 import Vm.Exception as Exception
+import Vm.Primitive as Primitive
 import Vm.Type as Type
 
 
@@ -505,9 +506,12 @@ booleanExpression state =
     P.inContext BooleanExpression <|
         leftAssociative
             { operators =
-                [ BinaryOperator (Helper.operator "=") Ast.Equal
-                , BinaryOperator (Helper.operator "<>") Ast.NotEqual
-                , BinaryOperator (Helper.operator ">") Ast.GreaterThan
+                [ BinaryOperator (Helper.operator "=") <|
+                    Ast.Primitive2 { name = "=", f = Primitive.equalp }
+                , BinaryOperator (Helper.operator "<>") <|
+                    Ast.Primitive2 { name = "<>", f = Primitive.notequalp }
+                , BinaryOperator (Helper.operator ">") <|
+                    Ast.Primitive2 { name = ">", f = Primitive.greaterp }
                 ]
             , operand = arithmeticExpression
             }
@@ -519,8 +523,10 @@ arithmeticExpression state =
     P.inContext ArithmeticExpression <|
         leftAssociative
             { operators =
-                [ BinaryOperator (Helper.operator "+") Ast.Add
-                , BinaryOperator (Helper.operator "-") Ast.Subtract
+                [ BinaryOperator (Helper.operator "+") <|
+                    Ast.Primitive2 { name = "+", f = Primitive.sum }
+                , BinaryOperator (Helper.operator "-") <|
+                    Ast.Primitive2 { name = "-", f = Primitive.difference }
                 ]
             , operand = term
             }
@@ -532,8 +538,10 @@ term state =
     P.inContext Term <|
         leftAssociative
             { operators =
-                [ BinaryOperator (Helper.operator "*") Ast.Multiply
-                , BinaryOperator (Helper.operator "/") Ast.Divide
+                [ BinaryOperator (Helper.operator "*") <|
+                    Ast.Primitive2 { name = "*", f = Primitive.product }
+                , BinaryOperator (Helper.operator "/") <|
+                    Ast.Primitive2 { name = "/", f = Primitive.quotient }
                 ]
             , operand = statement
             }
