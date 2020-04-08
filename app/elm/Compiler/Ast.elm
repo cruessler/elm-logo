@@ -13,6 +13,7 @@ module Compiler.Ast exposing
 -}
 
 import Dict exposing (Dict)
+import List.Nonempty as Nonempty exposing (Nonempty(..))
 import Vm.Command as C
 import Vm.Error exposing (Error(..))
 import Vm.Exception as Exception exposing (Exception)
@@ -194,17 +195,25 @@ All nodes except the last one are compiled as statements while the last one is
 compiled in the context of the control structure.
 
 -}
-compileNonEmptyBranch : Context -> List Node -> List Instruction
+compileNonEmptyBranch : Context -> Nonempty Node -> List Instruction
 compileNonEmptyBranch context children =
+    compileNonEmptyBranch_ context children []
+        |> List.concat
+
+
+compileNonEmptyBranch_ :
+    Context
+    -> Nonempty Node
+    -> List (List Instruction)
+    -> List (List Instruction)
+compileNonEmptyBranch_ context children acc =
     case children of
-        [] ->
-            []
+        Nonempty first [] ->
+            [ compileInContext context first ]
 
-        [ first ] ->
-            compileInContext context first
-
-        first :: rest ->
-            compileInContext Statement first ++ compileNonEmptyBranch context rest
+        Nonempty first (second :: rest) ->
+            compileInContext Statement first
+                :: compileNonEmptyBranch_ context (Nonempty second rest) acc
 
 
 {-| Compile the branch of a control structure, e. g. of an `if`, to a list of
@@ -225,8 +234,8 @@ compileBranch controlStructure context children =
                 Expression { caller } ->
                     [ Vm.Vm.Raise (Exception.NoOutput caller controlStructure) ]
 
-        _ ->
-            compileNonEmptyBranch context children
+        first :: rest ->
+            compileNonEmptyBranch context (Nonempty first rest)
 
 
 {-| Compile an AST node to a list of VM instructions.
