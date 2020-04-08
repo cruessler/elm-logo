@@ -55,9 +55,6 @@ type Node
     | Foreach Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
-    | Equal Node Node
-    | NotEqual Node Node
-    | GreaterThan Node Node
     | Command0 C.Command0
     | Command1 C.Command1 Node
     | Command2 C.Command2 Node Node
@@ -140,15 +137,6 @@ typeOfCallee node =
 
         Foreach _ _ ->
             Command { name = "foreach" }
-
-        Equal _ _ ->
-            Primitive { name = "=" }
-
-        NotEqual _ _ ->
-            Primitive { name = "<>" }
-
-        GreaterThan _ _ ->
-            Primitive { name = ">" }
 
         Command0 c ->
             Command { name = c.name }
@@ -408,27 +396,6 @@ compile context node =
             , compiledIfBranch
             , [ Jump (List.length compiledElseBranch + 1) ]
             , compiledElseBranch
-            ]
-                |> List.concat
-
-        Equal first second ->
-            [ compileInContext (Expression { caller = "=" }) second
-            , compileInContext (Expression { caller = "=" }) first
-            , [ Eval2 { name = "=", f = P.equalp } ]
-            ]
-                |> List.concat
-
-        NotEqual first second ->
-            [ compileInContext (Expression { caller = "<>" }) second
-            , compileInContext (Expression { caller = "<>" }) first
-            , [ Eval2 { name = "<>", f = P.notequalp } ]
-            ]
-                |> List.concat
-
-        GreaterThan first second ->
-            [ compileInContext (Expression { caller = ">" }) second
-            , compileInContext (Expression { caller = ">" }) first
-            , [ Eval2 { name = ">", f = P.greaterp } ]
             ]
                 |> List.concat
 
