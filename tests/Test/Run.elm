@@ -44,24 +44,6 @@ printsLines program lines =
                         (List.filter isOutput history)
 
 
-failsParsing : String -> String -> Test
-failsParsing program message =
-    let
-        match result =
-            case result of
-                Err (first :: _) ->
-                    Expect.equal (Problem.toString first.problem) message
-
-                _ ->
-                    Expect.fail <|
-                        "Expected to fail with error message `"
-                            ++ message
-                            ++ "`, but parsed program successfully"
-    in
-    test program <|
-        \_ -> match (Parser.run Parser.root program)
-
-
 statements : Test
 statements =
     describe "call print several times" <|
@@ -214,18 +196,6 @@ print :bar
 end
 (foo "baz) (foo "baz)"""
             [ "baz", "baz" ]
-        , failsParsing
-            """to foo :bar
-print :bar
-end
-(foo "bar "baz)"""
-            "too many inputs to foo"
-        , failsParsing
-            """to foo :bar :baz
-print :bar
-end
-(foo "bar)"""
-            "not enough inputs to foo"
         ]
 
 

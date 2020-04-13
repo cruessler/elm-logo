@@ -133,8 +133,8 @@ parsesArithmeticExpression expression =
                 Ok _ ->
                     Expect.pass
 
-                Err error ->
-                    Expect.fail (Debug.toString error)
+                Err _ ->
+                    Expect.fail <| "could not parse expression \"" ++ expression ++ "\""
     in
     test expression <|
         \_ ->
@@ -193,8 +193,8 @@ parsesBooleanExpression expression =
                 Ok _ ->
                     Expect.pass
 
-                Err error ->
-                    Expect.fail (Debug.toString error)
+                Err _ ->
+                    Expect.fail <| "could not parse expression \"" ++ expression ++ "\""
     in
     test expression <|
         \_ ->

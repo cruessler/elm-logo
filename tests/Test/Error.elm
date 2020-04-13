@@ -24,8 +24,17 @@ printsError program expectedMessage =
                 Just (Error actualMessage) ->
                     Expect.equal expectedMessage actualMessage
 
-                _ ->
-                    Expect.fail (Debug.toString history)
+                Just _ ->
+                    Expect.fail <|
+                        "expected error message \""
+                            ++ expectedMessage
+                            ++ "\", but last history entry was not an error message"
+
+                Nothing ->
+                    Expect.fail <|
+                        "expected error message \""
+                            ++ expectedMessage
+                            ++ "\", but history was empty"
 
 
 repeatWithInvalidArguments : Test
@@ -129,4 +138,28 @@ undefinedVariable =
     describe "prints error if undefined variable is used" <|
         [ printsError "print :variable" "variable has no value"
         , printsError ":variable" "variable has no value"
+        ]
+
+
+notEnoughInputs : Test
+notEnoughInputs =
+    describe "prints error if function is called with too few arguments" <|
+        [ printsError
+            """to foo :bar :baz
+print :bar
+end
+(foo "bar)"""
+            "not enough inputs to foo"
+        ]
+
+
+tooManyInputs : Test
+tooManyInputs =
+    describe "prints error if function is called with too many arguments" <|
+        [ printsError
+            """to foo :bar
+print :bar
+end
+(foo "bar "baz)"""
+            "too many inputs to foo"
         ]

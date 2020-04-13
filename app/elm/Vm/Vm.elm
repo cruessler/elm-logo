@@ -118,11 +118,8 @@ eval1 primitive vm =
                             |> incrementProgramCounter
                     )
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| NotEnoughInputs <| primitive.name
+            Err <| Internal InvalidStack
 
 
 {-| Boolean and arithmetic operators can be called in two ways, for example:
@@ -161,11 +158,8 @@ eval2 primitive vm =
                     )
                 |> Result.mapError (mapWrongInput primitive.name)
 
-        _ :: _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| NotEnoughInputs <| primitive.name
+            Err <| Internal InvalidStack
 
 
 {-| Run a command that takes no argument.
@@ -193,11 +187,8 @@ command1 command vm =
                             |> incrementProgramCounter
                     )
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| NotEnoughInputs <| command.name
+            Err <| Internal InvalidStack
 
 
 {-| Run a command that takes two arguments.
@@ -213,11 +204,8 @@ command2 command vm =
                             |> incrementProgramCounter
                     )
 
-        _ :: _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| NotEnoughInputs <| command.name
+            Err <| Internal InvalidStack
 
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
@@ -247,11 +235,8 @@ introspect1 primitive vm =
                     )
                 |> Result.mapError (Internal << Scope)
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| NotEnoughInputs primitive.name
+            Err <| Internal InvalidStack
 
 
 pushVariable : String -> Vm -> Result Error Vm
@@ -277,11 +262,8 @@ storeVariable name vm =
                     |> incrementProgramCounter
                 )
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| Internal EmptyStack
+            Err <| Internal InvalidStack
 
 
 localVariable : String -> Vm -> Result Error Vm
@@ -309,7 +291,7 @@ pushLoopScope vm =
                 |> Result.map incrementProgramCounter
 
         _ ->
-            Err <| Internal EmptyStack
+            Err <| Internal InvalidStack
 
 
 popLoopScope : Vm -> Result Error Vm
@@ -350,9 +332,6 @@ pushTemplateScope vm =
                  }
                     |> incrementProgramCounter
                 )
-
-        _ :: rest ->
-            Err <| Internal InvalidStack
 
         _ ->
             Err <| Internal NoIterator
@@ -397,9 +376,6 @@ pushLocalScope vm =
                     |> incrementProgramCounter
                 )
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
             Err <| Internal NoReturnAddress
 
@@ -437,11 +413,8 @@ jumpIfFalse by vm =
                     )
                 |> Result.mapError (Internal << Type)
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| Internal EmptyStack
+            Err <| Internal InvalidStack
 
 
 jumpIfTrue : Int -> Vm -> Result Error Vm
@@ -462,11 +435,8 @@ jumpIfTrue by vm =
                     )
                 |> Result.mapError (Internal << Type)
 
-        _ :: rest ->
-            Err <| Internal InvalidStack
-
         _ ->
-            Err <| Internal EmptyStack
+            Err <| Internal InvalidStack
 
 
 return : Vm -> Result Error Vm
@@ -478,9 +448,6 @@ return vm =
                     | programCounter = returnAddress
                     , stack = rest
                 }
-
-        _ :: rest ->
-            Err <| Internal InvalidStack
 
         _ ->
             Err <| Internal NoReturnAddress
@@ -501,7 +468,7 @@ duplicate vm =
                 )
 
         _ ->
-            Err <| Internal EmptyStack
+            Err <| Internal InvalidStack
 
 
 raise : Exception -> Vm -> Result Error Vm
@@ -513,7 +480,7 @@ raise exception vm =
                     Err <| WrongInput function (Type.toDebugString first)
 
                 _ ->
-                    Err <| Internal EmptyStack
+                    Err <| Internal InvalidStack
 
         Exception.NoUseOfValue ->
             case vm.stack of
@@ -521,10 +488,19 @@ raise exception vm =
                     Err <| NoUseOfValue (Type.toDebugString first)
 
                 _ ->
-                    Err <| Internal EmptyStack
+                    Err <| Internal InvalidStack
 
-        _ ->
-            Err <| Exception exception
+        Exception.NoOutput caller callee ->
+            Err <| NoOutput caller callee
+
+        Exception.OutputOutsideFunction ->
+            Err <| OutputOutsideFunction
+
+        Exception.NotEnoughInputs callable ->
+            Err <| NotEnoughInputs callable
+
+        Exception.TooManyInputs callable ->
+            Err <| TooManyInputs callable
 
 
 {-| Execute a single instruction.

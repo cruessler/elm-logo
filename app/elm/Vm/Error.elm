@@ -3,7 +3,6 @@ module Vm.Error exposing (Error(..), Internal(..), toString)
 {-| This module provides types for representing errors and invalid states.
 -}
 
-import Vm.Exception as Exception exposing (Exception)
 import Vm.Scope as Scope
 import Vm.Type as Type
 
@@ -13,26 +12,24 @@ These include invalid states of the VM’s stack or instruction pointer, and
 calls to undefined functions.
 -}
 type Internal
-    = EmptyStack
-    | InvalidStack
+    = InvalidStack
     | FunctionUndefined String
     | Scope Scope.Error
     | Type Type.Error
     | NoIterator
     | NoReturnAddress
-    | NoBoolean String
     | NoInstruction
 
 
 type Error
-    = NotEnoughInputs String
-    | Primitive String
-    | WrongInput String String
+    = WrongInput String String
     | NoUseOfValue String
     | NoOutput String String
     | VariableUndefined String
     | Internal Internal
-    | Exception Exception
+    | OutputOutsideFunction
+    | NotEnoughInputs String
+    | TooManyInputs String
 
 
 toString : Error -> String
@@ -47,11 +44,17 @@ toString error =
         NoOutput caller callee ->
             callee ++ " did not output to " ++ caller
 
-        Exception exception ->
-            Exception.toString exception
-
         VariableUndefined name ->
             name ++ " has no value"
 
-        _ ->
-            Debug.todo "unimplemented"
+        OutputOutsideFunction ->
+            "Can only use output inside a procedure"
+
+        NotEnoughInputs callable ->
+            "not enough inputs to " ++ callable
+
+        TooManyInputs callable ->
+            "too many inputs to " ++ callable
+
+        Internal _ ->
+            "Logo: Fatal Internal Error."

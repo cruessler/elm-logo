@@ -7,6 +7,7 @@ import Compiler.Ast.Primitive as Primitive
 import Compiler.Parser.Problem exposing (Problem(..))
 import Dict exposing (Dict)
 import Parser.Advanced exposing (Parser, problem, succeed)
+import Vm.Exception as Exception
 
 
 type alias FunctionDeclaration =
@@ -96,10 +97,10 @@ makeFunction arguments function =
             succeed <| Ast.Call function.name arguments
 
         else
-            problem <| TooManyInputs function.name
+            succeed <| Ast.Raise (Exception.TooManyInputs function.name)
 
     else
-        problem <| NotEnoughInputs function.name
+        succeed <| Ast.Raise (Exception.NotEnoughInputs function.name)
 
 
 find : Dict String Ast.Function -> String -> Maybe Callable

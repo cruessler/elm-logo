@@ -1,4 +1,4 @@
-module Vm.Exception exposing (Exception(..), toString)
+module Vm.Exception exposing (Exception(..))
 
 
 type Exception
@@ -6,16 +6,5 @@ type Exception
     | NoUseOfValue
     | NoOutput String String
     | OutputOutsideFunction
-
-
-toString : Exception -> String
-toString exception =
-    case exception of
-        OutputOutsideFunction ->
-            "Can only use output inside a procedure"
-
-        NoOutput caller callee ->
-            callee ++ " did not output to " ++ caller
-
-        _ ->
-            Debug.todo "unimplemented"
+    | NotEnoughInputs String
+    | TooManyInputs String

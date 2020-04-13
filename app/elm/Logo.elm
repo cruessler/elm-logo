@@ -80,7 +80,7 @@ compile program logo =
             Logo <| Paused newVm
 
         Err error ->
-            Logo <| Done { vm | environment = Environment.error (Debug.toString error) vm.environment }
+            Logo <| Done { vm | environment = Environment.error "parse error" vm.environment }
 
 
 step : Logo -> Logo
