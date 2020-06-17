@@ -364,3 +364,15 @@ end
 print foo "baz"""
             [ "baz" ]
         ]
+
+
+arithmeticInArguments : Test
+arithmeticInArguments =
+    describe "function" <|
+        [ printsLines """to snowflake :length :depth
+if :depth = 0 [ print :length ]
+if :depth <> 0 [ snowflake :length / 3 :depth - 1 snowflake :length / 3 :depth - 1 snowflake :length / 3 :depth - 1 snowflake :length / 3 :depth - 1 ]
+end
+snowflake 350 3"""
+            (List.repeat 64 (350 / 3 / 3 / 3 |> String.fromFloat))
+        ]
