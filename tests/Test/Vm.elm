@@ -195,6 +195,31 @@ vmWithTemplateLoop =
         ]
 
 
+vmWithLoopScope : Test
+vmWithLoopScope =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ PushValue (Type.Int 2)
+                    , PushLoopScope
+                    , EnterLoopScope
+                    , JumpIfTrue 2
+                    , Jump -2
+                    , PopLoopScope
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+    describe "with empty repeat loop" <|
+        [ test "stack is empty after loop is finished" <|
+            \_ -> Expect.equal vm.stack []
+        , test "program counter is beyond the last instruction" <|
+            \_ -> Expect.equal vm.programCounter 6
+        ]
+
+
 vmWithLocalScope : Test
 vmWithLocalScope =
     let
