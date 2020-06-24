@@ -376,3 +376,21 @@ end
 snowflake 350 3"""
             (List.repeat 64 (350 / 3 / 3 / 3 |> String.fromFloat))
         ]
+
+
+emptyLines : Test
+emptyLines =
+    describe "accepts empty lines in input" <|
+        [ printsLines """
+
+to foo
+print "foo
+end
+
+foo
+
+print "bar
+
+"""
+            [ "foo", "bar" ]
+        ]
