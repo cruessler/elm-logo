@@ -394,3 +394,15 @@ print "bar
 """
             [ "foo", "bar" ]
         ]
+
+
+leadingAndTrailingWhitespace : Test
+leadingAndTrailingWhitespace =
+    describe "accepts leading and trailing whitespace" <|
+        [ printsLines "   print \"foo   "
+            [ "foo" ]
+        , printsLines """to foo
+  print "foo
+end
+  foo  """ [ "foo" ]
+        ]
