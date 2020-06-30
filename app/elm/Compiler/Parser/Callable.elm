@@ -10,13 +10,6 @@ import Parser.Advanced exposing (Parser, problem, succeed)
 import Vm.Exception as Exception
 
 
-type alias FunctionDeclaration =
-    { name : String
-    , requiredArguments : Int
-    , optionalArguments : Int
-    }
-
-
 type Callable
     = Command Command.Command
     | Introspect Introspect.Introspect
@@ -26,18 +19,34 @@ type Callable
 
 makeNode : List Ast.Node -> Callable -> Parser context Problem Ast.Node
 makeNode arguments callable =
-    case callable of
-        Command command ->
-            makeCommand arguments command
+    let
+        numberOfRequiredArguments =
+            numberOfDefaultArguments callable
 
-        Primitive primitive ->
-            makePrimitive arguments primitive
+        numberOfGivenArguments =
+            List.length arguments
+    in
+    if numberOfGivenArguments < numberOfRequiredArguments then
+        -- This is incorrect insofar `arguments` are not evaluated before the
+        -- exception is raised. `sum print 3`, for example, is supposed to
+        -- first print 3 and only then raise an exception. This would require
+        -- it to produce AST nodes for `print 3` and not just for raising the
+        -- exception.
+        succeed <| Ast.Raise <| Exception.NotEnoughInputs (name callable)
 
-        Introspect introspect ->
-            makeIntrospect arguments introspect
+    else
+        case callable of
+            Command command ->
+                makeCommand arguments command
 
-        Function function ->
-            makeFunction arguments function
+            Primitive primitive ->
+                makePrimitive arguments primitive
+
+            Introspect introspect ->
+                makeIntrospect arguments introspect
+
+            Function function ->
+                makeFunction arguments function
 
 
 makeCommand : List Ast.Node -> Command.Command -> Parser context Problem Ast.Node
@@ -88,35 +97,47 @@ makeFunction arguments function =
         optionalArguments =
             List.length function.optionalArguments
     in
-    if requiredArguments <= numberOfArguments then
-        if
-            numberOfArguments
-                <= requiredArguments
-                + optionalArguments
-        then
-            succeed <| Ast.Call function.name arguments
-
-        else
-            succeed <| Ast.Raise (Exception.TooManyInputs function.name)
+    if
+        numberOfArguments
+            <= requiredArguments
+            + optionalArguments
+    then
+        succeed <| Ast.Call function.name arguments
 
     else
-        succeed <| Ast.Raise (Exception.NotEnoughInputs function.name)
+        succeed <| Ast.Raise (Exception.TooManyInputs function.name)
+
+
+name : Callable -> String
+name callable =
+    case callable of
+        Command command ->
+            Command.name command
+
+        Primitive primitive ->
+            Primitive.name primitive
+
+        Introspect introspect ->
+            Introspect.name introspect
+
+        Function function ->
+            function.name
 
 
 find : Dict String Ast.Function -> String -> Maybe Callable
-find userDefinedFunctions name =
+find userDefinedFunctions name_ =
     let
         command =
-            Command.find name |> Maybe.map Command
+            Command.find name_ |> Maybe.map Command
 
         primitive =
-            Primitive.find name |> Maybe.map Primitive
+            Primitive.find name_ |> Maybe.map Primitive
 
         introspect =
-            Introspect.find name |> Maybe.map Introspect
+            Introspect.find name_ |> Maybe.map Introspect
 
         function =
-            Dict.get name userDefinedFunctions |> Maybe.map Function
+            Dict.get name_ userDefinedFunctions |> Maybe.map Function
     in
     [ command, primitive, introspect, function ]
         |> List.filterMap identity

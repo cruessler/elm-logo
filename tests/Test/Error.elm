@@ -1,8 +1,8 @@
 module Test.Error exposing (..)
 
 import Environment.History exposing (Entry(..))
-import Expect exposing (Expectation)
-import Logo exposing (Logo)
+import Expect
+import Logo
 import Test exposing (Test, describe, test)
 
 
@@ -150,6 +150,9 @@ print :bar
 end
 (foo "bar)"""
             "not enough inputs to foo"
+        , printsError "print" "not enough inputs to print"
+        , printsError "   sum 3" "not enough inputs to sum"
+        , printsError "minus   " "not enough inputs to minus"
         ]
 
 

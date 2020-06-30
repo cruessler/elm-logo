@@ -25,6 +25,7 @@ import Parser.Advanced as P
         ( (|.)
         , (|=)
         , Parser
+        , Step(..)
         )
 import Vm.Exception as Exception
 import Vm.Primitive as Primitive
@@ -362,16 +363,25 @@ functionCall_ state name =
         |> Maybe.withDefault (P.problem <| InvalidFunctionCall name)
 
 
+{-| Parse a list of `count` or fewer arguments. We want errors related to
+functions being passed too few arguments to be runtime errors instead of parse
+errors. For this reason, we parse the argument list even if it has too few
+arguments. Then, when we compile the resulting AST nodes to instructions,
+we insert an instruction for raising an exception at the right place.
+-}
 arguments : State -> Int -> Parser Context Problem (List Ast.Node)
 arguments state count =
     if count > 0 then
         P.inContext (Arguments count) <|
-            P.succeed identity
-                |. P.backtrackable Helper.spaces
-                |= Helper.repeatExactly count
-                    { item = booleanExpression state
-                    , separator = Helper.spaces
-                    }
+            P.oneOf
+                [ P.succeed identity
+                    |. P.backtrackable Helper.spaces
+                    |= Helper.repeatAtMost count
+                        { item = booleanExpression state
+                        , separator = Helper.spaces
+                        }
+                , P.succeed []
+                ]
 
     else
         P.succeed []

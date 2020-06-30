@@ -4,7 +4,7 @@ module Compiler.Parser.Helper exposing
     , list
     , maybeSpaces
     , operator
-    , repeatExactly
+    , repeatAtMost
     , spaces
     , symbol
     )
@@ -64,15 +64,15 @@ list_ { item, separator } acc =
         ]
 
 
-repeatExactly :
+repeatAtMost :
     Int
     -> Config context problem a
     -> Parser context problem (List a)
-repeatExactly count config =
+repeatAtMost count config =
     let
         rest : a -> Parser context problem (List a)
         rest first =
-            loop ( count - 1, [ first ] ) <| repeatExactly_ config
+            loop ( count - 1, [ first ] ) <| repeatAtMost_ config
     in
     if count > 0 then
         config.item |> andThen rest
@@ -81,19 +81,27 @@ repeatExactly count config =
         succeed []
 
 
-repeatExactly_ :
+repeatAtMost_ :
     Config context problem a
     -> ( Int, List a )
     -> Parser context problem (Step ( Int, List a ) (List a))
-repeatExactly_ { item, separator } ( count, acc ) =
+repeatAtMost_ { item, separator } ( count, acc ) =
+    let
+        endLoop : Parser context problem (Step ( Int, List a ) (List a))
+        endLoop =
+            succeed ()
+                |> map (\_ -> Done <| List.reverse acc)
+    in
     if count > 0 then
-        succeed (\next -> Loop ( count - 1, next :: acc ))
-            |. separator
-            |= item
+        P.oneOf
+            [ succeed (\next -> Loop ( count - 1, next :: acc ))
+                |. separator
+                |= item
+            , endLoop
+            ]
 
     else
-        succeed ()
-            |> map (\_ -> Done <| List.reverse acc)
+        endLoop
 
 
 functionName : Parser context Problem String
