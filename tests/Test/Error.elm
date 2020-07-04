@@ -153,6 +153,8 @@ end
         , printsError "print" "not enough inputs to print"
         , printsError "   sum 3" "not enough inputs to sum"
         , printsError "minus   " "not enough inputs to minus"
+        , printsError "sum print 3" "not enough inputs to sum"
+        , printsError "difference print 3  " "not enough inputs to difference"
         ]
 
 

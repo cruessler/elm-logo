@@ -95,7 +95,7 @@ repeatAtMost_ { item, separator } ( count, acc ) =
     if count > 0 then
         P.oneOf
             [ succeed (\next -> Loop ( count - 1, next :: acc ))
-                |. separator
+                |. backtrackable separator
                 |= item
             , endLoop
             ]
