@@ -32,6 +32,19 @@ makeNode arguments callable =
         -- first print 3 and only then raise an exception. This would require
         -- it to produce AST nodes for `print 3` and not just for raising the
         -- exception.
+        --
+        -- We would want to use something like the following, but that leads to
+        -- problems when compiling arguments that are an expression as in `sum
+        -- 3` because if the compiler does not know that `3` is a function
+        -- argument, it inserts code that raises an exception if the value goes
+        -- unused which results in the error message "You don’t say what to do
+        -- with 3" instead of "not enough inputs to sum".
+        --
+        -- let
+        --     raise =
+        --         Ast.Raise <| Exception.NotEnoughInputs (name callable)
+        -- in
+        -- succeed <| Ast.Sequence arguments raise
         succeed <| Ast.Raise <| Exception.NotEnoughInputs (name callable)
 
     else
