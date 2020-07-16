@@ -1,11 +1,11 @@
 module Vm.Vm exposing
-    ( Instruction(..)
+    ( CompiledProgram
+    , Instruction(..)
     , State(..)
     , Vm
     , empty
     , initialize
     , run
-    , setEnvironment
     , step
     )
 
@@ -60,6 +60,15 @@ type Instruction
     | Raise Exception
 
 
+{-| Represent a compiled program.
+-}
+type alias CompiledProgram =
+    { instructions : List Instruction
+    , functionTable : Dict String Int
+    , startAddress : Int
+    }
+
+
 {-| Represent a stack based virtual machine.
 -}
 type alias Vm =
@@ -76,25 +85,20 @@ type alias Vm =
 -}
 empty : Vm
 empty =
-    initialize [] Dict.empty 0
+    initialize { instructions = [], functionTable = Dict.empty, startAddress = 0 }
 
 
 {-| Initialize a `Vm` with a list of instructions and a program counter.
 -}
-initialize : List Instruction -> Dict String Int -> Int -> Vm
-initialize instructions functionTable programCounter =
+initialize : CompiledProgram -> Vm
+initialize { instructions, functionTable, startAddress } =
     { instructions = Array.fromList instructions
-    , programCounter = programCounter
+    , programCounter = startAddress
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
     , functionTable = functionTable
     }
-
-
-setEnvironment : Environment -> Vm -> Vm
-setEnvironment env vm =
-    { vm | environment = env }
 
 
 {-| Increment the program counter of a `Vm`.

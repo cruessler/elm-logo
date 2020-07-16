@@ -1,6 +1,5 @@
 module Compiler.Ast exposing
-    ( CompiledProgram
-    , Context(..)
+    ( Context(..)
     , Function
     , Node(..)
     , Program
@@ -20,7 +19,7 @@ import Vm.Exception as Exception exposing (Exception)
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
-import Vm.Vm exposing (Instruction(..), Vm)
+import Vm.Vm exposing (CompiledProgram, Instruction(..), Vm)
 
 
 type alias Program =
@@ -34,13 +33,6 @@ type alias Function =
     , requiredArguments : List String
     , optionalArguments : List ( String, Node )
     , body : List Node
-    }
-
-
-type alias CompiledProgram =
-    { instructions : List Instruction
-    , functionTable : Dict String Int
-    , startAddress : Int
     }
 
 

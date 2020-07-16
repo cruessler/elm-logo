@@ -56,30 +56,22 @@ done (Logo state) =
 compile : String -> Logo -> Logo
 compile program logo =
     let
-        vm =
-            getVm logo
-
-        loadProgram : Ast.CompiledProgram -> Vm
-        loadProgram { instructions, functionTable, startAddress } =
-            let
-                env =
-                    Environment.input program vm.environment
-            in
-            Vm.initialize instructions functionTable startAddress
-                |> Vm.setEnvironment env
-
         result =
             program
                 |> Parser.run Parser.root
                 |> Result.mapError ParseError
                 |> Result.map Ast.compileProgram
-                |> Result.map loadProgram
+                |> Result.map Vm.initialize
     in
     case result of
         Ok newVm ->
-            Logo <| Paused newVm
+            Logo <| Paused { newVm | environment = Environment.input program newVm.environment }
 
         Err error ->
+            let
+                vm =
+                    getVm logo
+            in
             Logo <| Done { vm | environment = Environment.error "parse error" vm.environment }
 
 
