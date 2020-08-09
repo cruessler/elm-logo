@@ -2,15 +2,31 @@ module Vm.Command exposing
     ( Command0
     , Command1
     , Command2
+    , back
+    , clean
+    , clearscreen
+    , forward
+    , home
+    , left
+    , pendown
+    , penup
     , print
+    , right
+    , setpencolor
+    , setxy
     )
 
 {-| This module contains types and functions related to Logo’s builtin
 commands. A command can take arguments and returns no value.
+
+The functions in this module merely forward to the respective functions in
+`Environment` and add a layer of error handling which is why they are not
+explicitly documented.
+
 -}
 
 import Environment as E exposing (Environment)
-import Vm.Error exposing (Error)
+import Vm.Error exposing (Error(..), Internal(..))
 import Vm.Type as Type
 
 
@@ -41,8 +57,78 @@ type alias Command2 =
     }
 
 
-{-| Print a value to the console.
--}
 print : Type.Value -> Environment -> Result Error Environment
 print value env =
     Ok <| E.print (Type.toString value) env
+
+
+forward : Type.Value -> Environment -> Result Error Environment
+forward value env =
+    Type.toFloat value
+        |> Result.map (\f -> E.forward f env)
+        |> Result.mapError (Internal << Type)
+
+
+back : Type.Value -> Environment -> Result Error Environment
+back value env =
+    Type.toFloat value
+        |> Result.map (\f -> E.back f env)
+        |> Result.mapError (Internal << Type)
+
+
+left : Type.Value -> Environment -> Result Error Environment
+left value env =
+    Type.toFloat value
+        |> Result.map (\f -> E.left f env)
+        |> Result.mapError (Internal << Type)
+
+
+right : Type.Value -> Environment -> Result Error Environment
+right value env =
+    Type.toFloat value
+        |> Result.map (\f -> E.right f env)
+        |> Result.mapError (Internal << Type)
+
+
+setxy : Type.Value -> Type.Value -> Environment -> Result Error Environment
+setxy value1 value2 env =
+    Type.toFloat value1
+        |> Result.andThen
+            (\x ->
+                Type.toFloat value2
+                    |> Result.map
+                        (\y -> E.setxy x y env)
+            )
+        |> Result.mapError (Internal << Type)
+
+
+penup : Environment -> Result Error Environment
+penup =
+    Ok << E.penup
+
+
+pendown : Environment -> Result Error Environment
+pendown =
+    Ok << E.pendown
+
+
+setpencolor : Type.Value -> Environment -> Result Error Environment
+setpencolor value env =
+    Type.toInt value
+        |> Result.map (\int -> E.setpencolor int env)
+        |> Result.mapError (Internal << Type)
+
+
+home : Environment -> Result Error Environment
+home =
+    Ok << E.home
+
+
+clean : Environment -> Result Error Environment
+clean =
+    Ok << E.clean
+
+
+clearscreen : Environment -> Result Error Environment
+clearscreen =
+    Ok << E.clean << E.home

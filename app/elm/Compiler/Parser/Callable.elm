@@ -65,8 +65,14 @@ makeNode arguments callable =
 makeCommand : List Ast.Node -> Command.Command -> Parser context Problem Ast.Node
 makeCommand arguments command =
     case ( command, arguments ) of
+        ( Command.Command0 command0, [] ) ->
+            succeed <| Ast.Command0 command0
+
         ( Command.Command1 command1, [ first ] ) ->
             succeed <| Ast.Command1 command1 first
+
+        ( Command.Command2 command2, [ first, second ] ) ->
+            succeed <| Ast.Command2 command2 first second
 
         _ ->
             problem <| InvalidPrimitive (Command.name command)

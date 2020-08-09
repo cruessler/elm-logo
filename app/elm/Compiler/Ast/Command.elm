@@ -10,13 +10,25 @@ import Vm.Command as C
 
 
 type Command
-    = Command1 C.Command1
+    = Command0 C.Command0
+    | Command1 C.Command1
     | Command2 C.Command2
 
 
 all : List Command
 all =
     [ Command1 { name = "print", f = C.print }
+    , Command1 { name = "forward", f = C.forward }
+    , Command1 { name = "back", f = C.back }
+    , Command1 { name = "left", f = C.left }
+    , Command1 { name = "right", f = C.right }
+    , Command2 { name = "setxy", f = C.setxy }
+    , Command0 { name = "pendown", f = C.pendown }
+    , Command0 { name = "penup", f = C.penup }
+    , Command1 { name = "setpencolor", f = C.setpencolor }
+    , Command0 { name = "home", f = C.home }
+    , Command0 { name = "clean", f = C.clean }
+    , Command0 { name = "clearscreen", f = C.clearscreen }
     ]
 
 
@@ -29,6 +41,9 @@ find name_ =
 name : Command -> String
 name command =
     case command of
+        Command0 command0 ->
+            command0.name
+
         Command1 command1 ->
             command1.name
 
@@ -39,6 +54,9 @@ name command =
 arguments : Command -> Int
 arguments command =
     case command of
+        Command0 _ ->
+            0
+
         Command1 _ ->
             1
 

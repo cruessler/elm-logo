@@ -406,3 +406,54 @@ leadingAndTrailingWhitespace =
 end
   foo  """ [ "foo" ]
         ]
+
+
+{-| The following code comes from [rosettacode]. It has been slightly modified
+to make it run in a reasonable amount of time.
+
+[rosettacode]: https://rosettacode.org/wiki/Mandelbrot_set#Logo
+
+-}
+mandelbrot : Test
+mandelbrot =
+    describe "mandelbrot" <|
+        [ test "compiles and runs" <|
+            \_ ->
+                let
+                    program =
+                        """to count.color :count
+  if :count > 256 [output 0]
+  if :count > 128 [output 7]
+  if :count >  64 [output 5]
+  if :count >  32 [output 6]
+  if :count >  16 [output 4]
+  if :count >   8 [output 2]
+  if :count >   4 [output 1]
+  output 3
+end
+to calc :zr :zi [:count 0] [:az 0] [:bz 0]
+  if :az*:az + :bz*:bz > 4 [output :count]
+  if :count > 256 [output :count]
+  output (calc :zr :zi (:count + 1) (:zr + :az*:az - :bz*:bz) (:zi + 2*:az*:bz))
+end
+to mandelbrot :left :bottom :side :size
+  clearscreen
+  localmake "inc :side/:size
+  localmake "zr :left
+  repeat :size [ make "zr :zr + :inc make "zi :bottom penup setxy repcount - :size/2 minus :size/2 pendown repeat :size [ make "zi :zi + :inc setpencolor count.color calc :zr :zi forward 1 ] ]
+end
+
+mandelbrot minus 2 minus 1.25 2.5 10"""
+
+                    logo =
+                        Logo.run program Logo.empty
+
+                    env =
+                        Logo.getEnvironment logo
+
+                    -- The above program will create 10 * 10 lines.
+                    numberOfObjects =
+                        List.length env.objects
+                in
+                Expect.equal numberOfObjects 100
+        ]
