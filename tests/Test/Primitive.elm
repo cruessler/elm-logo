@@ -133,6 +133,20 @@ primitives =
                 \_ ->
                     Expect.equal (P.integerp <| T.Word <| "word") (Ok <| T.false)
             ]
+        , describe "floatp"
+            [ test "works with an integer" <|
+                \_ ->
+                    Expect.equal (P.floatp <| T.Int <| 10) (Ok <| T.true)
+            , test "works with a float" <|
+                \_ ->
+                    Expect.equal (P.floatp <| T.Float <| 1.1) (Ok <| T.true)
+            , test "works with a string" <|
+                \_ ->
+                    Expect.equal (P.floatp <| T.Word <| "word") (Ok <| T.false)
+            , test "works with a string that is a float" <|
+                \_ ->
+                    Expect.equal (P.floatp <| T.Word <| "10.0") (Ok <| T.true)
+            ]
         , describe "boolp"
             [ test "works with a string" <|
                 \_ -> Expect.equal (P.boolp <| T.Word <| "word") (Ok <| T.false)

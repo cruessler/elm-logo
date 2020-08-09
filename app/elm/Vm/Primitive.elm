@@ -8,6 +8,7 @@ module Vm.Primitive exposing
     , emptyp
     , equalp
     , first
+    , floatp
     , greaterp
     , integerp
     , lessp
@@ -495,6 +496,38 @@ integerp value =
                     Ok Type.true
 
                 Nothing ->
+                    Ok Type.false
+
+        _ ->
+            Ok Type.false
+
+
+{-| Check whether a given `Value` is an integer.
+
+    floatp (Word "a") == Ok (Word "false")
+
+    floatp (Int 10) == Ok (Word "true")
+
+    floatp (Float 10.1) == Ok (Word "true")
+
+    floatp (Word "10") == Ok (Word "true")
+
+-}
+floatp : Type.Value -> Result Error Type.Value
+floatp value =
+    case value of
+        Type.Int _ ->
+            Ok Type.true
+
+        Type.Float _ ->
+            Ok Type.true
+
+        Type.Word word ->
+            case String.toFloat word of
+                Just _ ->
+                    Ok Type.true
+
+                _ ->
                     Ok Type.false
 
         _ ->

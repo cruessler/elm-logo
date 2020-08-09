@@ -21,6 +21,7 @@ all =
     , Primitive1 { name = "emptyp", f = P.emptyp }
     , Primitive1 { name = "first", f = P.first }
     , Primitive1 { name = "integerp", f = P.integerp }
+    , Primitive1 { name = "floatp", f = P.floatp }
     , Primitive2 { name = "equalp", f = P.equalp }
     , Primitive2 { name = "notequalp", f = P.notequalp }
     , Primitive1 { name = "minus", f = P.minus }
