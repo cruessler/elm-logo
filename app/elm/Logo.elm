@@ -79,16 +79,7 @@ step : Logo -> Logo
 step (Logo state) =
     case state of
         Paused vm ->
-            case Vm.step vm of
-                Ok newVm ->
-                    Logo <| Paused newVm
-
-                Err error ->
-                    Logo <|
-                        Done
-                            { vm
-                                | environment = Environment.error (Error.toString error) vm.environment
-                            }
+            Logo <| Vm.step vm
 
         Done _ ->
             Logo state

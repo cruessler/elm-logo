@@ -627,20 +627,30 @@ execute instruction vm =
             raise exception vm
 
 
-{-| Execute a single instruction, returning an error when the program counter
-does not point to a valid instruction.
--}
-step : Vm -> Result Error Vm
-step vm =
-    Array.get vm.programCounter vm.instructions
-        |> Result.fromMaybe (Internal NoInstruction)
-        |> Result.andThen
-            (\instruction -> execute instruction vm)
-
-
 type State
     = Paused Vm
     | Done Vm
+
+
+{-| Execute a single instruction.
+-}
+step : Vm -> State
+step vm =
+    let
+        instruction =
+            Array.get vm.programCounter vm.instructions
+    in
+    case instruction of
+        Just instruction_ ->
+            case execute instruction_ vm of
+                Ok newVm ->
+                    Paused newVm
+
+                Err error ->
+                    Done { vm | environment = Environment.error (Error.toString error) vm.environment }
+
+        _ ->
+            Done vm
 
 
 {-| Run a `Vm` until the program counter points to an invalid instruction.
