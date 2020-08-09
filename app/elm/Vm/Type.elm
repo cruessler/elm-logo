@@ -96,6 +96,9 @@ toDebugString value =
         List [] ->
             "[]"
 
+        List _ ->
+            "[" ++ toString value ++ "]"
+
         _ ->
             toString value
 
