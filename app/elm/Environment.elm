@@ -15,6 +15,7 @@ module Environment exposing
     , right
     , setpencolor
     , setxy
+    , toValue
     )
 
 {-| This module contains types and functions related to the state of a Logo
@@ -25,6 +26,8 @@ import Color exposing (Color)
 import Environment.History exposing (Entry(..))
 import Environment.Line as Line exposing (Line)
 import Environment.Turtle as Turtle exposing (State(..), Turtle)
+import Json.Encode as E
+import Math.Vector2 as Vec2 exposing (Vec2)
 
 
 type Object
@@ -51,6 +54,88 @@ empty =
     , turtle = Turtle.initialize
     , color = defaultColor
     }
+
+
+encodeEntry : Entry -> E.Value
+encodeEntry entry =
+    case entry of
+        Input input_ ->
+            E.object [ ( "type", E.string "Input" ), ( "input", E.string input_ ) ]
+
+        Output output_ ->
+            E.object [ ( "type", E.string "Output" ), ( "output", E.string output_ ) ]
+
+        Error error_ ->
+            E.object [ ( "type", E.string "Error" ), ( "error", E.string error_ ) ]
+
+
+encodeVec2 : Vec2 -> E.Value
+encodeVec2 vec2 =
+    let
+        { x, y } =
+            Vec2.toRecord vec2
+    in
+    E.object [ ( "x", E.float x ), ( "y", E.float y ) ]
+
+
+encodeColor : Color -> E.Value
+encodeColor color =
+    let
+        { red, green, blue, alpha } =
+            Color.toRgba color
+    in
+    E.object
+        [ ( "red", E.float red )
+        , ( "green", E.float green )
+        , ( "blue", E.float blue )
+        , ( "alpha", E.float alpha )
+        ]
+
+
+encodeLine : Line -> E.Value
+encodeLine line =
+    E.object
+        [ ( "type", E.string "Line" )
+        , ( "start", encodeVec2 line.start )
+        , ( "end", encodeVec2 line.end )
+        , ( "color", encodeColor line.color )
+        ]
+
+
+encodeObject : Object -> E.Value
+encodeObject object =
+    case object of
+        Line line ->
+            encodeLine line
+
+
+encodeState : State -> E.Value
+encodeState state =
+    case state of
+        Down ->
+            E.string "Down"
+
+        Up ->
+            E.string "Up"
+
+
+encodeTurtle : Turtle -> E.Value
+encodeTurtle { x, y, direction, state } =
+    E.object
+        [ ( "x", E.float x )
+        , ( "y", E.float y )
+        , ( "direction", E.float direction )
+        , ( "state", encodeState state )
+        ]
+
+
+toValue : Environment -> E.Value
+toValue { history, objects, turtle } =
+    E.object
+        [ ( "history", E.list encodeEntry history )
+        , ( "objects", E.list encodeObject objects )
+        , ( "turtle", encodeTurtle turtle )
+        ]
 
 
 {-| Append an input to the console output.

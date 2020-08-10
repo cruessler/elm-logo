@@ -7,6 +7,7 @@ module Vm.Vm exposing
     , initialize
     , run
     , step
+    , toValue
     )
 
 {-| This module provides types and data structures for representing a virtual
@@ -16,6 +17,7 @@ machine as well as functions for running it.
 import Array exposing (Array)
 import Dict exposing (Dict)
 import Environment exposing (Environment)
+import Json.Encode as E
 import Vm.Command as C
 import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Exception as Exception exposing (Exception)
@@ -99,6 +101,118 @@ initialize { instructions, functionTable, startAddress } =
     , environment = Environment.empty
     , functionTable = functionTable
     }
+
+
+encodeInstruction : Instruction -> E.Value
+encodeInstruction instruction =
+    let
+        toString : String
+        toString =
+            case instruction of
+                PushValue value ->
+                    "PushValue " ++ Type.toDebugString value
+
+                PushVariable name ->
+                    "PushVariable " ++ name
+
+                StoreVariable name ->
+                    "StoreVariable " ++ name
+
+                LocalVariable name ->
+                    "LocalVariable " ++ name
+
+                Introspect0 { name } ->
+                    "Introspect0 " ++ name
+
+                Introspect1 { name } ->
+                    "Introspect1 " ++ name
+
+                Eval1 { name } ->
+                    "Eval1 " ++ name
+
+                Eval2 { name } ->
+                    "Eval2 " ++ name
+
+                Command0 { name } ->
+                    "Command0 " ++ name
+
+                Command1 { name } ->
+                    "Command1 " ++ name
+
+                Command2 { name } ->
+                    "Command2 " ++ name
+
+                PushLoopScope ->
+                    "PushLoopScope"
+
+                EnterLoopScope ->
+                    "EnterLoopScope"
+
+                PopLoopScope ->
+                    "PopLoopScope"
+
+                PushTemplateScope ->
+                    "PushTemplateScope"
+
+                EnterTemplateScope ->
+                    "EnterTemplateScope"
+
+                PopTemplateScope ->
+                    "PopTemplateScope"
+
+                PushLocalScope ->
+                    "PushLocalScope"
+
+                PopLocalScope ->
+                    "PopLocalScope"
+
+                JumpIfFalse distance ->
+                    "JumpIfFalse " ++ String.fromInt distance
+
+                JumpIfTrue distance ->
+                    "JumpIfTrue " ++ String.fromInt distance
+
+                Jump distance ->
+                    "Jump " ++ String.fromInt distance
+
+                Call address ->
+                    "Call " ++ String.fromInt address
+
+                CallByName name ->
+                    "CallByName " ++ name
+
+                PushVoid ->
+                    "PushVoid"
+
+                Return ->
+                    "Return"
+
+                CheckReturn ->
+                    "CheckReturn"
+
+                Duplicate ->
+                    "Duplicate"
+
+                Raise _ ->
+                    "Raise"
+    in
+    toString |> E.string
+
+
+encodeInstructions : Array Instruction -> E.Value
+encodeInstructions =
+    E.array encodeInstruction
+
+
+toValue : Vm -> E.Value
+toValue { instructions, programCounter, stack, scopes, environment } =
+    E.object
+        [ ( "instructions", encodeInstructions instructions )
+        , ( "programCounter", E.int programCounter )
+        , ( "stack", Stack.toValue stack )
+        , ( "scopes", E.list Scope.toValue scopes )
+        , ( "environment", Environment.toValue environment )
+        ]
 
 
 {-| Increment the program counter of a `Vm`.

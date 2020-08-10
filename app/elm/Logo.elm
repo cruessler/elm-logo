@@ -1,5 +1,6 @@
 module Logo exposing
     ( Logo
+    , compile
     , continue
     , done
     , empty

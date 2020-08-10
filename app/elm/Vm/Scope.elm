@@ -16,6 +16,7 @@ module Vm.Scope exposing
     , repcount
     , templateVariable
     , thing
+    , toValue
     )
 
 {-| This module contains types and functions related to Logo’s handling of
@@ -33,6 +34,7 @@ The current implementation is not optimized for speed, but for simplicity.
 -}
 
 import Dict exposing (Dict)
+import Json.Encode as E
 import Vm.Iterator as Iterator exposing (Iterator)
 import Vm.Type as Type
 
@@ -68,6 +70,55 @@ type Error
 empty : List Scope
 empty =
     [ Root { variables = Dict.empty } ]
+
+
+encodeBinding : Binding -> E.Value
+encodeBinding binding =
+    case binding of
+        Undefined ->
+            E.null
+
+        Defined value ->
+            E.string <| Type.toDebugString value
+
+
+encodeVariables : Dict String Binding -> E.Value
+encodeVariables =
+    E.dict identity encodeBinding
+
+
+toValue : Scope -> E.Value
+toValue scope =
+    case scope of
+        Root variables ->
+            E.object
+                [ ( "type", E.string "Root" )
+                , ( "variables", encodeVariables variables.variables )
+                ]
+
+        Local address variables ->
+            E.object
+                [ ( "type", E.string "Local" )
+                , ( "address", E.int address )
+                , ( "variables", encodeVariables variables.variables )
+                ]
+
+        Template { current, rest } ->
+            E.object
+                [ ( "type", E.string "Template" )
+                , ( "current"
+                  , current
+                        |> Maybe.map (Type.toDebugString >> E.string)
+                        |> Maybe.withDefault E.null
+                  )
+                , ( "rest", E.string <| Type.toDebugString rest )
+                ]
+
+        Loop { current } ->
+            E.object
+                [ ( "type", E.string "Loop" )
+                , ( "current", E.int current )
+                ]
 
 
 member : String -> Scope -> Bool

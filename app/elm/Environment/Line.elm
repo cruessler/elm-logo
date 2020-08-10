@@ -2,7 +2,7 @@ module Environment.Line exposing (Line, line)
 
 import Color exposing (Color)
 import Environment.Turtle exposing (Turtle)
-import Math.Vector2 as V2 exposing (Vec2)
+import Math.Vector2 as Vec2 exposing (Vec2)
 
 
 type alias Line =
@@ -14,7 +14,7 @@ type alias Line =
 
 line : Turtle -> Turtle -> Color -> Line
 line start end color =
-    { start = V2.vec2 start.x start.y
-    , end = V2.vec2 end.x end.y
+    { start = Vec2.vec2 start.x start.y
+    , end = Vec2.vec2 end.x end.y
     , color = color
     }
