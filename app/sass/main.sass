@@ -1,0 +1,186 @@
+$monospace-font: 12px 'Fira Code', monospace
+$background-color: rgb(37, 36, 36)
+
+*
+  box-sizing: border-box
+
+body
+  width: 100vw
+  height: 100vh
+
+  margin: 0
+
+button
+  color: rgb(37, 36, 36)
+  background-color: #cfcfcf
+  border-radius: 5px
+  border: none
+  padding: 5px 20px
+  cursor: pointer
+  transition: background-color ease-in 0.2s
+
+  &:hover
+    background-color: #efefef
+    transition: background-color ease-in 0.2s
+
+#main
+  font-family: Raleway, -apple-system, system, sans-serif
+  position: relative
+
+  width: 100%
+  height: 100%
+
+#canvas-container
+  width: 100%
+  height: 100%
+
+#canvas
+  width: 100%
+  height: 95%
+
+#overlay
+  position: absolute
+  top: 0
+  left: 0
+  width: 100vw
+  height: 100vh
+
+  display: grid
+  grid-template-columns: 4fr 9fr 3fr
+  grid-template-areas: "overlay-left . vm"
+
+#overlay-left
+  grid-area: overlay-left
+  display: grid
+  grid-template-rows: 5fr auto
+  grid-template-areas: "terminal" "examples"
+  overflow-y: auto
+
+  box-shadow: 5px 5px 5px 0px rgb(201, 199, 199)
+
+#vm
+  grid-area: vm
+  padding: 1em
+  overflow-y: auto
+
+  color: rgb(248, 248, 242)
+  background-color: $background-color
+
+  box-shadow: -5px 5px 5px 0px rgb(201, 199, 199)
+
+  h2
+    margin: 0px
+
+  table, ul
+    font: $monospace-font
+
+  tr.current
+    background-color: rgb(248, 248, 242)
+    color: rgb(18, 18, 18)
+
+  ul
+    padding: 0px
+
+    list-style: none
+
+    li
+      padding: 0.2em 0px
+
+      &.current
+        background-color: rgb(248, 248, 242)
+        color: rgb(18, 18, 18)
+
+table.instructions
+  overflow-y: auto
+
+#examples
+  color: rgb(248, 248, 242)
+  background-color: $background-color
+
+  grid-area: examples
+  padding: 1em
+  overflow-y: auto
+
+  h1
+    margin: 0px
+
+  ul
+    display: flex
+    flex-wrap: wrap
+    column-gap: 5px
+
+    padding: 0px
+
+    list-style: none
+
+    li
+      padding: 0.2em 0px
+
+      button
+        font-size: smaller
+
+#terminal
+  color: rgb(248, 248, 242)
+  background-color: $background-color
+
+  grid-area: terminal
+
+  display: grid
+  grid-template-rows: 1fr auto
+  grid-template-areas: "history" "controls"
+  overflow-y: auto
+
+#history
+  display: grid
+  grid-template-rows: 5fr 1fr
+  grid-template-areas: "entries" "prompt"
+  overflow-y: auto
+
+#entries
+  grid-area: entries
+
+  margin: 0px
+  padding: 0px
+  font: $monospace-font
+  overflow-y: auto
+
+  li
+    white-space: pre-wrap
+    list-style: none
+
+    &.input
+      &::before
+        content: "> "
+
+      color: adjust-color(rgb(247, 248, 242), $alpha: -0.3)
+
+    &.error
+      &::before
+        content: "! "
+
+      color: rgb(248, 80, 80)
+
+#controls
+  grid-area: controls
+
+  display: flex
+  padding: 10px
+
+  button
+    margin-left: 10px
+
+  :first-child
+    margin-left: auto
+
+#prompt
+  grid-area: prompt
+
+  display: flex
+
+#command-line
+  width: 100%
+
+  font: $monospace-font
+  background-color: #312f2f
+  border: none
+  color: #EAEAF0

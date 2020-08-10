@@ -1,3 +1,5 @@
-node_modules
-public
-elm-stuff
+node_modules/
+elm-stuff/
+
+.cache/
+dist/
