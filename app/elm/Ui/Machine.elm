@@ -1,12 +1,32 @@
 module Ui.Machine exposing (Machine, empty, fromValue, view)
 
 import Array exposing (Array)
+import Css
+    exposing
+        ( auto
+        , backgroundColor
+        , batch
+        , boxShadow5
+        , color
+        , em
+        , listStyle
+        , margin
+        , none
+        , overflowY
+        , padding
+        , padding2
+        , property
+        , px
+        , rgb
+        , zero
+        )
 import Dict exposing (Dict)
-import Html as H exposing (Html)
-import Html.Attributes as A
+import Html.Styled as H exposing (Html)
+import Html.Styled.Attributes as A
 import Json.Decode as D
 import Ui.Machine.Environment as Environment exposing (Environment)
 import Ui.Machine.Scope as Scope exposing (Binding(..), Scope(..))
+import Ui.Theme as Theme
 
 
 type alias Machine =
@@ -40,7 +60,10 @@ fromValue =
 
 stackValue : String -> Html msg
 stackValue value =
-    H.li [] [ H.text value ]
+    H.li
+        [ A.css [ padding2 (em 0.2) zero ]
+        ]
+        [ H.text value ]
 
 
 stack : List String -> Html msg
@@ -49,9 +72,16 @@ stack stack_ =
         children =
             List.map stackValue stack_
     in
-    H.div [ A.id "stack" ]
-        [ H.h2 [] [ H.text "Stack" ]
-        , H.ul [] children
+    H.div []
+        [ H.h2 [ A.css [ margin zero ] ] [ H.text "Stack" ]
+        , H.ul
+            [ A.css
+                [ Theme.monospaceFont
+                , padding zero
+                , listStyle none
+                ]
+            ]
+            children
         ]
 
 
@@ -80,7 +110,7 @@ variables variables_ =
             Dict.map variable variables_
                 |> Dict.values
     in
-    H.table [] children
+    H.table [ A.css [ Theme.monospaceFont ] ] children
 
 
 scope : Scope -> Html msg
@@ -100,7 +130,7 @@ scope scope_ =
         Template current rest ->
             H.li []
                 [ H.h3 [] [ H.text "Template" ]
-                , H.table []
+                , H.table [ A.css [ Theme.monospaceFont ] ]
                     [ H.tr []
                         [ H.td [] [ H.text "current" ]
                         , H.td [] [ H.text <| Maybe.withDefault "_" current ]
@@ -122,15 +152,36 @@ scopes scopes_ =
         children =
             List.map scope scopes_
     in
-    H.div [ A.id "scopes" ]
-        [ H.h2 [] [ H.text "Scopes" ]
-        , H.ul [] children
+    H.div []
+        [ H.h2 [ A.css [ margin zero ] ] [ H.text "Scopes" ]
+        , H.ul
+            [ A.css
+                [ Theme.monospaceFont
+                , padding zero
+                , listStyle none
+                ]
+            ]
+            children
         ]
 
 
 instruction : Bool -> Int -> String -> Html msg
 instruction current i instruction_ =
-    H.tr [ A.classList [ ( "current", current ) ] ]
+    let
+        style =
+            if current then
+                batch
+                    [ color (rgb 18 18 18)
+                    , backgroundColor Theme.color
+                    ]
+
+            else
+                batch []
+    in
+    H.tr
+        [ A.css
+            [ style ]
+        ]
         [ H.td [] [ H.text <| String.fromInt i ]
         , H.td [] [ H.text <| instruction_ ]
         ]
@@ -151,11 +202,17 @@ instructions programCounter instructions_ =
                 instructions_
                 |> Array.toList
     in
-    H.div [ A.id "instructions" ]
-        [ H.h2 [] [ H.text "Instructions" ]
+    H.div []
+        [ H.h2 [ A.css [ margin zero ] ] [ H.text "Instructions" ]
         , H.h3 [] [ H.text "Next" ]
-        , H.table [] [ current ]
-        , H.table [ A.class "instructions" ] children
+        , H.table [ A.css [ Theme.monospaceFont ] ] [ current ]
+        , H.table
+            [ A.css
+                [ Theme.monospaceFont
+                , overflowY auto
+                ]
+            ]
+            children
         ]
 
 
@@ -171,4 +228,14 @@ view machine_ =
         instructions_ =
             instructions machine_.programCounter machine_.instructions
     in
-    H.div [ A.id "vm" ] [ stack_, scopes_, instructions_ ]
+    H.div
+        [ A.css
+            [ property "grid-area" "vm"
+            , padding (em 1)
+            , overflowY auto
+            , color Theme.color
+            , backgroundColor Theme.backgroundColor
+            , boxShadow5 (px -5) (px 5) (px 5) zero (rgb 201 199 199)
+            ]
+        ]
+        [ stack_, scopes_, instructions_ ]

@@ -3,9 +3,31 @@ port module Main exposing (main)
 import Browser
 import Browser.Dom as Dom exposing (Viewport)
 import Browser.Events as Events
-import Html as H exposing (Html)
-import Html.Attributes as A
-import Html.Lazy exposing (lazy2)
+import Css
+    exposing
+        ( absolute
+        , auto
+        , boxShadow5
+        , height
+        , left
+        , none
+        , overflowY
+        , pct
+        , position
+        , property
+        , px
+        , relative
+        , rgb
+        , top
+        , vh
+        , vw
+        , width
+        , zero
+        )
+import Html as Unstyled
+import Html.Styled as H exposing (Html)
+import Html.Styled.Attributes as A
+import Html.Styled.Lazy exposing (lazy2)
 import Json.Decode as D
 import Json.Encode as E
 import Task
@@ -13,6 +35,7 @@ import Ui.Canvas as Canvas exposing (Size)
 import Ui.Examples as Examples
 import Ui.Machine as Machine exposing (Machine)
 import Ui.Terminal as Terminal
+import Ui.Theme as Theme
 import Worker.Command as Command exposing (Command(..))
 
 
@@ -142,7 +165,16 @@ overlayLeft model =
             , onContinue = Continue
             }
     in
-    H.div [ A.id "overlay-left" ]
+    H.div
+        [ A.css
+            [ property "grid-area" "overlay-left"
+            , property "display" "grid"
+            , property "grid-template-rows" "5fr auto"
+            , property "grid-template-areas" "\"terminal\" \"examples\""
+            , overflowY auto
+            , boxShadow5 (px 5) (px 5) (px 5) zero (rgb 201 199 199)
+            ]
+        ]
         [ Terminal.view
             config
             { currentText = model.currentCommandLine
@@ -154,13 +186,24 @@ overlayLeft model =
 
 overlay : Model -> Html Msg
 overlay model =
-    H.div [ A.id "overlay" ]
+    H.div
+        [ A.css
+            [ position absolute
+            , top (px 0)
+            , left (px 0)
+            , width (vw 100)
+            , height (vh 100)
+            , property "display" "grid"
+            , property "grid-template-columns" "4fr 9fr 3fr"
+            , property "grid-template-areas" "\"overlay-left . vm\""
+            ]
+        ]
         [ overlayLeft model
         , Machine.view model.machine
         ]
 
 
-view : Model -> Html Msg
+view : Model -> Unstyled.Html Msg
 view model =
     let
         canvas =
@@ -172,11 +215,21 @@ view model =
                 |> Maybe.withDefault (H.text "")
 
         children =
-            [ canvas
+            [ Theme.globalStyle
+            , canvas
             , overlay model
             ]
     in
-    H.div [ A.id "main" ] children
+    H.div
+        [ A.css
+            [ Theme.proportionalFont
+            , position relative
+            , width (pct 100)
+            , height (pct 100)
+            ]
+        ]
+        children
+        |> H.toUnstyled
 
 
 port sendCommand : E.Value -> Cmd msg

@@ -21,7 +21,6 @@
     "elm-hot": "^1.1.5",
     "elm-test": "^0.19.1",
     "parcel-bundler": "^1.12.4",
-    "request": "^2.88.2",
-    "sass": "^1.26.11"
+    "request": "^2.88.2"
   }
 }

@@ -1,9 +1,34 @@
 module Ui.Terminal exposing (view)
 
+import Css
+    exposing
+        ( auto
+        , backgroundColor
+        , before
+        , borderStyle
+        , color
+        , displayFlex
+        , hex
+        , margin
+        , marginLeft
+        , none
+        , overflowY
+        , padding
+        , pct
+        , preWrap
+        , property
+        , px
+        , rgb
+        , rgba
+        , whiteSpace
+        , width
+        , zero
+        )
 import Environment.History exposing (Entry(..))
-import Html as H exposing (Html)
-import Html.Attributes as A
-import Html.Events as E
+import Html.Styled as H exposing (Html)
+import Html.Styled.Attributes as A
+import Html.Styled.Events as E
+import Ui.Theme as Theme
 
 
 type alias Config msg =
@@ -22,21 +47,47 @@ type alias Model =
 
 line : Entry -> Html msg
 line entry =
+    let
+        style : Css.Style
+        style =
+            whiteSpace preWrap
+    in
     case entry of
         Input command ->
-            H.li [ A.class "input" ] [ H.text command ]
+            H.li
+                [ A.css
+                    [ style
+                    , before [ property "content" "\"> \"" ]
+                    , color (rgba 247 248 242 0.7)
+                    ]
+                ]
+                [ H.text command ]
 
         Output string ->
-            H.li [ A.class "output" ] [ H.text string ]
+            H.li [ A.css [ style ] ] [ H.text string ]
 
         Error message ->
-            H.li [ A.class "error" ] [ H.text message ]
+            H.li
+                [ A.css
+                    [ style
+                    , before [ property "content" "\"! \"" ]
+                    , color (rgb 248 80 80)
+                    ]
+                ]
+                [ H.text message ]
 
 
 prompt : Config msg -> Model -> Html msg
 prompt { onInput } { currentText } =
     H.textarea
-        [ A.id "command-line"
+        [ A.css
+            [ property "grid-area" "prompt"
+            , width (pct 100)
+            , Theme.monospaceFont
+            , backgroundColor (hex "312f2f")
+            , borderStyle none
+            , color (hex "eaeaf0")
+            ]
         , A.value currentText
         , A.placeholder help
         , E.onInput onInput
@@ -50,8 +101,24 @@ history config model =
         entries =
             List.map line model.history |> List.reverse
     in
-    H.div [ A.id "history" ]
-        [ H.ul [ A.id "entries" ] entries
+    H.div
+        [ A.css
+            [ property "display" "grid"
+            , property "grid-template-rows" "5fr 1fr"
+            , property "grid-template-areas" "\"entries\" \"prompt\""
+            , overflowY auto
+            ]
+        ]
+        [ H.ul
+            [ A.css
+                [ property "grid-area" "entries"
+                , margin zero
+                , padding zero
+                , Theme.monospaceFont
+                , overflowY auto
+                ]
+            ]
+            entries
         , prompt config model
         ]
 
@@ -63,19 +130,30 @@ help =
 
 controls : Config msg -> Html msg
 controls { onCompile, onContinue, onStep } =
-    H.div [ A.id "controls" ]
+    let
+        buttonStyle : Css.Style
+        buttonStyle =
+            marginLeft (px 10)
+    in
+    H.div
+        [ A.css
+            [ property "grid-area" "controls"
+            , padding (px 10)
+            , displayFlex
+            ]
+        ]
         [ H.button
-            [ A.id "compile"
+            [ A.css [ Theme.buttonStyle, marginLeft auto ]
             , E.onClick onCompile
             ]
             [ H.text "Compile" ]
         , H.button
-            [ A.id "step"
+            [ A.css [ Theme.buttonStyle, buttonStyle ]
             , E.onClick onStep
             ]
             [ H.text "Step" ]
         , H.button
-            [ A.id "run"
+            [ A.css [ Theme.buttonStyle, buttonStyle ]
             , E.onClick onContinue
             ]
             [ H.text "Continue" ]
@@ -84,7 +162,17 @@ controls { onCompile, onContinue, onStep } =
 
 view : Config msg -> Model -> Html msg
 view config model =
-    H.div [ A.id "terminal" ]
+    H.div
+        [ A.css
+            [ property "grid-area" "terminal"
+            , property "display" "grid"
+            , property "grid-template-rows" "1fr auto"
+            , property "grid-template-areas" "\"history\" \"controls\""
+            , overflowY auto
+            , color Theme.color
+            , backgroundColor Theme.backgroundColor
+            ]
+        ]
         [ history config model
         , controls config
         ]

@@ -1,9 +1,32 @@
 module Ui.Examples exposing (view)
 
+import Css
+    exposing
+        ( auto
+        , backgroundColor
+        , color
+        , display
+        , displayFlex
+        , em
+        , flexWrap
+        , fontSize
+        , listStyle
+        , margin
+        , none
+        , overflowY
+        , padding
+        , padding2
+        , property
+        , px
+        , smaller
+        , wrap
+        , zero
+        )
 import Dict exposing (Dict)
-import Html as H exposing (Html)
-import Html.Attributes as A
-import Html.Events as E
+import Html.Styled as H exposing (Html)
+import Html.Styled.Attributes as A
+import Html.Styled.Events as E
+import Ui.Theme as Theme
 
 
 type alias Config msg =
@@ -107,8 +130,15 @@ foreach range 99 1 [verse ?1 (print ")]"""
 
 example : Config msg -> String -> String -> Html msg
 example { onClick } title code =
-    H.li []
-        [ H.button [ A.class "load-example", E.onClick (onClick code) ]
+    H.li
+        [ A.css
+            [ padding2 (em 0.2) zero
+            ]
+        ]
+        [ H.button
+            [ A.css [ Theme.buttonStyle, fontSize smaller ]
+            , E.onClick (onClick code)
+            ]
             [ H.text title ]
         ]
 
@@ -117,10 +147,30 @@ view : Config msg -> Html msg
 view config =
     let
         h1 =
-            H.h1 [] [ H.text "Examples" ]
+            H.h1 [ A.css [ margin zero ] ] [ H.text "Examples" ]
 
         children =
             Dict.map (example config) all
                 |> Dict.values
     in
-    H.div [ A.id "examples" ] [ h1, H.ul [] children ]
+    H.div
+        [ A.css
+            [ property "grid-area" "examples"
+            , padding (em 1)
+            , overflowY auto
+            , color Theme.color
+            , backgroundColor Theme.backgroundColor
+            ]
+        ]
+        [ h1
+        , H.ul
+            [ A.css
+                [ displayFlex
+                , flexWrap wrap
+                , property "column-gap" "5px"
+                , padding zero
+                , listStyle none
+                ]
+            ]
+            children
+        ]

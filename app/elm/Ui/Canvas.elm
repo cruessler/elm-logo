@@ -1,14 +1,15 @@
 module Ui.Canvas exposing (Size, view)
 
 import Color
+import Css exposing (pct)
 import Environment.Line exposing (Line)
 import Environment.Turtle exposing (Turtle)
-import Html as H exposing (Html)
+import Html.Styled as H exposing (Html)
 import Math.Matrix4 as Mat4
 import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
-import Svg exposing (Svg, svg)
-import Svg.Attributes as A
+import Svg.Styled as Svg exposing (Svg, svg)
+import Svg.Styled.Attributes as A
 import Ui.Machine.Environment as Environment exposing (Environment, Object(..))
 
 
@@ -125,9 +126,12 @@ view { width, height } env =
         objects =
             turtle env.turtle :: lines env.objects
     in
-    H.div [ A.id "canvas-container" ]
+    H.div
+        [ A.css [ Css.width (pct 100), Css.height (pct 100) ]
+        , A.viewBox viewBox_
+        ]
         [ svg
-            [ A.id "canvas"
+            [ A.css [ Css.width (pct 100), Css.height (pct 95) ]
             , A.viewBox viewBox_
             ]
             objects
