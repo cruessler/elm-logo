@@ -28,11 +28,13 @@ import Environment.History exposing (Entry(..))
 import Html.Styled as H exposing (Html)
 import Html.Styled.Attributes as A
 import Html.Styled.Events as E
+import Json.Decode as D
 import Ui.Theme as Theme
 
 
 type alias Config msg =
     { onInput : String -> msg
+    , onRun : msg
     , onCompile : msg
     , onContinue : msg
     , onStep : msg
@@ -77,8 +79,28 @@ line entry =
                 [ H.text message ]
 
 
+onEnter : msg -> H.Attribute msg
+onEnter onRun =
+    let
+        decoder =
+            D.map2
+                (\key ctrlKey ->
+                    case ( key, ctrlKey ) of
+                        ( "Enter", True ) ->
+                            Just onRun
+
+                        _ ->
+                            Nothing
+                )
+                (D.field "key" D.string)
+                (D.field "ctrlKey" D.bool)
+                |> D.andThen (Maybe.map D.succeed >> Maybe.withDefault (D.fail ""))
+    in
+    E.on "keypress" decoder
+
+
 prompt : Config msg -> Model -> Html msg
-prompt { onInput } { currentText } =
+prompt { onInput, onRun } { currentText } =
     H.textarea
         [ A.css
             [ property "grid-area" "prompt"
@@ -91,6 +113,7 @@ prompt { onInput } { currentText } =
         , A.value currentText
         , A.placeholder help
         , E.onInput onInput
+        , onEnter onRun
         ]
         []
 

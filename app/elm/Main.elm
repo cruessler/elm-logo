@@ -50,6 +50,7 @@ type Msg
     = GetViewport Viewport
     | Resize Int Int
     | Input String
+    | Run
     | Compile
     | Step
     | Continue
@@ -116,6 +117,16 @@ update msg model =
         Input newCommandLine ->
             ( { model | currentCommandLine = newCommandLine }, Cmd.none )
 
+        Run ->
+            let
+                command =
+                    Command.Run model.currentCommandLine
+
+                outCmd =
+                    sendCommand (Command.toValue command)
+            in
+            ( { model | currentCommandLine = "" }, outCmd )
+
         Compile ->
             let
                 command =
@@ -160,6 +171,7 @@ overlayLeft model =
     let
         config =
             { onInput = Input
+            , onRun = Run
             , onCompile = Compile
             , onStep = Step
             , onContinue = Continue
