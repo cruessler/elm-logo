@@ -49,7 +49,6 @@ line { start, end, color } =
     in
     Svg.polyline
         [ A.fill "none"
-        , A.stroke "black"
         , A.stroke <|
             "rgba("
                 ++ String.fromFloat (red * 255.0)
