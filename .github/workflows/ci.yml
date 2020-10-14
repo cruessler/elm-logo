@@ -24,7 +24,16 @@ jobs:
         run: npm test
 
       - name: Build assets
-        run: npm run prod
+        run: |
+          # By compiling both `Main.elm` and `Worker.elm`, we make sure all
+          # intermediate files are present before `npm run prod` runs.
+          #
+          # Otherwise, parcel would compile both files in parallel which can
+          # lead to data races and let one of the compiler processes fail with
+          # an error about corrupt files.
+          npx elm make app/elm/Main.elm --output /dev/null
+          npx elm make app/elm/Worker.elm --output /dev/null
+          npm run prod
 
       - name: Check formatting
         run: |
