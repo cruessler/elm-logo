@@ -8,6 +8,7 @@ module Vm.Vm exposing
     , run
     , step
     , toValue
+    , withEnvironment
     )
 
 {-| This module provides types and data structures for representing a virtual
@@ -100,6 +101,13 @@ initialize { instructions, functionTable, startAddress } =
     , scopes = Scope.empty
     , environment = Environment.empty
     , functionTable = functionTable
+    }
+
+
+withEnvironment : Environment -> Vm -> Vm
+withEnvironment environment vm =
+    { vm
+        | environment = environment
     }
 
 

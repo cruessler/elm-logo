@@ -457,3 +457,29 @@ mandelbrot minus 2 minus 1.25 2.5 10"""
                 in
                 Expect.equal numberOfObjects 100
         ]
+
+
+environmentIsKept : Test
+environmentIsKept =
+    test "the environment is kept" <|
+        \_ ->
+            let
+                firstProgram =
+                    "pendown forward 90"
+
+                secondProgram =
+                    "forward 90"
+
+                logo =
+                    Logo.empty
+                        |> Logo.run firstProgram
+                        |> Logo.run secondProgram
+
+                env =
+                    Logo.getEnvironment logo
+
+                -- The above program will create 2 lines.
+                numberOfObjects =
+                    List.length env.objects
+            in
+            Expect.equal numberOfObjects 2
