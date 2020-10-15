@@ -33,7 +33,7 @@ type alias Introspect1 a =
 
 repcount : { a | scopes : List Scope } -> Result Scope.Error Type.Value
 repcount vm =
-    Ok <| Type.Word (Scope.repcount vm.scopes |> String.fromInt)
+    Ok <| Type.Int (Scope.repcount vm.scopes)
 
 
 templateVariable : Type.Value -> { a | scopes : List Scope } -> Result Scope.Error Type.Value

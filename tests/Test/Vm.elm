@@ -100,7 +100,7 @@ vmWithIntrospection =
     in
     test "calling repcount outside a loop" <|
         \_ ->
-            Expect.equal vm.stack [ Stack.Value <| Type.Word "-1" ]
+            Expect.equal vm.stack [ Stack.Value <| Type.Int -1 ]
 
 
 vmWithConditionalPrint : Test
