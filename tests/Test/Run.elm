@@ -93,6 +93,8 @@ repeatWithRepcount =
     describe "repeat with repcount " <|
         [ printsLines "repeat 4 [ print repcount ]" [ "1", "2", "3", "4" ]
         , printsLines "repeat 2 [ repeat 2 [ print repcount ] ]" [ "1", "2", "1", "2" ]
+        , printsLines "repeat 2 [ print 3 - repcount ]" [ "2", "1" ]
+        , printsLines "repeat 2 [ print (3 - repcount) ]" [ "2", "1" ]
         ]
 
 

@@ -106,22 +106,32 @@ repeatAtMost_ { item, separator } ( count, acc ) =
 
 functionName : Parser context Problem String
 functionName =
+    let
+        isStartCharacter =
+            \c ->
+                (c /= '[')
+                    && (c /= ']')
+                    && (c /= '(')
+                    && (c /= ')')
+                    && (c /= ':')
+                    && (c /= '"')
+                    && (c /= '?')
+                    && (c /= '\n')
+                    && (not <| Char.isDigit c)
+
+        isRestCharacter =
+            \c ->
+                (c /= '[')
+                    && (c /= ']')
+                    && (c /= '(')
+                    && (c /= ')')
+                    && (c /= ' ')
+                    && (c /= '\n')
+    in
     getChompedString <|
         succeed ()
-            |. chompIf
-                (\c ->
-                    (c /= '[')
-                        && (c /= ']')
-                        && (c /= '(')
-                        && (c /= ')')
-                        && (c /= ':')
-                        && (c /= '"')
-                        && (c /= '?')
-                        && (c /= '\n')
-                        && (not <| Char.isDigit c)
-                )
-                ExpectingStartOfFunctionName
-            |. chompWhile (\c -> c /= ' ' && c /= '\n')
+            |. chompIf isStartCharacter ExpectingStartOfFunctionName
+            |. chompWhile isRestCharacter
 
 
 maybeSpaces : Parser context problem ()
