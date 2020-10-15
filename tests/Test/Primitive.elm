@@ -132,6 +132,9 @@ primitives =
             , test "works with a string" <|
                 \_ ->
                     Expect.equal (P.integerp <| T.Word <| "word") (Ok <| T.false)
+            , test "works with a float" <|
+                \_ ->
+                    Expect.equal (P.integerp <| T.Float 3.0) (Ok <| T.true)
             ]
         , describe "floatp"
             [ test "works with an integer" <|

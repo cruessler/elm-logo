@@ -1,4 +1,4 @@
-module Test.Type exposing (toDebugString, toString)
+module Test.Type exposing (toDebugString, toInt, toString)
 
 import Expect
 import Test exposing (Test, describe, test)
@@ -34,6 +34,24 @@ toString =
                 Expect.equal
                     "[small medium large] [vanilla [ultra chocolate] lychee [rum raisin] ginger] [cone cup]"
                     (T.toString list)
+        ]
+
+
+toInt : Test
+toInt =
+    describe "toInt" <|
+        [ test "works with an integer" <|
+            \_ ->
+                Expect.equal (T.toInt <| T.Int 10) (Ok 10)
+        , test "works with a float" <|
+            \_ ->
+                Expect.equal (T.toInt <| T.Float 10) (Ok 10)
+        , test "works with a string" <|
+            \_ ->
+                Expect.err (T.toInt <| T.Word "word")
+        , test "works with a string that is an integer" <|
+            \_ ->
+                Expect.equal (T.toInt <| T.Word "10") (Ok 10)
         ]
 
 

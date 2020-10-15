@@ -114,6 +114,17 @@ toInt value =
         Int int ->
             Ok int
 
+        Float float ->
+            let
+                maybeInt =
+                    round float
+            in
+            if (round float |> Basics.toFloat) == float then
+                Ok maybeInt
+
+            else
+                Err <| NoInt (String.fromFloat float)
+
         _ ->
             Err <| NoInt (toString value)
 

@@ -95,6 +95,8 @@ repeatWithRepcount =
         , printsLines "repeat 2 [ repeat 2 [ print repcount ] ]" [ "1", "2", "1", "2" ]
         , printsLines "repeat 2 [ print 3 - repcount ]" [ "2", "1" ]
         , printsLines "repeat 2 [ print (3 - repcount) ]" [ "2", "1" ]
+        , printsLines """repeat 1 [ repeat repcount + 1 [ print repcount ] ]"""
+            [ "1", "2" ]
         ]
 
 

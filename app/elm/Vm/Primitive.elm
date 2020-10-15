@@ -498,6 +498,13 @@ integerp value =
                 Nothing ->
                     Ok Type.false
 
+        Type.Float float ->
+            if (round float |> toFloat) == float then
+                Ok Type.true
+
+            else
+                Ok Type.false
+
         _ ->
             Ok Type.false
 
