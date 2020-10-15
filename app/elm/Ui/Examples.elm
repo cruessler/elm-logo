@@ -104,7 +104,7 @@ foreach [ 1 2 3 4 5 6 7 8 9 10 ] [ print fibonacci ?1 ]
   repeat (:i - 2) [ make "c :a make "a :a + :b make "b :c ]
   output :a
 end
-foreach [ 1 2 3 4 5 6 7 8 9 10 ] [ print fibonacci ?1 ]"""
+repeat 10 [ print fibonacci repcount ]"""
       )
     , ( "99 bottles of beer"
       , """to bottles :n
@@ -118,11 +118,7 @@ to verse :n
   print [Take one down, pass it around]
   print sentence bottles :n-1 [of beer on the wall]
 end
-to range :from :to [:acc []]
-  if :from > :to - 1 [make "acc (sentence :acc :from) output (range :from - 1 :to :acc)]
-  output :acc
-end
-foreach range 99 1 [verse ?1 (print ")]"""
+repeat 99 [verse 100 - repcount (print ")]"""
       )
     ]
         |> Dict.fromList
