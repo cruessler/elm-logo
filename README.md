@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/cruessler/elm-logo.svg?branch=master)](https://travis-ci.org/cruessler/elm-logo)
+[![Build Status](https://github.com/cruessler/elm-logo/workflows/build/badge.svg)](https://github.com/cruessler/elm-logo/actions?query=workflow%3Abuild)
 
 # A Logo interpreter, written in Elm
 
