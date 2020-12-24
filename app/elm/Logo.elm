@@ -11,14 +11,12 @@ module Logo exposing
     , step
     )
 
-import Array exposing (Array)
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
 import Environment exposing (Environment)
-import Environment.History exposing (Entry, History)
+import Environment.History exposing (History)
 import Parser.Advanced as Parser exposing (DeadEnd)
-import Vm.Error as Error
-import Vm.Vm as Vm exposing (Instruction, State(..), Vm)
+import Vm.Vm as Vm exposing (State(..), Vm)
 
 
 type Logo
@@ -47,7 +45,7 @@ continue (Logo state) =
 done : Logo -> Bool
 done (Logo state) =
     case state of
-        Paused vm ->
+        Paused _ ->
             False
 
         Done _ ->

@@ -2,7 +2,6 @@ module Test.Parser exposing (..)
 
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
-import Compiler.Parser.Helper as Helper
 import Compiler.Parser.Value as Value
 import Dict
 import Expect exposing (Expectation)

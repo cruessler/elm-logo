@@ -4,7 +4,7 @@ import Array
 import Dict
 import Environment
 import Environment.History exposing (Entry(..), History)
-import Expect exposing (Expectation)
+import Expect
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Exception as Exception

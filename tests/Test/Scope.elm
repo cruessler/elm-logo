@@ -1,13 +1,8 @@
 module Test.Scope exposing (..)
 
-import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
+import Expect
 import Test exposing (..)
-import Vm.Scope as Scope
-    exposing
-        ( Binding(..)
-        , Scope
-        )
+import Vm.Scope as Scope exposing (Binding(..))
 import Vm.Type as Type
 
 

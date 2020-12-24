@@ -56,8 +56,7 @@ type Scope
 
 
 type Type
-    = RootScope
-    | LocalScope
+    = LocalScope
     | TemplateScope
     | LoopScope
 
@@ -280,7 +279,7 @@ enterLoopScope scopes =
 repcount : List Scope -> Int
 repcount scopes =
     case scopes of
-        (Loop { current }) :: rest ->
+        (Loop { current }) :: _ ->
             current
 
         _ ->

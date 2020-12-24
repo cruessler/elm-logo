@@ -1,11 +1,10 @@
 module Test.Ast exposing (..)
 
 import Compiler.Ast as Ast
-import Expect exposing (Expectation)
+import Expect
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Exception as Exception
-import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
 import Vm.Vm exposing (Instruction(..))

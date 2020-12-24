@@ -11,8 +11,8 @@ module Compiler.Ast exposing
 {-| This module provides types and functions for working with Logo ASTs.
 -}
 
-import Dict exposing (Dict)
-import List.Nonempty as Nonempty exposing (Nonempty(..))
+import Dict
+import List.Nonempty exposing (Nonempty(..))
 import Vm.Command as C
 import Vm.Error exposing (Error(..))
 import Vm.Exception as Exception exposing (Exception)

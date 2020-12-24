@@ -7,7 +7,6 @@ module Compiler.Ast.Primitive exposing
     )
 
 import Vm.Primitive as P
-import Vm.Vm exposing (Vm)
 
 
 type Primitive

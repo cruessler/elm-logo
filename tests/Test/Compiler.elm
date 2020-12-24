@@ -1,7 +1,7 @@
 module Test.Compiler exposing (..)
 
 import Compiler.Ast as Ast exposing (Node(..))
-import Expect exposing (Expectation)
+import Expect
 import Test exposing (Test, describe, test)
 import Vm.Type as Type
 import Vm.Vm as Vm exposing (Instruction(..))
