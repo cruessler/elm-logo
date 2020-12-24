@@ -21,7 +21,7 @@ printsError program expectedMessage =
                     List.head history
             in
             case last of
-                Just (Error actualMessage) ->
+                Just ( _, Error actualMessage ) ->
                     Expect.equal expectedMessage actualMessage
 
                 Just _ ->

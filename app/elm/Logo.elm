@@ -15,7 +15,7 @@ import Array exposing (Array)
 import Compiler.Ast as Ast
 import Compiler.Parser as Parser
 import Environment exposing (Environment)
-import Environment.History exposing (Entry)
+import Environment.History exposing (Entry, History)
 import Parser.Advanced as Parser exposing (DeadEnd)
 import Vm.Error as Error
 import Vm.Vm as Vm exposing (Instruction, State(..), Vm)
@@ -101,7 +101,7 @@ getEnvironment (Logo state) =
             environment
 
 
-getHistory : Logo -> List Entry
+getHistory : Logo -> History
 getHistory (Logo state) =
     case state of
         Paused { environment } ->

@@ -3,20 +3,25 @@ module Test.Run exposing (..)
 import Array
 import Compiler.Parser as Parser
 import Compiler.Parser.Problem as Problem
-import Environment.History exposing (Entry(..))
+import Environment.History exposing (Entry(..), History)
 import Expect exposing (Expectation)
 import Logo exposing (Logo)
 import Parser.Advanced as Parser
 import Test exposing (Test, describe, test)
 
 
+outputLines : List String -> History
+outputLines =
+    List.indexedMap (\i line -> ( i + 1, Output line ))
+
+
 printsLines : String -> List String -> Test
 printsLines program lines =
     let
-        isOutput : Entry -> Bool
+        isOutput : ( Int, Entry ) -> Bool
         isOutput entry =
             case entry of
-                Output _ ->
+                ( _, Output _ ) ->
                     True
 
                 _ ->
@@ -35,12 +40,12 @@ printsLines program lines =
                     List.head history
             in
             case last of
-                Just (Error message) ->
+                Just ( _, Error message ) ->
                     Expect.fail message
 
                 _ ->
                     Expect.equal
-                        (lines |> List.map Output |> List.reverse)
+                        (lines |> outputLines |> List.reverse)
                         (List.filter isOutput history)
 
 

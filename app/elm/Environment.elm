@@ -23,7 +23,7 @@ environment: the state of the turtle, console output etc.
 -}
 
 import Color exposing (Color)
-import Environment.History exposing (Entry(..))
+import Environment.History exposing (Entry(..), History)
 import Environment.Line as Line exposing (Line)
 import Environment.Turtle as Turtle exposing (State(..), Turtle)
 import Json.Encode as E
@@ -35,10 +35,11 @@ type Object
 
 
 type alias Environment =
-    { history : List Entry
-    , objects : List Object
+    { history : History
+    , objects : List ( Int, Object )
     , turtle : Turtle
     , color : Color
+    , nextId : Int
     }
 
 
@@ -53,20 +54,33 @@ empty =
     , objects = []
     , turtle = Turtle.initialize
     , color = defaultColor
+    , nextId = 0
     }
 
 
-encodeEntry : Entry -> E.Value
-encodeEntry entry =
+encodeEntry : ( Int, Entry ) -> E.Value
+encodeEntry ( id, entry ) =
     case entry of
         Input input_ ->
-            E.object [ ( "type", E.string "Input" ), ( "input", E.string input_ ) ]
+            E.object
+                [ ( "type", E.string "Input" )
+                , ( "id", E.int id )
+                , ( "input", E.string input_ )
+                ]
 
         Output output_ ->
-            E.object [ ( "type", E.string "Output" ), ( "output", E.string output_ ) ]
+            E.object
+                [ ( "type", E.string "Output" )
+                , ( "id", E.int id )
+                , ( "output", E.string output_ )
+                ]
 
         Error error_ ->
-            E.object [ ( "type", E.string "Error" ), ( "error", E.string error_ ) ]
+            E.object
+                [ ( "type", E.string "Error" )
+                , ( "id", E.int id )
+                , ( "error", E.string error_ )
+                ]
 
 
 encodeVec2 : Vec2 -> E.Value
@@ -92,21 +106,22 @@ encodeColor color =
         ]
 
 
-encodeLine : Line -> E.Value
-encodeLine line =
+encodeLine : Int -> Line -> E.Value
+encodeLine id line =
     E.object
         [ ( "type", E.string "Line" )
+        , ( "id", E.int id )
         , ( "start", encodeVec2 line.start )
         , ( "end", encodeVec2 line.end )
         , ( "color", encodeColor line.color )
         ]
 
 
-encodeObject : Object -> E.Value
-encodeObject object =
+encodeObject : ( Int, Object ) -> E.Value
+encodeObject ( id, object ) =
     case object of
         Line line ->
-            encodeLine line
+            encodeLine id line
 
 
 encodeState : State -> E.Value
@@ -138,25 +153,43 @@ toValue { history, objects, turtle } =
         ]
 
 
+pushHistoryEntry : Entry -> Environment -> Environment
+pushHistoryEntry entry env =
+    let
+        nextId =
+            env.nextId + 1
+    in
+    { env | nextId = nextId, history = ( env.nextId, entry ) :: env.history }
+
+
 {-| Append an input to the console output.
 -}
 input : String -> Environment -> Environment
-input string env =
-    { env | history = Input string :: env.history }
+input string =
+    pushHistoryEntry (Input string)
 
 
 {-| Append an error to the console output.
 -}
 error : String -> Environment -> Environment
-error string env =
-    { env | history = Error string :: env.history }
+error string =
+    pushHistoryEntry (Error string)
 
 
 {-| Append a line to the console output.
 -}
 print : String -> Environment -> Environment
-print string env =
-    { env | history = Output string :: env.history }
+print string =
+    pushHistoryEntry (Output string)
+
+
+pushObject : Object -> Environment -> Environment
+pushObject object env =
+    let
+        nextId =
+            env.nextId + 1
+    in
+    { env | nextId = nextId, objects = ( env.nextId, object ) :: env.objects }
 
 
 {-| Move the turtle forward.
@@ -177,7 +210,8 @@ forward by env =
             newLine =
                 Line.line env.turtle newTurtle env.color
         in
-        { env | turtle = newTurtle, objects = Line newLine :: env.objects }
+        { env | turtle = newTurtle }
+            |> pushObject (Line newLine)
 
 
 {-| Move the turtle back.
@@ -198,7 +232,8 @@ back by env =
             newLine =
                 Line.line env.turtle newTurtle env.color
         in
-        { env | turtle = newTurtle, objects = Line newLine :: env.objects }
+        { env | turtle = newTurtle }
+            |> pushObject (Line newLine)
 
 
 {-| Turn the turtle left.

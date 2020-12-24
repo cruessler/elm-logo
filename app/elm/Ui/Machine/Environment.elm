@@ -1,7 +1,7 @@
 module Ui.Machine.Environment exposing (Environment, Object(..), empty, environment, fromValue)
 
 import Color exposing (Color)
-import Environment.History exposing (Entry(..))
+import Environment.History exposing (Entry(..), History)
 import Environment.Line as Line exposing (Line)
 import Environment.Turtle as Turtle exposing (State(..), Turtle)
 import Json.Decode as D
@@ -13,8 +13,8 @@ type Object
 
 
 type alias Environment =
-    { history : List Entry
-    , objects : List Object
+    { history : History
+    , objects : List ( Int, Object )
     , turtle : Turtle
     }
 
@@ -43,13 +43,20 @@ decoderForEntry type_ =
             D.fail ("Invalid entry: " ++ type_)
 
 
-entry : D.Decoder Entry
+decodeId : a -> D.Decoder ( Int, a )
+decodeId value =
+    D.field "id" D.int
+        |> D.map (\id -> ( id, value ))
+
+
+entry : D.Decoder ( Int, Entry )
 entry =
     D.field "type" D.string
         |> D.andThen decoderForEntry
+        |> D.andThen decodeId
 
 
-history : D.Decoder (List Entry)
+history : D.Decoder History
 history =
     D.list entry
 
@@ -89,13 +96,14 @@ decoderForObject type_ =
             D.fail ("Invalid object: " ++ type_)
 
 
-object : D.Decoder Object
+object : D.Decoder ( Int, Object )
 object =
     D.field "type" D.string
         |> D.andThen decoderForObject
+        |> D.andThen decodeId
 
 
-objects : D.Decoder (List Object)
+objects : D.Decoder (List ( Int, Object ))
 objects =
     D.list object
 
