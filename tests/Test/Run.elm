@@ -1,12 +1,8 @@
 module Test.Run exposing (..)
 
-import Array
-import Compiler.Parser as Parser
-import Compiler.Parser.Problem as Problem
 import Environment.History exposing (Entry(..), History)
-import Expect exposing (Expectation)
-import Logo exposing (Logo)
-import Parser.Advanced as Parser
+import Expect
+import Logo
 import Test exposing (Test, describe, test)
 
 
@@ -375,6 +371,8 @@ print foo "baz"""
         ]
 
 
+{-| This function has been stripped of statements that move the turtle.
+-}
 arithmeticInArguments : Test
 arithmeticInArguments =
     describe "function" <|

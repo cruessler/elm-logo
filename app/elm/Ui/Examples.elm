@@ -5,7 +5,6 @@ import Css
         ( auto
         , backgroundColor
         , color
-        , display
         , displayFlex
         , em
         , flexWrap
@@ -17,7 +16,6 @@ import Css
         , padding
         , padding2
         , property
-        , px
         , smaller
         , wrap
         , zero

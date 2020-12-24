@@ -31,7 +31,7 @@ manual][ucb-manual].
 
 -}
 
-import Vm.Error as Error exposing (Error(..), Internal(..))
+import Vm.Error exposing (Error(..), Internal(..))
 import Vm.Type as Type
 
 
@@ -246,10 +246,10 @@ equalp_ value1 value2 =
         ( Type.List list1, Type.List list2 ) ->
             compareLists list1 list2
 
-        ( Type.List list1, _ ) ->
+        ( Type.List _, _ ) ->
             False
 
-        ( _, Type.List list2 ) ->
+        ( _, Type.List _ ) ->
             False
 
         ( Type.Word word1, Type.Word word2 ) ->

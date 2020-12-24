@@ -1,9 +1,9 @@
 module Test.Primitive exposing (..)
 
-import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
+import Expect
+import Fuzz exposing (list, string)
 import Test exposing (..)
-import Vm.Error as Error exposing (Error)
+import Vm.Error as Error
 import Vm.Primitive as P
 import Vm.Type as T
 
@@ -32,7 +32,7 @@ primitives =
                             list |> List.map T.Word |> T.List |> P.first
                     in
                     case list of
-                        first :: rest ->
+                        first :: _ ->
                             result
                                 |> Expect.equal (Ok <| T.Word <| first)
 
@@ -61,7 +61,7 @@ primitives =
                             list |> List.map T.Word |> T.List |> P.butfirst
                     in
                     case list of
-                        first :: rest ->
+                        _ :: rest ->
                             result
                                 |> Expect.equal (Ok <| T.List <| List.map T.Word <| rest)
 

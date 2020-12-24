@@ -602,7 +602,7 @@ raise exception vm =
     case exception of
         Exception.WrongInput function ->
             case vm.stack of
-                (Stack.Value first) :: rest ->
+                (Stack.Value first) :: _ ->
                     Err <| WrongInput function (Type.toDebugString first)
 
                 _ ->
@@ -610,7 +610,7 @@ raise exception vm =
 
         Exception.NoUseOfValue ->
             case vm.stack of
-                (Stack.Value first) :: rest ->
+                (Stack.Value first) :: _ ->
                     Err <| NoUseOfValue (Type.toDebugString first)
 
                 _ ->
@@ -733,7 +733,7 @@ execute instruction vm =
                             |> incrementProgramCounter
                         )
 
-                (Stack.Value _) :: rest ->
+                (Stack.Value _) :: _ ->
                     Ok
                         ({ vm | stack = Stack.Value Type.true :: vm.stack }
                             |> incrementProgramCounter
