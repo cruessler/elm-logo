@@ -1,11 +1,19 @@
-module Test.Encode exposing (compilePrograms, encodeAndDecodeScope, encodeAndDecodeStack, encodeAndDecodeVms)
+module Test.Encode exposing
+    ( compilePrograms
+    , encodeAndDecodeEnvironment
+    , encodeAndDecodeScope
+    , encodeAndDecodeStack
+    , encodeAndDecodeVms
+    )
 
+import Environment.History exposing (Entry(..))
 import Expect
 import Json.Decode as D
 import Json.Encode as E
 import Logo
 import Test exposing (Test, describe, test)
 import Ui.Machine as Machine
+import Ui.Machine.Environment exposing (Object(..))
 import Ui.Machine.Scope as Scope
 import Vm.Scope as Scope
 import Vm.Stack as Stack
@@ -128,4 +136,34 @@ encodeAndDecodeStack =
                 in
                 D.decodeValue (D.list D.string) value
                     |> Expect.ok
+        ]
+
+
+encodeAndDecodeEnvironment : Test
+encodeAndDecodeEnvironment =
+    describe "Environment" <|
+        [ test "encodes and decodes objects" <|
+            \_ ->
+                let
+                    decodedMachine =
+                        Logo.empty
+                            |> Logo.run "pendown forward 100"
+                            |> Logo.getVm
+                            |> Vm.toValue
+                            |> Machine.fromValue
+
+                    failure =
+                        Expect.fail "expected decoded environment to contain exactly one line and one line of history"
+                in
+                case decodedMachine of
+                    Ok { environment } ->
+                        case ( environment.objects, environment.history ) of
+                            ( [ ( 1, Line _ ) ], [ ( 0, Input "pendown forward 100" ) ] ) ->
+                                Expect.pass
+
+                            _ ->
+                                failure
+
+                    _ ->
+                        failure
         ]

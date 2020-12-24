@@ -24,10 +24,11 @@ import Css
         , width
         , zero
         )
-import Environment.History exposing (Entry(..))
+import Environment.History exposing (Entry(..), History)
 import Html.Styled as H exposing (Html)
 import Html.Styled.Attributes as A
 import Html.Styled.Events as E
+import Html.Styled.Keyed as K
 import Json.Decode as D
 import Ui.Theme as Theme
 
@@ -43,7 +44,7 @@ type alias Config msg =
 
 type alias Model =
     { currentText : String
-    , history : List Entry
+    , history : History
     }
 
 
@@ -122,7 +123,12 @@ history : Config msg -> Model -> Html msg
 history config model =
     let
         entries =
-            List.map line model.history |> List.reverse
+            model.history
+                |> List.map
+                    (\( id, entry ) ->
+                        ( String.fromInt id, line entry )
+                    )
+                |> List.reverse
     in
     H.div
         [ A.css
@@ -132,7 +138,7 @@ history config model =
             , overflowY auto
             ]
         ]
-        [ H.ul
+        [ K.ul
             [ A.css
                 [ property "grid-area" "entries"
                 , margin zero

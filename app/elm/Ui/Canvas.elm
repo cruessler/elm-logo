@@ -10,6 +10,7 @@ import Math.Vector2 as Vec2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3)
 import Svg.Styled as Svg exposing (Svg, svg)
 import Svg.Styled.Attributes as A
+import Svg.Styled.Keyed as K
 import Ui.Machine.Environment as Environment exposing (Environment, Object(..))
 
 
@@ -68,16 +69,20 @@ line { start, end, color } =
         []
 
 
-object : Object -> Svg msg
-object object_ =
+object : ( Int, Object ) -> ( String, Svg msg )
+object ( id, object_ ) =
     case object_ of
         Environment.Line line_ ->
-            line line_
+            ( String.fromInt id, line line_ )
 
 
-lines : List Object -> List (Svg msg)
+lines : List ( Int, Object ) -> Svg msg
 lines objects_ =
-    List.map object objects_
+    let
+        keyedObjects =
+            List.map object objects_
+    in
+    K.node "g" [] keyedObjects
 
 
 turtle : Turtle -> Svg msg
@@ -123,7 +128,7 @@ view { width, height } env =
                 |> String.join " "
 
         objects =
-            turtle env.turtle :: lines env.objects
+            [ turtle env.turtle, lines env.objects ]
     in
     H.div
         [ A.css [ Css.width (pct 100), Css.height (pct 100) ]

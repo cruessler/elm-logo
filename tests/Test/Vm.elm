@@ -3,7 +3,7 @@ module Test.Vm exposing (..)
 import Array
 import Dict
 import Environment
-import Environment.History exposing (Entry(..))
+import Environment.History exposing (Entry(..), History)
 import Expect exposing (Expectation)
 import Test exposing (..)
 import Vm.Command as C
@@ -43,6 +43,11 @@ runAndUnwrap vm =
 
         Paused vm_ ->
             vm_
+
+
+outputLines : List String -> History
+outputLines =
+    List.indexedMap (\i line -> ( i, Output line ))
 
 
 vmWithTwoInstructions : Test
@@ -130,7 +135,7 @@ vmWithConditionalPrint =
                 Expect.equal vm.stack []
         , test "environment contains printed line" <|
             \_ ->
-                Expect.equal vm.environment.history <| [ Output "first" ]
+                Expect.equal vm.environment.history <| [ ( 0, Output "first" ) ]
         ]
 
 
@@ -163,7 +168,9 @@ vmWithPrintLoop =
         , test "stack is empty" <|
             \_ -> Expect.equal vm.stack []
         , test "environment contains printed lines" <|
-            \_ -> Expect.equal vm.environment.history (List.repeat 10 <| Output "word")
+            \_ ->
+                Expect.equal vm.environment.history
+                    (List.repeat 10 "word" |> outputLines |> List.reverse)
         ]
 
 
@@ -191,7 +198,7 @@ vmWithTemplateLoop =
         [ test "environment contains printed lines" <|
             \_ ->
                 Expect.equal vm.environment.history
-                    (List.map Output [ "w", "o", "r", "d" ] |> List.reverse)
+                    (outputLines [ "w", "o", "r", "d" ] |> List.reverse)
         ]
 
 
@@ -241,7 +248,7 @@ vmWithLocalScope =
     in
     describe "with print in a local scope" <|
         [ test "environment contains printed lines" <|
-            \_ -> Expect.equal vm.environment.history [ Output "value" ]
+            \_ -> Expect.equal vm.environment.history [ ( 0, Output "value" ) ]
         ]
 
 
@@ -351,7 +358,7 @@ vmWithSampleProgram =
         , test "environment contains printed lines" <|
             \_ ->
                 Expect.equal vm.environment.history
-                    (List.map Output
+                    (outputLines
                         [ "small vanilla cone"
                         , "small vanilla cup"
                         , "small ultra chocolate cone"

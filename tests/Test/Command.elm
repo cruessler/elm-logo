@@ -29,7 +29,8 @@ commands =
                     Expect.equal result
                         (Ok
                             { empty
-                                | history = [ Output string ]
+                                | history = [ ( 0, Output string ) ]
+                                , nextId = 1
                             }
                         )
             ]
