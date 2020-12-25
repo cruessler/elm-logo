@@ -30,6 +30,7 @@ type Error
     | OutputOutsideFunction
     | NotEnoughInputs String
     | TooManyInputs String
+    | CallableUndefined String
 
 
 toString : Error -> String
@@ -55,6 +56,9 @@ toString error =
 
         TooManyInputs callable ->
             "too many inputs to " ++ callable
+
+        CallableUndefined functionName ->
+            "I don’t know how to " ++ functionName
 
         Internal _ ->
             "Logo: Fatal Internal Error."

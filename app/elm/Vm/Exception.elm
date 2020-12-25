@@ -8,3 +8,4 @@ type Exception
     | OutputOutsideFunction
     | NotEnoughInputs String
     | TooManyInputs String
+    | CallableUndefined String

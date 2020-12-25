@@ -168,3 +168,16 @@ end
 (foo "bar "baz)"""
             "too many inputs to foo"
         ]
+
+
+undefinedFunction : Test
+undefinedFunction =
+    describe "prints error if function is not defined" <|
+        [ printsError "a" "I don’t know how to a"
+        , printsError
+            """a
+to a
+end
+"""
+            "I don’t know how to a"
+        ]

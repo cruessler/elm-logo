@@ -628,6 +628,9 @@ raise exception vm =
         Exception.TooManyInputs callable ->
             Err <| TooManyInputs callable
 
+        Exception.CallableUndefined functionName ->
+            Err <| CallableUndefined functionName
+
 
 {-| Execute a single instruction.
 -}

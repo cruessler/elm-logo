@@ -360,7 +360,7 @@ functionCall_ state name =
                 arguments state numberOfArguments
                     |> P.andThen (\arguments_ -> Callable.makeNode arguments_ callable)
             )
-        |> Maybe.withDefault (P.problem <| InvalidFunctionCall name)
+        |> Maybe.withDefault (P.succeed <| Ast.Raise (Exception.CallableUndefined name))
 
 
 {-| Parse a list of `count` or fewer arguments. We want errors related to
