@@ -30,6 +30,7 @@ type Error
     | OutputOutsideFunction
     | NotEnoughInputs String
     | TooManyInputs String
+    | FunctionAlreadyDefined String
     | CallableUndefined String
 
 
@@ -56,6 +57,9 @@ toString error =
 
         TooManyInputs callable ->
             "too many inputs to " ++ callable
+
+        FunctionAlreadyDefined functionName ->
+            functionName ++ " is already defined"
 
         CallableUndefined functionName ->
             "I don’t know how to " ++ functionName

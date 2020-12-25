@@ -80,17 +80,28 @@ toplevel_ state =
             ]
 
 
+defineFunctionUnlessDefined : State -> Ast.Function -> State
+defineFunctionUnlessDefined state newFunction =
+    if Dict.member newFunction.name state.userDefinedFunctions then
+        let
+            parsedBody =
+                state.parsedBody
+                    ++ [ Ast.Raise (Exception.FunctionAlreadyDefined newFunction.name) ]
+        in
+        { state | parsedBody = parsedBody }
+
+    else
+        let
+            userDefinedFunctions =
+                Dict.insert newFunction.name newFunction state.userDefinedFunctions
+        in
+        { state | userDefinedFunctions = userDefinedFunctions }
+
+
 function : State -> Parser Context Problem State
 function state =
     functionDefinition state
-        |> P.map
-            (\newFunction ->
-                let
-                    userDefinedFunctions =
-                        Dict.insert newFunction.name newFunction state.userDefinedFunctions
-                in
-                { state | userDefinedFunctions = userDefinedFunctions }
-            )
+        |> P.map (defineFunctionUnlessDefined state)
 
 
 toplevelStatements : State -> Parser Context Problem State
@@ -105,25 +116,30 @@ toplevelStatements state =
         |. P.oneOf [ P.symbol (P.Token "\n" ExpectingNewline), P.end ExpectingEnd ]
 
 
+defineFunction : State -> Ast.Function -> Parser Context Problem Ast.Function
+defineFunction state newFunction =
+    let
+        userDefinedFunctions =
+            Dict.insert newFunction.name newFunction state.userDefinedFunctions
+
+        -- `temporaryState` never leaves this function. It is only used while
+        -- the function body is parsed to enable parsing of recursive
+        -- functions.
+        temporaryState =
+            { state
+                | userDefinedFunctions = userDefinedFunctions
+                , inFunction = True
+            }
+    in
+    functionBody temporaryState
+        |> P.map (\body -> { newFunction | body = body })
+
+
 functionDefinition : State -> Parser Context Problem Ast.Function
 functionDefinition state =
     P.inContext FunctionDefinition <|
         (functionHeader state
-            |> P.andThen
-                (\newFunction ->
-                    let
-                        userDefinedFunctions =
-                            Dict.insert newFunction.name newFunction state.userDefinedFunctions
-
-                        newState =
-                            { state
-                                | userDefinedFunctions = userDefinedFunctions
-                                , inFunction = True
-                            }
-                    in
-                    functionBody newState
-                        |> P.map (\body -> { newFunction | body = body })
-                )
+            |> P.andThen (defineFunction state)
         )
 
 
