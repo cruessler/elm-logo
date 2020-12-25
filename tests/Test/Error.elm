@@ -181,3 +181,16 @@ end
 """
             "I don’t know how to a"
         ]
+
+
+duplicateDefinition : Test
+duplicateDefinition =
+    describe "prints error if function is defined twice" <|
+        [ printsError
+            """to foo
+end
+to foo
+end
+"""
+            "foo is already defined"
+        ]

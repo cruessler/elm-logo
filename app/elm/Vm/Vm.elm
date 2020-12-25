@@ -628,6 +628,9 @@ raise exception vm =
         Exception.TooManyInputs callable ->
             Err <| TooManyInputs callable
 
+        Exception.FunctionAlreadyDefined functionName ->
+            Err <| FunctionAlreadyDefined functionName
+
         Exception.CallableUndefined functionName ->
             Err <| CallableUndefined functionName
 
