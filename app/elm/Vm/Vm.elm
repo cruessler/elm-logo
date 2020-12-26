@@ -1,6 +1,5 @@
 module Vm.Vm exposing
     ( CompiledProgram
-    , Instruction(..)
     , State(..)
     , Vm
     , empty
@@ -22,45 +21,12 @@ import Json.Encode as E
 import Vm.Command as C
 import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Exception as Exception exposing (Exception)
+import Vm.Instruction exposing (Instruction(..))
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Binding(..), Scope)
 import Vm.Stack as Stack exposing (Stack)
 import Vm.Type as Type
-
-
-{-| Represent instructions a `Vm` can execute.
--}
-type Instruction
-    = PushValue Type.Value
-    | PushVariable String
-    | StoreVariable String
-    | LocalVariable String
-    | Introspect0 (I.Introspect0 Vm)
-    | Introspect1 (I.Introspect1 Vm)
-    | Eval1 P.Primitive1
-    | Eval2 P.Primitive2
-    | Command0 C.Command0
-    | Command1 C.Command1
-    | Command2 C.Command2
-    | PushLoopScope
-    | EnterLoopScope
-    | PopLoopScope
-    | PushTemplateScope
-    | EnterTemplateScope
-    | PopTemplateScope
-    | PushLocalScope
-    | PopLocalScope
-    | JumpIfFalse Int
-    | JumpIfTrue Int
-    | Jump Int
-    | Call Int
-    | CallByName String
-    | PushVoid
-    | Return
-    | CheckReturn
-    | Duplicate
-    | Raise Exception
 
 
 {-| Represent a compiled program.
@@ -336,9 +302,9 @@ command2 command vm =
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
 -}
-introspect0 : I.Introspect0 Vm -> Vm -> Result Error Vm
+introspect0 : I.Introspect0 -> Vm -> Result Error Vm
 introspect0 primitive vm =
-    primitive.f vm
+    primitive.f vm.scopes
         |> Result.map
             (\value ->
                 { vm | stack = Stack.Value value :: vm.stack }
@@ -349,11 +315,11 @@ introspect0 primitive vm =
 
 {-| Put a value representing some internal state of a `Vm` on the stack.
 -}
-introspect1 : I.Introspect1 Vm -> Vm -> Result Error Vm
+introspect1 : I.Introspect1 -> Vm -> Result Error Vm
 introspect1 primitive vm =
     case vm.stack of
         (Stack.Value first) :: rest ->
-            primitive.f first vm
+            primitive.f first vm.scopes
                 |> Result.map
                     (\value ->
                         { vm | stack = Stack.Value value :: rest }

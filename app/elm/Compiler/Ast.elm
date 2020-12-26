@@ -1,5 +1,6 @@
 module Compiler.Ast exposing
-    ( Context(..)
+    ( CompiledProgram
+    , Context(..)
     , Function
     , Node(..)
     , Program
@@ -11,20 +12,29 @@ module Compiler.Ast exposing
 {-| This module provides types and functions for working with Logo ASTs.
 -}
 
-import Dict
+import Dict exposing (Dict)
 import List.Nonempty exposing (Nonempty(..))
 import Vm.Command as C
 import Vm.Error exposing (Error(..))
 import Vm.Exception as Exception exposing (Exception)
+import Vm.Instruction as Instruction exposing (Instruction(..))
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Type as Type
-import Vm.Vm exposing (CompiledProgram, Instruction(..), Vm)
 
 
 type alias Program =
     { functions : List Function
     , body : List Node
+    }
+
+
+{-| Represent a compiled program.
+-}
+type alias CompiledProgram =
+    { instructions : List Instruction
+    , functionTable : Dict String Int
+    , startAddress : Int
     }
 
 
@@ -53,8 +63,8 @@ type Node
     | Command2 C.Command2 Node Node
     | Primitive1 P.Primitive1 Node
     | Primitive2 P.Primitive2 Node Node
-    | Introspect0 (I.Introspect0 Vm)
-    | Introspect1 (I.Introspect1 Vm) Node
+    | Introspect0 I.Introspect0
+    | Introspect1 I.Introspect1 Node
     | Call String (List Node)
     | Return (Maybe Node)
     | Make String Node
@@ -224,7 +234,7 @@ compileBranch controlStructure context children =
                     []
 
                 Expression { caller } ->
-                    [ Vm.Vm.Raise (Exception.NoOutput caller controlStructure) ]
+                    [ Instruction.Raise (Exception.NoOutput caller controlStructure) ]
 
         first :: rest ->
             compileNonEmptyBranch context (Nonempty first rest)
@@ -268,12 +278,12 @@ compileInContext context node =
                     instructions
                         ++ [ CheckReturn
                            , JumpIfFalse 2
-                           , Vm.Vm.Raise Exception.NoUseOfValue
+                           , Instruction.Raise Exception.NoUseOfValue
                            ]
 
                 Primitive _ ->
                     instructions
-                        ++ [ Vm.Vm.Raise Exception.NoUseOfValue ]
+                        ++ [ Instruction.Raise Exception.NoUseOfValue ]
 
                 _ ->
                     instructions
@@ -284,7 +294,7 @@ compileInContext context node =
                     instructions
                         ++ [ CheckReturn
                            , JumpIfTrue 2
-                           , Vm.Vm.Raise (Exception.NoOutput caller name)
+                           , Instruction.Raise (Exception.NoOutput caller name)
                            ]
 
                 Primitive _ ->
@@ -292,7 +302,7 @@ compileInContext context node =
 
                 Command { name } ->
                     instructions
-                        ++ [ Vm.Vm.Raise (Exception.NoOutput caller name) ]
+                        ++ [ Instruction.Raise (Exception.NoOutput caller name) ]
 
                 DoesNotApply ->
                     instructions
@@ -331,7 +341,7 @@ compile context node =
             , [ Duplicate
               , Eval1 { name = "integerp", f = P.integerp }
               , JumpIfTrue 2
-              , Vm.Vm.Raise (Exception.WrongInput "repeat")
+              , Instruction.Raise (Exception.WrongInput "repeat")
               ]
             , body
             ]
@@ -369,7 +379,7 @@ compile context node =
             , [ Duplicate
               , Eval1 { name = "boolp", f = P.boolp }
               , JumpIfTrue 2
-              , Vm.Vm.Raise (Exception.WrongInput "if")
+              , Instruction.Raise (Exception.WrongInput "if")
               , JumpIfFalse (List.length compiledChildren + 1)
               ]
             , compiledChildren
@@ -391,7 +401,7 @@ compile context node =
             , [ Duplicate
               , Eval1 { name = "boolp", f = P.boolp }
               , JumpIfTrue 2
-              , Vm.Vm.Raise (Exception.WrongInput "ifelse")
+              , Instruction.Raise (Exception.WrongInput "ifelse")
               , JumpIfFalse (List.length compiledIfBranch + 2)
               ]
             , compiledIfBranch
@@ -401,18 +411,18 @@ compile context node =
                 |> List.concat
 
         Command0 c ->
-            [ Vm.Vm.Command0 c ]
+            [ Instruction.Command0 c ]
 
         Command1 c node_ ->
             [ compileInContext (Expression { caller = c.name }) node_
-            , [ Vm.Vm.Command1 c ]
+            , [ Instruction.Command1 c ]
             ]
                 |> List.concat
 
         Command2 c first second ->
             [ compileInContext (Expression { caller = c.name }) second
             , compileInContext (Expression { caller = c.name }) first
-            , [ Vm.Vm.Command2 c ]
+            , [ Instruction.Command2 c ]
             ]
                 |> List.concat
 
@@ -430,11 +440,11 @@ compile context node =
                 |> List.concat
 
         Introspect0 i ->
-            [ Vm.Vm.Introspect0 i ]
+            [ Instruction.Introspect0 i ]
 
         Introspect1 i node_ ->
             [ compileInContext (Expression { caller = i.name }) node_
-            , [ Vm.Vm.Introspect1 i ]
+            , [ Instruction.Introspect1 i ]
             ]
                 |> List.concat
 
@@ -445,14 +455,14 @@ compile context node =
             in
             [ List.reverse arguments
                 |> List.concatMap (compileInContext (Expression { caller = name }))
-            , [ Vm.Vm.CallByName mangledName ]
+            , [ Instruction.CallByName mangledName ]
             ]
                 |> List.concat
 
         Return (Just node_) ->
             [ compileInContext (Expression { caller = "output" }) node_
             , [ PopLocalScope
-              , Vm.Vm.Return
+              , Instruction.Return
               ]
             ]
                 |> List.concat
@@ -460,7 +470,7 @@ compile context node =
         Return Nothing ->
             [ PushVoid
             , PopLocalScope
-            , Vm.Vm.Return
+            , Instruction.Return
             ]
 
         Make name node_ ->
@@ -479,7 +489,7 @@ compile context node =
             [ PushValue value ]
 
         Raise error ->
-            [ Vm.Vm.Raise error ]
+            [ Instruction.Raise error ]
 
 
 compileProgram : Program -> CompiledProgram
@@ -541,7 +551,7 @@ compileFunction { name, requiredArguments, optionalArguments, body } =
             [ List.concatMap (compileInContext Statement) body
             , [ PushVoid
               , PopLocalScope
-              , Vm.Vm.Return
+              , Instruction.Return
               ]
             ]
                 |> List.concat

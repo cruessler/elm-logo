@@ -5,9 +5,9 @@ import Expect
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Exception as Exception
+import Vm.Instruction exposing (Instruction(..))
 import Vm.Primitive as P
 import Vm.Type as Type
-import Vm.Vm exposing (Instruction(..))
 
 
 intLiteral =

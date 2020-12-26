@@ -3,8 +3,8 @@ module Test.Compiler exposing (..)
 import Compiler.Ast as Ast exposing (Node(..))
 import Expect
 import Test exposing (Test, describe, test)
+import Vm.Instruction as Instruction exposing (Instruction(..))
 import Vm.Type as Type
-import Vm.Vm as Vm exposing (Instruction(..))
 
 
 compileFunction : Test
@@ -33,7 +33,7 @@ compileFunction =
                             , StoreVariable "baz"
                             , PushVoid
                             , PopLocalScope
-                            , Vm.Return
+                            , Instruction.Return
                             ]
                       }
                     , { name = "foo1"
@@ -46,7 +46,7 @@ compileFunction =
                             , StoreVariable "baz"
                             , PushVoid
                             , PopLocalScope
-                            , Vm.Return
+                            , Instruction.Return
                             ]
                       }
                     ]

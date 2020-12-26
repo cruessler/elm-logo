@@ -8,12 +8,13 @@ import Expect
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Exception as Exception
+import Vm.Instruction exposing (Instruction(..))
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope
 import Vm.Stack as Stack
 import Vm.Type as Type
-import Vm.Vm exposing (..)
+import Vm.Vm exposing (State(..), Vm, run)
 
 
 emptyVm : Vm
@@ -149,7 +150,7 @@ vmWithPrintLoop =
                     , Duplicate
                     , Eval1 { name = "integerp", f = P.integerp }
                     , JumpIfTrue 2
-                    , Vm.Vm.Raise (Exception.WrongInput "repeat")
+                    , Raise (Exception.WrongInput "repeat")
                     , PushLoopScope
                     , EnterLoopScope
                     , JumpIfTrue 4
