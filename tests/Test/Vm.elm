@@ -25,6 +25,7 @@ emptyVm =
     , scopes = Scope.empty
     , environment = Environment.empty
     , functionTable = Dict.empty
+    , compiledFunctions = []
     }
 
 

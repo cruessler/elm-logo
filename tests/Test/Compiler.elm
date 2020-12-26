@@ -1,9 +1,9 @@
 module Test.Compiler exposing (..)
 
-import Compiler.Ast as Ast exposing (Node(..))
+import Compiler.Ast as Ast
 import Expect
 import Test exposing (Test, describe, test)
-import Vm.Instruction as Instruction exposing (Instruction(..))
+import Vm.Instruction exposing (Instruction(..))
 import Vm.Type as Type
 
 
@@ -16,7 +16,7 @@ compileFunction =
                     function =
                         { name = "foo"
                         , requiredArguments = [ "bar" ]
-                        , optionalArguments = [ ( "baz", Value <| Type.Word "baz" ) ]
+                        , optionalArguments = [ ( "baz", Ast.Value <| Type.Word "baz" ) ]
                         , body = []
                         }
 
@@ -24,31 +24,36 @@ compileFunction =
                         Ast.compileFunction function
                 in
                 Expect.equal
-                    [ { name = "foo2"
-                      , body =
-                            [ PushLocalScope
-                            , LocalVariable "bar"
-                            , StoreVariable "bar"
-                            , LocalVariable "baz"
-                            , StoreVariable "baz"
-                            , PushVoid
-                            , PopLocalScope
-                            , Instruction.Return
-                            ]
-                      }
-                    , { name = "foo1"
-                      , body =
-                            [ PushLocalScope
-                            , LocalVariable "bar"
-                            , StoreVariable "bar"
-                            , LocalVariable "baz"
-                            , PushValue (Type.Word "baz")
-                            , StoreVariable "baz"
-                            , PushVoid
-                            , PopLocalScope
-                            , Instruction.Return
-                            ]
-                      }
-                    ]
+                    { name = "foo"
+                    , requiredArguments = [ "bar" ]
+                    , optionalArguments = [ "baz" ]
+                    , instances =
+                        [ { mangledName = "foo2"
+                          , body =
+                                [ PushLocalScope
+                                , LocalVariable "bar"
+                                , StoreVariable "bar"
+                                , LocalVariable "baz"
+                                , StoreVariable "baz"
+                                , PushVoid
+                                , PopLocalScope
+                                , Return
+                                ]
+                          }
+                        , { mangledName = "foo1"
+                          , body =
+                                [ PushLocalScope
+                                , LocalVariable "bar"
+                                , StoreVariable "bar"
+                                , LocalVariable "baz"
+                                , PushValue (Type.Word "baz")
+                                , StoreVariable "baz"
+                                , PushVoid
+                                , PopLocalScope
+                                , Return
+                                ]
+                          }
+                        ]
+                    }
                     compiledFunctions
         ]
