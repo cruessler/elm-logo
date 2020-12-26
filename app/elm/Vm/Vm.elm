@@ -1,6 +1,5 @@
 module Vm.Vm exposing
-    ( CompiledProgram
-    , State(..)
+    ( State(..)
     , Vm
     , empty
     , initialize
@@ -15,6 +14,7 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
+import Compiler.Ast exposing (CompiledFunction, CompiledProgram)
 import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Json.Encode as E
@@ -29,15 +29,6 @@ import Vm.Stack as Stack exposing (Stack)
 import Vm.Type as Type
 
 
-{-| Represent a compiled program.
--}
-type alias CompiledProgram =
-    { instructions : List Instruction
-    , functionTable : Dict String Int
-    , startAddress : Int
-    }
-
-
 {-| Represent a stack based virtual machine.
 -}
 type alias Vm =
@@ -47,6 +38,7 @@ type alias Vm =
     , scopes : List Scope
     , environment : Environment
     , functionTable : Dict String Int
+    , compiledFunctions : List CompiledFunction
     }
 
 
@@ -54,19 +46,25 @@ type alias Vm =
 -}
 empty : Vm
 empty =
-    initialize { instructions = [], functionTable = Dict.empty, startAddress = 0 }
+    initialize
+        { instructions = []
+        , functionTable = Dict.empty
+        , compiledFunctions = []
+        , startAddress = 0
+        }
 
 
 {-| Initialize a `Vm` with a list of instructions and a program counter.
 -}
 initialize : CompiledProgram -> Vm
-initialize { instructions, functionTable, startAddress } =
+initialize { instructions, functionTable, compiledFunctions, startAddress } =
     { instructions = Array.fromList instructions
     , programCounter = startAddress
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
     , functionTable = functionTable
+    , compiledFunctions = compiledFunctions
     }
 
 

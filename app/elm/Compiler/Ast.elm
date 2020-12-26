@@ -1,5 +1,6 @@
 module Compiler.Ast exposing
-    ( CompiledProgram
+    ( CompiledFunction
+    , CompiledProgram
     , Context(..)
     , Function
     , Node(..)
@@ -34,6 +35,7 @@ type alias Program =
 type alias CompiledProgram =
     { instructions : List Instruction
     , functionTable : Dict String Int
+    , compiledFunctions : List CompiledFunction
     , startAddress : Int
     }
 
@@ -46,8 +48,18 @@ type alias Function =
     }
 
 
+{-| Represent a compiled function.
+-}
 type alias CompiledFunction =
     { name : String
+    , requiredArguments : List String
+    , optionalArguments : List String
+    , instances : List CompiledFunctionInstance
+    }
+
+
+type alias CompiledFunctionInstance =
+    { mangledName : String
     , body : List Instruction
     }
 
@@ -496,25 +508,29 @@ compileProgram : Program -> CompiledProgram
 compileProgram { functions, body } =
     let
         compiledFunctions =
-            List.concatMap compileFunction functions
+            List.map compileFunction functions
+
+        compiledFunctionInstances =
+            List.concatMap .instances compiledFunctions
 
         ( functionTable, startAddress ) =
             List.foldl
                 (\f ( acc, address ) ->
-                    ( Dict.insert f.name address acc
+                    ( Dict.insert f.mangledName address acc
                     , address + List.length f.body
                     )
                 )
                 ( Dict.empty, 0 )
-                compiledFunctions
+                compiledFunctionInstances
 
         instructions =
             List.append
-                (List.concatMap .body compiledFunctions)
+                (List.concatMap .body compiledFunctionInstances)
                 (List.concatMap (compileInContext Statement) body)
     in
     { instructions = instructions
     , functionTable = functionTable
+    , compiledFunctions = compiledFunctions
     , startAddress = startAddress
     }
 
@@ -536,8 +552,8 @@ compileOptionalArgument context ( arg, node ) =
 {-| Compile a function, taking optional arguments into account by returning
 multiple versions, each taking a different number of arguments.
 -}
-compileFunction : Function -> List CompiledFunction
-compileFunction { name, requiredArguments, optionalArguments, body } =
+compileFunctionInstances : Function -> List CompiledFunctionInstance
+compileFunctionInstances { name, requiredArguments, optionalArguments, body } =
     let
         {- Instructions for required arguments. -}
         instructionsForRequiredArguments =
@@ -603,8 +619,19 @@ compileFunction { name, requiredArguments, optionalArguments, body } =
     -}
     List.map
         (\i ->
-            { name = mangleName name (numberOfRequiredArguments + i)
+            { mangledName = mangleName name (numberOfRequiredArguments + i)
             , body = compileBody i
             }
         )
         (List.range 0 numberOfOptionalArguments |> List.reverse)
+
+
+{-| Compile a function.
+-}
+compileFunction : Function -> CompiledFunction
+compileFunction ({ name, requiredArguments, optionalArguments } as function) =
+    { name = name
+    , requiredArguments = requiredArguments
+    , optionalArguments = List.map Tuple.first optionalArguments
+    , instances = compileFunctionInstances function
+    }
