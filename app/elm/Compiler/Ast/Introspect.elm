@@ -8,12 +8,11 @@ module Compiler.Ast.Introspect exposing
     )
 
 import Vm.Introspect as I
-import Vm.Vm exposing (Vm)
 
 
 type Introspect
-    = Introspect0 (I.Introspect0 Vm)
-    | Introspect1 (I.Introspect1 Vm)
+    = Introspect0 I.Introspect0
+    | Introspect1 I.Introspect1
 
 
 all : List Introspect
@@ -48,6 +47,6 @@ arguments introspect =
             1
 
 
-templateVariable : I.Introspect1 Vm
+templateVariable : I.Introspect1
 templateVariable =
     { name = "?", f = I.templateVariable }
