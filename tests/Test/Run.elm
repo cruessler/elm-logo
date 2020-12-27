@@ -516,3 +516,25 @@ functionIsKept =
                     List.length env.objects
             in
             Expect.equal numberOfObjects 1
+
+
+duplicateDefinition : Test
+duplicateDefinition =
+    test "prints error if function is redefined in subsequent run" <|
+        \_ ->
+            let
+                program =
+                    "to a\nend\n"
+
+                logo =
+                    Logo.empty
+                        |> Logo.run program
+                        |> Logo.run program
+
+                env =
+                    Logo.getEnvironment logo
+
+                lastEntry =
+                    List.head env.history
+            in
+            Expect.equal lastEntry (Just ( 2, Error "a is already defined" ))

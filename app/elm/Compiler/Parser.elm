@@ -90,7 +90,10 @@ toplevel_ state =
 
 defineFunctionUnlessDefined : State -> Ast.Function -> State
 defineFunctionUnlessDefined state newFunction =
-    if Dict.member newFunction.name state.newFunctions then
+    if
+        Dict.member newFunction.name state.newFunctions
+            || Dict.member newFunction.name state.existingFunctions
+    then
         let
             parsedBody =
                 state.parsedBody
