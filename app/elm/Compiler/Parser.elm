@@ -2,17 +2,18 @@ module Compiler.Parser exposing
     ( State
     , arithmeticExpression
     , booleanExpression
+    , defaultState
     , functionDefinition
     , output
-    , root
     , term
+    , withExistingFunctions
     )
 
 {-| This module provides functions for parsing Logo code.
 -}
 
 import Char
-import Compiler.Ast as Ast
+import Compiler.Ast as Ast exposing (CompiledFunction)
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Parser.Callable as Callable
 import Compiler.Parser.Context exposing (Context(..))
@@ -33,20 +34,27 @@ import Vm.Type as Type
 
 
 type alias State =
-    { userDefinedFunctions : Dict String Ast.Function
+    { newFunctions : Dict String Ast.Function
+    , existingFunctions : Dict String CompiledFunction
     , parsedBody : List Ast.Node
     , inFunction : Bool
     }
 
 
-root : Parser Context Problem Ast.Program
-root =
+defaultState : State
+defaultState =
+    { newFunctions = Dict.empty
+    , existingFunctions = Dict.empty
+    , parsedBody = []
+    , inFunction = False
+    }
+
+
+withExistingFunctions : Dict String CompiledFunction -> Parser Context Problem Ast.Program
+withExistingFunctions existingFunctions =
     let
         state =
-            { userDefinedFunctions = Dict.empty
-            , parsedBody = []
-            , inFunction = False
-            }
+            { defaultState | existingFunctions = existingFunctions }
     in
     P.inContext Root <|
         toplevel state
@@ -56,7 +64,7 @@ toplevel : State -> Parser Context Problem Ast.Program
 toplevel state =
     let
         program =
-            { functions = Dict.values state.userDefinedFunctions
+            { functions = Dict.values state.newFunctions
             , body = state.parsedBody
             }
     in
@@ -82,7 +90,7 @@ toplevel_ state =
 
 defineFunctionUnlessDefined : State -> Ast.Function -> State
 defineFunctionUnlessDefined state newFunction =
-    if Dict.member newFunction.name state.userDefinedFunctions then
+    if Dict.member newFunction.name state.newFunctions then
         let
             parsedBody =
                 state.parsedBody
@@ -92,10 +100,10 @@ defineFunctionUnlessDefined state newFunction =
 
     else
         let
-            userDefinedFunctions =
-                Dict.insert newFunction.name newFunction state.userDefinedFunctions
+            newFunctions =
+                Dict.insert newFunction.name newFunction state.newFunctions
         in
-        { state | userDefinedFunctions = userDefinedFunctions }
+        { state | newFunctions = newFunctions }
 
 
 function : State -> Parser Context Problem State
@@ -119,15 +127,15 @@ toplevelStatements state =
 defineFunction : State -> Ast.Function -> Parser Context Problem Ast.Function
 defineFunction state newFunction =
     let
-        userDefinedFunctions =
-            Dict.insert newFunction.name newFunction state.userDefinedFunctions
+        newFunctions =
+            Dict.insert newFunction.name newFunction state.newFunctions
 
         -- `temporaryState` never leaves this function. It is only used while
         -- the function body is parsed to enable parsing of recursive
         -- functions.
         temporaryState =
             { state
-                | userDefinedFunctions = userDefinedFunctions
+                | newFunctions = newFunctions
                 , inFunction = True
             }
     in
@@ -366,7 +374,13 @@ functionCall state =
 
 functionCall_ : State -> String -> Parser Context Problem Ast.Node
 functionCall_ state name =
-    Callable.find state.userDefinedFunctions name
+    let
+        functions =
+            { newFunctions = state.newFunctions
+            , existingFunctions = state.existingFunctions
+            }
+    in
+    Callable.find functions name
         |> Maybe.map
             (\callable ->
                 let
@@ -459,7 +473,13 @@ functionCallInParentheses state =
 
 variableFunctionCall : State -> String -> List Ast.Node -> Parser Context Problem Ast.Node
 variableFunctionCall state name arguments_ =
-    Callable.find state.userDefinedFunctions name
+    let
+        functions =
+            { newFunctions = state.newFunctions
+            , existingFunctions = state.existingFunctions
+            }
+    in
+    Callable.find functions name
         |> Maybe.map (Callable.makeNode arguments_)
         |> Maybe.withDefault (P.problem <| InvalidFunctionCall name)
 

@@ -12,7 +12,9 @@ module Logo exposing
     )
 
 import Compiler.Ast as Ast
+import Compiler.Linker as Linker
 import Compiler.Parser as Parser
+import Dict
 import Environment exposing (Environment)
 import Environment.History exposing (History)
 import Parser.Advanced as Parser exposing (DeadEnd)
@@ -58,11 +60,21 @@ compile program logo =
         vm =
             getVm logo
 
-        result =
+        parser =
+            vm.compiledFunctions
+                |> List.map (\function -> ( function.name, function ))
+                |> Dict.fromList
+                |> Parser.withExistingFunctions
+
+        compiledProgram =
             program
-                |> Parser.run Parser.root
+                |> Parser.run parser
                 |> Result.mapError ParseError
                 |> Result.map Ast.compileProgram
+
+        result =
+            compiledProgram
+                |> Result.map (Linker.linkProgram vm.compiledFunctions)
                 |> Result.map Vm.initialize
                 |> Result.map (Vm.withEnvironment vm.environment)
     in

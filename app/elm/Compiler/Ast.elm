@@ -34,9 +34,7 @@ type alias Program =
 -}
 type alias CompiledProgram =
     { instructions : List Instruction
-    , functionTable : Dict String Int
     , compiledFunctions : List CompiledFunction
-    , startAddress : Int
     }
 
 
@@ -510,28 +508,11 @@ compileProgram { functions, body } =
         compiledFunctions =
             List.map compileFunction functions
 
-        compiledFunctionInstances =
-            List.concatMap .instances compiledFunctions
-
-        ( functionTable, startAddress ) =
-            List.foldl
-                (\f ( acc, address ) ->
-                    ( Dict.insert f.mangledName address acc
-                    , address + List.length f.body
-                    )
-                )
-                ( Dict.empty, 0 )
-                compiledFunctionInstances
-
         instructions =
-            List.append
-                (List.concatMap .body compiledFunctionInstances)
-                (List.concatMap (compileInContext Statement) body)
+            List.concatMap (compileInContext Statement) body
     in
     { instructions = instructions
-    , functionTable = functionTable
     , compiledFunctions = compiledFunctions
-    , startAddress = startAddress
     }
 
 

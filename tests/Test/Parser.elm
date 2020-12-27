@@ -1,22 +1,13 @@
 module Test.Parser exposing (..)
 
 import Compiler.Ast as Ast
-import Compiler.Parser as Parser
+import Compiler.Parser as Parser exposing (defaultState)
 import Compiler.Parser.Value as Value
-import Dict
 import Expect exposing (Expectation)
 import Parser.Advanced as Parser exposing (DeadEnd)
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Type as Type
-
-
-defaultState : Parser.State
-defaultState =
-    { userDefinedFunctions = Dict.empty
-    , parsedBody = []
-    , inFunction = False
-    }
 
 
 value : Test

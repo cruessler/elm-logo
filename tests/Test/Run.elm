@@ -490,3 +490,29 @@ environmentIsKept =
                     List.length env.objects
             in
             Expect.equal numberOfObjects 2
+
+
+functionIsKept : Test
+functionIsKept =
+    test "a function is kept and can be called in a subsequent run" <|
+        \_ ->
+            let
+                firstProgram =
+                    "to drawLine\npendown forward 90\nend\n"
+
+                secondProgram =
+                    "drawLine"
+
+                logo =
+                    Logo.empty
+                        |> Logo.run firstProgram
+                        |> Logo.run secondProgram
+
+                env =
+                    Logo.getEnvironment logo
+
+                -- The above program will create 1 line.
+                numberOfObjects =
+                    List.length env.objects
+            in
+            Expect.equal numberOfObjects 1
