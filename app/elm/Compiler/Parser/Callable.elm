@@ -1,6 +1,6 @@
 module Compiler.Parser.Callable exposing (find, makeNode, numberOfDefaultArguments)
 
-import Compiler.Ast as Ast
+import Compiler.Ast as Ast exposing (CompiledFunction)
 import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
@@ -14,7 +14,15 @@ type Callable
     = Command Command.Command
     | Introspect Introspect.Introspect
     | Primitive Primitive.Primitive
-    | Function Ast.Function
+    | NewFunction Ast.Function
+    | ExistingFunction CompiledFunction
+
+
+type alias Function =
+    { name : String
+    , numberOfRequiredArguments : Int
+    , numberOfOptionalArguments : Int
+    }
 
 
 makeNode : List Ast.Node -> Callable -> Parser context Problem Ast.Node
@@ -58,8 +66,31 @@ makeNode arguments callable =
             Introspect introspect ->
                 makeIntrospect arguments introspect
 
-            Function function ->
-                makeFunction arguments function
+            NewFunction function ->
+                let
+                    numberOfOptionalArguments =
+                        List.length function.optionalArguments
+
+                    callableFunction =
+                        { name = function.name
+                        , numberOfRequiredArguments = numberOfRequiredArguments
+                        , numberOfOptionalArguments = numberOfOptionalArguments
+                        }
+                in
+                makeFunction arguments callableFunction
+
+            ExistingFunction function ->
+                let
+                    numberOfOptionalArguments =
+                        List.length function.optionalArguments
+
+                    callableFunction =
+                        { name = function.name
+                        , numberOfRequiredArguments = numberOfRequiredArguments
+                        , numberOfOptionalArguments = numberOfOptionalArguments
+                        }
+                in
+                makeFunction arguments callableFunction
 
 
 makeCommand : List Ast.Node -> Command.Command -> Parser context Problem Ast.Node
@@ -104,22 +135,16 @@ makeIntrospect arguments introspect =
             problem <| InvalidPrimitive (Introspect.name introspect)
 
 
-makeFunction : List Ast.Node -> Ast.Function -> Parser context Problem Ast.Node
+makeFunction : List Ast.Node -> Function -> Parser context Problem Ast.Node
 makeFunction arguments function =
     let
         numberOfArguments =
             List.length arguments
-
-        requiredArguments =
-            List.length function.requiredArguments
-
-        optionalArguments =
-            List.length function.optionalArguments
     in
     if
         numberOfArguments
-            <= requiredArguments
-            + optionalArguments
+            <= function.numberOfRequiredArguments
+            + function.numberOfOptionalArguments
     then
         succeed <| Ast.Call function.name arguments
 
@@ -139,12 +164,21 @@ name callable =
         Introspect introspect ->
             Introspect.name introspect
 
-        Function function ->
+        NewFunction function ->
+            function.name
+
+        ExistingFunction function ->
             function.name
 
 
-find : Dict String Ast.Function -> String -> Maybe Callable
-find userDefinedFunctions name_ =
+type alias Functions =
+    { newFunctions : Dict String Ast.Function
+    , existingFunctions : Dict String CompiledFunction
+    }
+
+
+find : Functions -> String -> Maybe Callable
+find { newFunctions, existingFunctions } name_ =
     let
         command =
             Command.find name_ |> Maybe.map Command
@@ -156,9 +190,12 @@ find userDefinedFunctions name_ =
             Introspect.find name_ |> Maybe.map Introspect
 
         function =
-            Dict.get name_ userDefinedFunctions |> Maybe.map Function
+            Dict.get name_ newFunctions |> Maybe.map NewFunction
+
+        existingFunction =
+            Dict.get name_ existingFunctions |> Maybe.map ExistingFunction
     in
-    [ command, primitive, introspect, function ]
+    [ command, primitive, introspect, function, existingFunction ]
         |> List.filterMap identity
         |> List.head
 
@@ -175,5 +212,8 @@ numberOfDefaultArguments callable =
         Introspect introspect ->
             Introspect.arguments introspect
 
-        Function function ->
+        NewFunction function ->
+            List.length function.requiredArguments
+
+        ExistingFunction function ->
             List.length function.requiredArguments

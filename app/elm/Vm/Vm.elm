@@ -14,7 +14,8 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
-import Compiler.Ast exposing (CompiledFunction, CompiledProgram)
+import Compiler.Ast exposing (CompiledFunction)
+import Compiler.Linker exposing (LinkedProgram)
 import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Json.Encode as E
@@ -56,7 +57,7 @@ empty =
 
 {-| Initialize a `Vm` with a list of instructions and a program counter.
 -}
-initialize : CompiledProgram -> Vm
+initialize : LinkedProgram -> Vm
 initialize { instructions, functionTable, compiledFunctions, startAddress } =
     { instructions = Array.fromList instructions
     , programCounter = startAddress
