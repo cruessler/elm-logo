@@ -16,6 +16,7 @@ module Environment exposing
     , setpencolor
     , setxy
     , toValue
+    , type_
     )
 
 {-| This module contains types and functions related to the state of a Logo
@@ -23,7 +24,7 @@ environment: the state of the turtle, console output etc.
 -}
 
 import Color exposing (Color)
-import Environment.History exposing (Entry(..), History)
+import Environment.History as History exposing (Entry(..), History)
 import Environment.Line as Line exposing (Line)
 import Environment.Turtle as Turtle exposing (State(..), Turtle)
 import Json.Encode as E
@@ -56,31 +57,6 @@ empty =
     , color = defaultColor
     , nextId = 0
     }
-
-
-encodeEntry : ( Int, Entry ) -> E.Value
-encodeEntry ( id, entry ) =
-    case entry of
-        Input input_ ->
-            E.object
-                [ ( "type", E.string "Input" )
-                , ( "id", E.int id )
-                , ( "input", E.string input_ )
-                ]
-
-        Output output_ ->
-            E.object
-                [ ( "type", E.string "Output" )
-                , ( "id", E.int id )
-                , ( "output", E.string output_ )
-                ]
-
-        Error error_ ->
-            E.object
-                [ ( "type", E.string "Error" )
-                , ( "id", E.int id )
-                , ( "error", E.string error_ )
-                ]
 
 
 encodeVec2 : Vec2 -> E.Value
@@ -147,40 +123,116 @@ encodeTurtle { x, y, direction, state } =
 toValue : Environment -> E.Value
 toValue { history, objects, turtle } =
     E.object
-        [ ( "history", E.list encodeEntry history )
+        [ ( "history", History.toValue history )
         , ( "objects", E.list encodeObject objects )
         , ( "turtle", encodeTurtle turtle )
         ]
 
 
-pushHistoryEntry : Entry -> Environment -> Environment
-pushHistoryEntry entry env =
+{-| Append an input to the console output.
+
+If the last entry is a partial line as produced by `type`, make the input the
+second to last entry so that the partial line is still the last line.
+
+-}
+input : String -> Environment -> Environment
+input string env =
     let
         nextId =
             env.nextId + 1
+
+        inputWithId =
+            ( env.nextId, Input string )
     in
-    { env | nextId = nextId, history = ( env.nextId, entry ) :: env.history }
+    case env.history of
+        (( _, PartialOutput _ ) as partialOutput) :: rest ->
+            { env
+                | nextId = nextId
+                , history = partialOutput :: inputWithId :: rest
+            }
 
-
-{-| Append an input to the console output.
--}
-input : String -> Environment -> Environment
-input string =
-    pushHistoryEntry (Input string)
+        _ ->
+            { env
+                | nextId = nextId
+                , history = inputWithId :: env.history
+            }
 
 
 {-| Append an error to the console output.
+
+If the last entry is a partial line as produced by `type`, mark it as complete
+before appending the new entry.
+
 -}
 error : String -> Environment -> Environment
-error string =
-    pushHistoryEntry (Error string)
+error string env =
+    let
+        nextId =
+            env.nextId + 1
+
+        errorWithId =
+            ( env.nextId, Error string )
+    in
+    case env.history of
+        ( id, PartialOutput output_ ) :: rest ->
+            { env
+                | nextId = nextId
+                , history = errorWithId :: ( id, Output output_ ) :: rest
+            }
+
+        _ ->
+            { env
+                | nextId = nextId
+                , history = errorWithId :: env.history
+            }
+
+
+appendCharacter : Char -> Environment -> Environment
+appendCharacter char env =
+    case env.history of
+        ( id, PartialOutput output_ ) :: rest ->
+            if char == '\n' then
+                { env | history = ( id, Output output_ ) :: rest }
+
+            else
+                { env | history = ( id, PartialOutput (output_ ++ String.fromChar char) ) :: rest }
+
+        _ ->
+            let
+                nextId =
+                    env.nextId + 1
+            in
+            if char == '\n' then
+                { env
+                    | nextId = nextId
+                    , history = ( env.nextId, Output "" ) :: env.history
+                }
+
+            else
+                { env
+                    | nextId = nextId
+                    , history = ( env.nextId, PartialOutput (String.fromChar char) ) :: env.history
+                }
 
 
 {-| Append a line to the console output.
 -}
 print : String -> Environment -> Environment
-print string =
-    pushHistoryEntry (Output string)
+print string env =
+    String.foldl appendCharacter env string |> appendCharacter '\n'
+
+
+{-| Print characters to the console output, but don’t append a newline or space
+at the end.
+
+A subsequent invocation of `type_` will write its argument to the same line. A
+subsequent invocation of `print` will write its argument to the same line and
+add a newline.
+
+-}
+type_ : String -> Environment -> Environment
+type_ string env =
+    String.foldl appendCharacter env string
 
 
 pushObject : Object -> Environment -> Environment

@@ -142,6 +142,15 @@ printContatenatedWords =
         ]
 
 
+typeWordsOnSameLine : Test
+typeWordsOnSameLine =
+    describe "type words on same line" <|
+        [ printsLines
+            """type "bar type "| baz | print "baz"""
+            [ "bar baz baz" ]
+        ]
+
+
 {-| The programs in these tests are deliberately put at the beginning of a
 line because the parser expects "end" to be the only thing in a line that
 closes a function definition.

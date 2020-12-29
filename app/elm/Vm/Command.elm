@@ -14,6 +14,7 @@ module Vm.Command exposing
     , right
     , setpencolor
     , setxy
+    , type_
     )
 
 {-| This module contains types and functions related to Logo’s builtin
@@ -60,6 +61,11 @@ type alias Command2 =
 print : Type.Value -> Environment -> Result Error Environment
 print value env =
     Ok <| E.print (Type.toString value) env
+
+
+type_ : Type.Value -> Environment -> Result Error Environment
+type_ value env =
+    Ok <| E.type_ (Type.toString value) env
 
 
 forward : Type.Value -> Environment -> Result Error Environment

@@ -24,13 +24,22 @@ commands =
                         result =
                             empty
                                 |> C.print (Type.Word string)
+
+                        lines =
+                            String.lines string
+
+                        entries =
+                            lines
+                                |> List.indexedMap (\i line -> ( i, Output line ))
+                                |> List.reverse
+
+                        expectedResult =
+                            Ok
+                                { empty
+                                    | history = entries
+                                    , nextId = List.length entries
+                                }
                     in
-                    Expect.equal result
-                        (Ok
-                            { empty
-                                | history = [ ( 0, Output string ) ]
-                                , nextId = 1
-                            }
-                        )
+                    Expect.equal result expectedResult
             ]
         ]
