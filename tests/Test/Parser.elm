@@ -19,6 +19,9 @@ value =
         word =
             Parser.run Value.value "\"word"
 
+        wordInVerticalBars =
+            Parser.run Value.value """"|make "a [|"""
+
         list =
             Parser.run Value.value "[ 1234 word ]"
 
@@ -36,6 +39,8 @@ value =
             \_ -> Expect.equal integer (Ok <| Ast.Value <| Type.Int 1234)
         , test "parse word" <|
             \_ -> Expect.equal word (Ok <| Ast.Value <| Type.Word "word")
+        , test "parse word in vertical bars" <|
+            \_ -> Expect.equal wordInVerticalBars (Ok <| Ast.Value <| Type.Word "make \"a [")
         , test "parse list" <|
             \_ ->
                 Expect.equal list
