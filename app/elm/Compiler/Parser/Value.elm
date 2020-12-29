@@ -38,6 +38,7 @@ valueOutsideList =
         oneOf
             [ lazy (\_ -> list)
             , number
+            , wordInVerticalBars
             , wordOutsideList
             ]
 
@@ -53,6 +54,25 @@ number =
         , invalid = InvalidNumber
         , expecting = ExpectingNumber
         }
+
+
+wordInVerticalBars : Parser context Problem Type.Value
+wordInVerticalBars =
+    let
+        word : Parser context Problem String
+        word =
+            succeed ()
+                |. chompWhile
+                    (\c ->
+                        (c /= '|')
+                            && (c /= '\n')
+                    )
+                |> getChompedString
+    in
+    succeed Type.Word
+        |. Helper.symbol "\"|"
+        |= word
+        |. Helper.symbol "|"
 
 
 wordOutsideList : Parser context Problem Type.Value
