@@ -3,6 +3,7 @@ module Vm.Primitive exposing
     , Primitive2
     , boolp
     , butfirst
+    , char
     , count
     , difference
     , emptyp
@@ -19,6 +20,7 @@ module Vm.Primitive exposing
     , remainder
     , sentence
     , sum
+    , word
     )
 
 {-| This module contains types and functions related to Logo’s builtin
@@ -128,8 +130,8 @@ count value =
     let
         length =
             case value of
-                Type.Word word ->
-                    String.length word
+                Type.Word word_ ->
+                    String.length word_
 
                 Type.Int int ->
                     int |> String.fromInt |> String.length
@@ -255,17 +257,17 @@ equalp_ value1 value2 =
         ( Type.Word word1, Type.Word word2 ) ->
             word1 == word2
 
-        ( Type.Word word, Type.Int int ) ->
-            word == String.fromInt int
+        ( Type.Word word_, Type.Int int ) ->
+            word_ == String.fromInt int
 
-        ( Type.Int int, Type.Word word ) ->
-            word == String.fromInt int
+        ( Type.Int int, Type.Word word_ ) ->
+            word_ == String.fromInt int
 
-        ( Type.Float float, Type.Word word ) ->
-            word == String.fromFloat float
+        ( Type.Float float, Type.Word word_ ) ->
+            word_ == String.fromFloat float
 
-        ( Type.Word word, Type.Float float ) ->
-            word == String.fromFloat float
+        ( Type.Word word_, Type.Float float ) ->
+            word_ == String.fromFloat float
 
 
 {-| Check whether two `Value`s are equal.
@@ -448,6 +450,24 @@ minus value =
         |> Result.mapError (always <| WrongInput "minus" (Type.toDebugString value))
 
 
+{-| Join two words into one.
+
+    word (Word "a") (Word "b) == Ok (Word "ab")
+
+-}
+word : Type.Value -> Type.Value -> Result Error Type.Value
+word value1 value2 =
+    case ( value1, value2 ) of
+        ( Type.List _, _ ) ->
+            Err <| WrongInput "word" (Type.toDebugString value1)
+
+        ( _, Type.List _ ) ->
+            Err <| WrongInput "word" (Type.toDebugString value2)
+
+        _ ->
+            Ok <| Type.Word <| (Type.toString value1 ++ Type.toString value2)
+
+
 {-| Join two values into a list. One level of nesting will be flattened.
 
     sentence (Word "a") (Word "b) == Ok (List [ Word "a", Word "b" ])
@@ -475,6 +495,23 @@ sentence value1 value2 =
     Ok <| Type.List <| List.append list1 list2
 
 
+{-| Convert an integer to a character. The actual work is delegated to Elm’s
+`Char.fromCode`.
+
+    char (Word "65") == Ok (Word "A")
+
+    char (Word "10") == Ok (Word "\n")
+
+<https://package.elm-lang.org/packages/elm/core/latest/Char#fromCode>
+
+-}
+char : Type.Value -> Result Error Type.Value
+char value =
+    Type.toInt value
+        |> Result.map (Char.fromCode >> String.fromChar >> Type.Word)
+        |> Result.mapError (always <| WrongInput "char" (Type.toDebugString value))
+
+
 {-| Check whether a given `Value` is an integer.
 
     integerp (Word "a") == Ok (Word "false")
@@ -490,8 +527,8 @@ integerp value =
         Type.Int _ ->
             Ok Type.true
 
-        Type.Word word ->
-            case String.toInt word of
+        Type.Word word_ ->
+            case String.toInt word_ of
                 Just _ ->
                     Ok Type.true
 
@@ -529,8 +566,8 @@ floatp value =
         Type.Float _ ->
             Ok Type.true
 
-        Type.Word word ->
-            case String.toFloat word of
+        Type.Word word_ ->
+            case String.toFloat word_ of
                 Just _ ->
                     Ok Type.true
 
@@ -555,8 +592,8 @@ floatp value =
 boolp : Type.Value -> Result Error Type.Value
 boolp value =
     case value of
-        Type.Word word ->
-            if String.toLower word == "true" || String.toLower word == "false" then
+        Type.Word word_ ->
+            if String.toLower word_ == "true" || String.toLower word_ == "false" then
                 Ok Type.true
 
             else

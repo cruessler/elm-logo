@@ -164,4 +164,27 @@ primitives =
             , test "works if result is not 0" <|
                 \_ -> Expect.equal (P.remainder (T.Word "20") (T.Word "3")) (Ok <| T.Int 2)
             ]
+        , describe "char"
+            [ test "works with printable and non-printable UTF-8 characters" <|
+                \_ ->
+                    let
+                        integers =
+                            [ 10, 65, 100, 120, 0x0001F603, -1 ]
+
+                        characters =
+                            List.map (T.Int >> P.char) integers
+                    in
+                    Expect.equal characters (List.map (T.Word >> Ok) [ "\n", "A", "d", "x", "😃", "�" ])
+            ]
+        , describe "word"
+            [ test "works with 2 strings" <|
+                \_ ->
+                    Expect.equal (P.word (T.Word "word") (T.Word "word")) (Ok <| T.Word "wordword")
+            , test "works with 2 numbers" <|
+                \_ ->
+                    Expect.equal (P.word (T.Int 10) (T.Float 1.5)) (Ok <| T.Word "101.5")
+            , test "fails with 2 lists" <|
+                \_ ->
+                    Expect.equal (P.word (T.List []) (T.List [])) (Err <| Error.WrongInput "word" "[]")
+            ]
         ]

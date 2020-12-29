@@ -36,6 +36,9 @@ decoderForEntry type_ =
         "Output" ->
             D.field "output" D.string |> D.map Output
 
+        "PartialOutput" ->
+            D.field "output" D.string |> D.map PartialOutput
+
         "Error" ->
             D.field "error" D.string |> D.map Error
 

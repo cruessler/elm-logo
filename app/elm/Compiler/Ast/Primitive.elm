@@ -32,6 +32,8 @@ all =
     , Primitive2 { name = "lessp", f = P.lessp }
     , Primitive2 { name = "remainder", f = P.remainder }
     , Primitive2 { name = "sentence", f = P.sentence }
+    , Primitive2 { name = "word", f = P.word }
+    , Primitive1 { name = "char", f = P.char }
     ]
 
 

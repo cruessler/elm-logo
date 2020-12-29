@@ -2,7 +2,8 @@ module Ui.Terminal exposing (view)
 
 import Css
     exposing
-        ( auto
+        ( after
+        , auto
         , backgroundColor
         , before
         , borderStyle
@@ -68,6 +69,15 @@ line entry =
 
         Output string ->
             H.li [ A.css [ style ] ] [ H.text string ]
+
+        PartialOutput string ->
+            H.li
+                [ A.css
+                    [ style
+                    , after [ property "content" "\"?\"" ]
+                    ]
+                ]
+                [ H.text string ]
 
         Error message ->
             H.li
