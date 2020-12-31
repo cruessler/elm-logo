@@ -1,6 +1,12 @@
 import { Elm } from "../elm/Main.elm";
 
-const app = Elm.Main.init({ node: document.getElementById("app") });
+const params = new URLSearchParams(window.location.search);
+const initialCommandLine = params.get("initialCommandLine") ?? null;
+
+const app = Elm.Main.init({
+  node: document.getElementById("app"),
+  flags: initialCommandLine,
+});
 
 const worker = new Worker("./worker.js");
 
