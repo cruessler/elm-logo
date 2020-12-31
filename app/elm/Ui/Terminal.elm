@@ -168,7 +168,7 @@ help =
 
 
 controls : Config msg -> Html msg
-controls { onCompile, onContinue, onStep } =
+controls { onRun, onCompile, onContinue, onStep } =
     let
         buttonStyle : Css.Style
         buttonStyle =
@@ -183,6 +183,11 @@ controls { onCompile, onContinue, onStep } =
         ]
         [ H.button
             [ A.css [ Theme.buttonStyle, marginLeft auto ]
+            , E.onClick onRun
+            ]
+            [ H.text "Run" ]
+        , H.button
+            [ A.css [ Theme.buttonStyle, buttonStyle ]
             , E.onClick onCompile
             ]
             [ H.text "Compile" ]
