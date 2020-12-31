@@ -46,6 +46,10 @@ type alias Model =
     }
 
 
+type alias Flags =
+    Maybe String
+
+
 type Msg
     = GetViewport Viewport
     | Resize Int Int
@@ -58,7 +62,7 @@ type Msg
     | ReplaceMachine Machine
 
 
-main : Program () Model Msg
+main : Program Flags Model Msg
 main =
     Browser.element
         { init = init
@@ -68,10 +72,10 @@ main =
         }
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : Flags -> ( Model, Cmd Msg )
+init initialCommandLine =
     ( { windowSize = Nothing
-      , currentCommandLine = ""
+      , currentCommandLine = Maybe.withDefault "" initialCommandLine
       , machine = Machine.empty
       }
     , Task.perform GetViewport Dom.getViewport
