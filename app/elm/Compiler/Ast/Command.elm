@@ -18,18 +18,27 @@ type Command
 all : List Command
 all =
     [ Command1 { name = "print", f = C.print }
+    , Command1 { name = "pr", f = C.print }
     , Command1 { name = "type", f = C.type_ }
     , Command1 { name = "forward", f = C.forward }
+    , Command1 { name = "fd", f = C.forward }
     , Command1 { name = "back", f = C.back }
+    , Command1 { name = "bk", f = C.back }
     , Command1 { name = "left", f = C.left }
+    , Command1 { name = "lt", f = C.left }
     , Command1 { name = "right", f = C.right }
+    , Command1 { name = "rt", f = C.right }
     , Command2 { name = "setxy", f = C.setxy }
     , Command0 { name = "pendown", f = C.pendown }
+    , Command0 { name = "pd", f = C.pendown }
     , Command0 { name = "penup", f = C.penup }
+    , Command0 { name = "pu", f = C.penup }
     , Command1 { name = "setpencolor", f = C.setpencolor }
+    , Command1 { name = "setpc", f = C.setpencolor }
     , Command0 { name = "home", f = C.home }
     , Command0 { name = "clean", f = C.clean }
     , Command0 { name = "clearscreen", f = C.clearscreen }
+    , Command0 { name = "cs", f = C.clearscreen }
     ]
 
 
