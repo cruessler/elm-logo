@@ -1,10 +1,10 @@
-module Test.Command exposing (..)
+module Test.Command exposing (commands)
 
 import Environment exposing (Environment)
 import Environment.History exposing (Entry(..))
 import Expect
 import Fuzz exposing (string)
-import Test exposing (..)
+import Test exposing (Test, describe, fuzz)
 import Vm.Command as C
 import Vm.Type as Type
 

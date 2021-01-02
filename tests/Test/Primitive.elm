@@ -1,8 +1,8 @@
-module Test.Primitive exposing (..)
+module Test.Primitive exposing (primitives)
 
 import Expect
 import Fuzz exposing (list, string)
-import Test exposing (..)
+import Test exposing (Test, describe, fuzz, test)
 import Vm.Error as Error
 import Vm.Primitive as P
 import Vm.Type as T
