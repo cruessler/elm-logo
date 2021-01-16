@@ -2,6 +2,7 @@ module Vm.Vm exposing
     ( State(..)
     , Vm
     , empty
+    , getParser
     , initialize
     , run
     , step
@@ -15,8 +16,9 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
-import Compiler.Ast exposing (CompiledFunction)
+import Compiler.Ast as Ast exposing (CompiledFunction)
 import Compiler.Linker exposing (LinkedProgram)
+import Compiler.Parser as Parser exposing (Parser)
 import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Json.Encode as E
@@ -82,6 +84,14 @@ withEnvironment environment vm =
     { vm
         | environment = environment
     }
+
+
+getParser : Vm -> Parser Ast.Program
+getParser =
+    .compiledFunctions
+        >> List.map (\function -> ( function.name, function ))
+        >> Dict.fromList
+        >> Parser.withExistingFunctions
 
 
 encodeInstruction : Instruction -> E.Value

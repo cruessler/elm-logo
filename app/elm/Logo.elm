@@ -26,8 +26,8 @@ type Logo
     = Logo State
 
 
-type Error context problem
-    = ParseError (List (DeadEnd context problem))
+type Error
+    = ParseError Parser.Error
 
 
 empty : Logo
@@ -67,10 +67,7 @@ compile program logo =
             getVm logo
 
         parser =
-            vm.compiledFunctions
-                |> List.map (\function -> ( function.name, function ))
-                |> Dict.fromList
-                |> Parser.withExistingFunctions
+            Vm.getParser vm
 
         compiledProgram =
             program
