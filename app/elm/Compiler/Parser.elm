@@ -1,5 +1,7 @@
 module Compiler.Parser exposing
-    ( State
+    ( Error
+    , Parser
+    , State
     , arithmeticExpression
     , booleanExpression
     , defaultState
@@ -25,12 +27,20 @@ import Parser.Advanced as P
     exposing
         ( (|.)
         , (|=)
-        , Parser
+        , DeadEnd
         , Step(..)
         )
 import Vm.Exception as Exception
 import Vm.Primitive as Primitive
 import Vm.Type as Type
+
+
+type alias Parser a =
+    P.Parser Context Problem a
+
+
+type alias Error =
+    List (DeadEnd Context Problem)
 
 
 type alias State =
@@ -50,7 +60,7 @@ defaultState =
     }
 
 
-withExistingFunctions : Dict String CompiledFunction -> Parser Context Problem Ast.Program
+withExistingFunctions : Dict String CompiledFunction -> Parser Ast.Program
 withExistingFunctions existingFunctions =
     let
         state =
@@ -60,7 +70,7 @@ withExistingFunctions existingFunctions =
         toplevel state
 
 
-toplevel : State -> Parser Context Problem Ast.Program
+toplevel : State -> Parser Ast.Program
 toplevel state =
     let
         program =
@@ -77,7 +87,7 @@ toplevel state =
             ]
 
 
-toplevel_ : State -> Parser Context Problem State
+toplevel_ : State -> Parser State
 toplevel_ state =
     P.succeed identity
         |. Helper.maybeSpaces
@@ -109,13 +119,13 @@ defineFunctionUnlessDefined state newFunction =
         { state | newFunctions = newFunctions }
 
 
-function : State -> Parser Context Problem State
+function : State -> Parser State
 function state =
     functionDefinition state
         |> P.map (defineFunctionUnlessDefined state)
 
 
-toplevelStatements : State -> Parser Context Problem State
+toplevelStatements : State -> Parser State
 toplevelStatements state =
     let
         appendNodes nodes =
@@ -127,7 +137,7 @@ toplevelStatements state =
         |. P.oneOf [ P.symbol (P.Token "\n" ExpectingNewline), P.end ExpectingEnd ]
 
 
-defineFunction : State -> Ast.Function -> Parser Context Problem Ast.Function
+defineFunction : State -> Ast.Function -> Parser Ast.Function
 defineFunction state newFunction =
     let
         newFunctions =
@@ -146,7 +156,7 @@ defineFunction state newFunction =
         |> P.map (\body -> { newFunction | body = body })
 
 
-functionDefinition : State -> Parser Context Problem Ast.Function
+functionDefinition : State -> Parser Ast.Function
 functionDefinition state =
     P.inContext FunctionDefinition <|
         (functionHeader state
@@ -154,7 +164,7 @@ functionDefinition state =
         )
 
 
-functionHeader : State -> Parser Context Problem Ast.Function
+functionHeader : State -> Parser Ast.Function
 functionHeader state =
     P.succeed Ast.Function
         |. Helper.keyword "to"
@@ -177,12 +187,12 @@ functionHeader state =
         |= P.succeed []
 
 
-requiredArguments : Parser Context Problem (List String)
+requiredArguments : Parser (List String)
 requiredArguments =
     Helper.list { item = requiredArgument, separator = Helper.spaces }
 
 
-requiredArgument : Parser Context Problem String
+requiredArgument : Parser String
 requiredArgument =
     P.succeed identity
         |. Helper.symbol ":"
@@ -191,12 +201,12 @@ requiredArgument =
            )
 
 
-optionalArguments : State -> Parser Context Problem (List ( String, Ast.Node ))
+optionalArguments : State -> Parser (List ( String, Ast.Node ))
 optionalArguments state =
     Helper.list { item = optionalArgument state, separator = Helper.spaces }
 
 
-optionalArgument : State -> Parser Context Problem ( String, Ast.Node )
+optionalArgument : State -> Parser ( String, Ast.Node )
 optionalArgument state =
     P.succeed (\a b -> ( a, b ))
         |. Helper.symbol "["
@@ -208,13 +218,13 @@ optionalArgument state =
         |. Helper.symbol "]"
 
 
-functionBody : State -> Parser Context Problem (List Ast.Node)
+functionBody : State -> Parser (List Ast.Node)
 functionBody state =
     P.inContext FunctionBody <|
         functionBody_ state []
 
 
-functionBody_ : State -> List Ast.Node -> Parser Context Problem (List Ast.Node)
+functionBody_ : State -> List Ast.Node -> Parser (List Ast.Node)
 functionBody_ state acc =
     P.oneOf
         [ P.token (P.Token "end\n" <| ExpectingEnd)
@@ -224,7 +234,7 @@ functionBody_ state acc =
         ]
 
 
-line : State -> Parser Context Problem (List Ast.Node)
+line : State -> Parser (List Ast.Node)
 line state =
     P.inContext Line <|
         P.succeed identity
@@ -240,7 +250,7 @@ See comment to `statement` for details on why `statements` consists of
 expressions.
 
 -}
-statements : State -> Parser Context Problem (List Ast.Node)
+statements : State -> Parser (List Ast.Node)
 statements state =
     P.inContext Statements <|
         Helper.list
@@ -262,7 +272,7 @@ This function parses both statements and expressions and leaves it to the later
 stages of the compiler to deal with semantically invalid programs.
 
 -}
-statement : State -> Parser Context Problem Ast.Node
+statement : State -> Parser Ast.Node
 statement state =
     P.inContext Statement <|
         P.oneOf
@@ -285,7 +295,7 @@ statement state =
             ]
 
 
-output : State -> Parser Context Problem Ast.Node
+output : State -> Parser Ast.Node
 output state =
     let
         makeNode expr =
@@ -302,7 +312,7 @@ output state =
             |= booleanExpression state
 
 
-stop : Parser Context Problem Ast.Node
+stop : Parser Ast.Node
 stop =
     P.succeed (Ast.Return Nothing) |. Helper.keyword "stop"
 
@@ -310,7 +320,7 @@ stop =
 controlStructure :
     State
     -> { keyword : String, constructor : Ast.Node -> List Ast.Node -> Ast.Node }
-    -> Parser Context Problem Ast.Node
+    -> Parser Ast.Node
 controlStructure state { keyword, constructor } =
     P.inContext (Keyword keyword) <|
         P.succeed constructor
@@ -324,7 +334,7 @@ controlStructure state { keyword, constructor } =
 invertedControlStructure :
     State
     -> { keyword : String, constructor : Ast.Node -> List Ast.Node -> Ast.Node }
-    -> Parser Context Problem Ast.Node
+    -> Parser Ast.Node
 invertedControlStructure state { keyword, constructor } =
     P.inContext (Keyword keyword) <|
         P.succeed (\a b -> constructor b a)
@@ -341,7 +351,7 @@ controlStructure2 :
         { keyword : String
         , constructor : Ast.Node -> List Ast.Node -> List Ast.Node -> Ast.Node
         }
-    -> Parser Context Problem Ast.Node
+    -> Parser Ast.Node
 controlStructure2 state { keyword, constructor } =
     P.inContext (Keyword keyword) <|
         P.succeed constructor
@@ -354,7 +364,7 @@ controlStructure2 state { keyword, constructor } =
             |= instructionList state
 
 
-instructionList : State -> Parser Context Problem (List Ast.Node)
+instructionList : State -> Parser (List Ast.Node)
 instructionList state =
     P.succeed identity
         |. Helper.symbol "["
@@ -364,42 +374,42 @@ instructionList state =
         |. Helper.symbol "]"
 
 
-if_ : State -> Parser Context Problem Ast.Node
+if_ : State -> Parser Ast.Node
 if_ state =
     controlStructure state { keyword = "if", constructor = Ast.If }
 
 
-foreach : State -> Parser Context Problem Ast.Node
+foreach : State -> Parser Ast.Node
 foreach state =
     P.lazy (\_ -> controlStructure state { keyword = "foreach", constructor = Ast.Foreach })
 
 
-map : State -> Parser Context Problem Ast.Node
+map : State -> Parser Ast.Node
 map state =
     P.lazy (\_ -> invertedControlStructure state { keyword = "map", constructor = Ast.Map })
 
 
-filter : State -> Parser Context Problem Ast.Node
+filter : State -> Parser Ast.Node
 filter state =
     P.lazy (\_ -> invertedControlStructure state { keyword = "filter", constructor = Ast.Filter })
 
 
-repeat : State -> Parser Context Problem Ast.Node
+repeat : State -> Parser Ast.Node
 repeat state =
     controlStructure state { keyword = "repeat", constructor = Ast.Repeat }
 
 
-until : State -> Parser Context Problem Ast.Node
+until : State -> Parser Ast.Node
 until state =
     controlStructure state { keyword = "until", constructor = Ast.Until }
 
 
-ifElse : State -> Parser Context Problem Ast.Node
+ifElse : State -> Parser Ast.Node
 ifElse state =
     controlStructure2 state { keyword = "ifelse", constructor = Ast.IfElse }
 
 
-functionCall : State -> Parser Context Problem Ast.Node
+functionCall : State -> Parser Ast.Node
 functionCall state =
     P.inContext FunctionCall <|
         (Helper.functionName
@@ -407,7 +417,7 @@ functionCall state =
         )
 
 
-functionCall_ : State -> String -> Parser Context Problem Ast.Node
+functionCall_ : State -> String -> Parser Ast.Node
 functionCall_ state name =
     let
         functions =
@@ -434,7 +444,7 @@ errors. For this reason, we parse the argument list even if it has too few
 arguments. Then, when we compile the resulting AST nodes to instructions,
 we insert an instruction for raising an exception at the right place.
 -}
-arguments : State -> Int -> Parser Context Problem (List Ast.Node)
+arguments : State -> Int -> Parser (List Ast.Node)
 arguments state count =
     if count > 0 then
         P.inContext (Arguments count) <|
@@ -452,7 +462,7 @@ arguments state count =
         P.succeed []
 
 
-inParentheses : State -> Parser Context Problem Ast.Node
+inParentheses : State -> Parser Ast.Node
 inParentheses state =
     P.inContext InParentheses <|
         P.succeed identity
@@ -485,10 +495,10 @@ The parser only commits if the first thing that follows the opening parenthesis
 is a valid function name.
 
 -}
-functionCallInParentheses : State -> Parser Context Problem Ast.Node
+functionCallInParentheses : State -> Parser Ast.Node
 functionCallInParentheses state =
     let
-        zeroOrMoreArguments : Parser Context Problem (List Ast.Node)
+        zeroOrMoreArguments : Parser (List Ast.Node)
         zeroOrMoreArguments =
             P.oneOf
                 [ P.succeed identity
@@ -506,7 +516,7 @@ functionCallInParentheses state =
         |> P.andThen (\( a, b ) -> variableFunctionCall state a b)
 
 
-variableFunctionCall : State -> String -> List Ast.Node -> Parser Context Problem Ast.Node
+variableFunctionCall : State -> String -> List Ast.Node -> Parser Ast.Node
 variableFunctionCall state name arguments_ =
     let
         functions =
@@ -520,18 +530,18 @@ variableFunctionCall state name arguments_ =
 
 
 type alias BinaryOperator =
-    { operator : Parser Context Problem ()
+    { operator : Parser ()
     , constructor : Ast.Node -> Ast.Node -> Ast.Node
     }
 
 
 type alias BinaryOperation =
     { operators : List BinaryOperator
-    , operand : State -> Parser Context Problem Ast.Node
+    , operand : State -> Parser Ast.Node
     }
 
 
-leftAssociative : BinaryOperation -> State -> Parser Context Problem Ast.Node
+leftAssociative : BinaryOperation -> State -> Parser Ast.Node
 leftAssociative op state =
     P.lazy (\_ -> op.operand state)
         |> P.andThen
@@ -553,10 +563,10 @@ This is not the most efficient parser because it constructs parsers on the fly.
 <http://www.cs.cornell.edu/courses/cs211/2006fa/Sections/S3/grammars.html>
 
 -}
-leftAssociative_ : BinaryOperation -> State -> Ast.Node -> Parser Context Problem Ast.Node
+leftAssociative_ : BinaryOperation -> State -> Ast.Node -> Parser Ast.Node
 leftAssociative_ op state left =
     let
-        right : BinaryOperator -> Parser Context Problem Ast.Node
+        right : BinaryOperator -> Parser Ast.Node
         right { operator, constructor } =
             (P.succeed (constructor left)
                 |. P.backtrackable (Helper.maybeSpaces |. operator)
@@ -565,7 +575,7 @@ leftAssociative_ op state left =
             )
                 |> P.andThen (\node -> leftAssociative_ op state node)
 
-        rights : List (Parser Context Problem Ast.Node)
+        rights : List (Parser Ast.Node)
         rights =
             List.map right op.operators
     in
@@ -582,7 +592,7 @@ This means that the AST correctly mirrors the structure of boolean and
 arithmetic expressions.
 
 -}
-booleanExpression : State -> Parser Context Problem Ast.Node
+booleanExpression : State -> Parser Ast.Node
 booleanExpression state =
     P.inContext BooleanExpression <|
         leftAssociative
@@ -601,7 +611,7 @@ booleanExpression state =
             state
 
 
-arithmeticExpression : State -> Parser Context Problem Ast.Node
+arithmeticExpression : State -> Parser Ast.Node
 arithmeticExpression state =
     P.inContext ArithmeticExpression <|
         leftAssociative
@@ -616,7 +626,7 @@ arithmeticExpression state =
             state
 
 
-term : State -> Parser Context Problem Ast.Node
+term : State -> Parser Ast.Node
 term state =
     P.inContext Term <|
         leftAssociative
@@ -631,7 +641,7 @@ term state =
             state
 
 
-templateVariable : Parser Context Problem Ast.Node
+templateVariable : Parser Ast.Node
 templateVariable =
     let
         digits =
@@ -658,10 +668,10 @@ templateVariable =
                 ]
 
 
-localmake : State -> Parser Context Problem Ast.Node
+localmake : State -> Parser Ast.Node
 localmake state =
     let
-        makeNode : ( Type.Value, Ast.Node ) -> Parser Context Problem Ast.Node
+        makeNode : ( Type.Value, Ast.Node ) -> Parser Ast.Node
         makeNode ( name, node ) =
             case name of
                 Type.Word word ->
@@ -681,10 +691,10 @@ localmake state =
         )
 
 
-make : State -> Parser Context Problem Ast.Node
+make : State -> Parser Ast.Node
 make state =
     let
-        makeNode : ( Type.Value, Ast.Node ) -> Parser Context Problem Ast.Node
+        makeNode : ( Type.Value, Ast.Node ) -> Parser Ast.Node
         makeNode ( name, node ) =
             case name of
                 Type.Word word ->
@@ -704,7 +714,7 @@ make state =
         )
 
 
-variable : Parser Context Problem Ast.Node
+variable : Parser Ast.Node
 variable =
     P.inContext Variable <|
         P.succeed Ast.Variable
