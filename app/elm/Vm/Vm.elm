@@ -16,12 +16,13 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
-import Compiler.Ast as Ast exposing (CompiledFunction)
-import Compiler.Linker exposing (LinkedProgram)
+import Compiler.Ast as Ast exposing (CompiledFunction, CompiledProgram, Program)
+import Compiler.Linker as Linker exposing (LinkedProgram)
 import Compiler.Parser as Parser exposing (Parser)
 import Dict exposing (Dict)
 import Environment exposing (Environment)
 import Json.Encode as E
+import Parser.Advanced as Parser
 import Vm.Command as C
 import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Exception as Exception exposing (Exception)
@@ -117,6 +118,9 @@ encodeInstruction instruction =
 
                 Introspect1 { name } ->
                     "Introspect1 " ++ name
+
+                Eval ->
+                    "Eval"
 
                 Eval1 { name } ->
                     "Eval1 " ++ name
@@ -255,6 +259,77 @@ takeValues n stack =
                 )
                 (Ok [])
             |> Result.map (\first -> ( first, List.drop n stack ))
+
+
+parseAndCompileProgram : Parser Program -> String -> Result Error CompiledProgram
+parseAndCompileProgram parser =
+    Parser.run parser
+        >> Result.mapError (always <| Internal ParsingFailed)
+        >> Result.map Ast.compileProgram
+
+
+parseAndEvalInstructions : Vm -> List Type.Value -> Result Error Vm
+parseAndEvalInstructions vm instructions =
+    let
+        parser =
+            getParser vm
+
+        compiledProgram =
+            instructions
+                |> Type.List
+                |> Type.toString
+                |> parseAndCompileProgram parser
+
+        result =
+            compiledProgram
+                |> Result.map (Linker.linkProgram vm.compiledFunctions)
+                |> Result.map initialize
+                |> Result.map (withEnvironment vm.environment)
+                |> Result.map run
+    in
+    case result of
+        Ok (Done subVm) ->
+            case subVm.stack of
+                ((Stack.Value _) as value) :: _ ->
+                    let
+                        newVm =
+                            { vm | environment = subVm.environment, stack = value :: vm.stack }
+                    in
+                    Ok newVm
+
+                [] ->
+                    vm |> withEnvironment subVm.environment |> Ok
+
+                _ ->
+                    Err <| Internal EvalFailed
+
+        _ ->
+            Err <| Internal EvalFailed
+
+
+eval : Vm -> Result Error Vm
+eval vm =
+    case vm.stack of
+        (Stack.Value (Type.List instructions)) :: rest ->
+            instructions
+                |> parseAndEvalInstructions vm
+                |> Result.map
+                    (\newVm ->
+                        { newVm | stack = rest }
+                            |> incrementProgramCounter
+                    )
+
+        (Stack.Value (Type.Word instruction)) :: rest ->
+            [ Type.Word instruction ]
+                |> parseAndEvalInstructions vm
+                |> Result.map
+                    (\newVm ->
+                        { newVm | stack = rest }
+                            |> incrementProgramCounter
+                    )
+
+        _ ->
+            Err <| Internal InvalidStack
 
 
 {-| Evaluate a primitive that takes 1 argument and put the result on top of the
@@ -738,6 +813,9 @@ execute instruction vm =
 
         Introspect1 primitive ->
             introspect1 primitive vm
+
+        Eval ->
+            eval vm
 
         Eval1 primitive ->
             eval1 primitive vm

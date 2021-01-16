@@ -283,7 +283,6 @@ vmWithSampleProgram : Test
 vmWithSampleProgram =
     {- This test is a manual translation of the sample program given at
        <https://people.eecs.berkeley.edu/~bh/logo-sample.html>.
-
        > Here is a short but complete program in Berkeley Logo:
        >
        >   to choices :menu [:sofar []]
@@ -419,4 +418,48 @@ vmWithSampleProgram =
                         ]
                         |> List.reverse
                     )
+        ]
+
+
+vmWithEvalOnList : Test
+vmWithEvalOnList =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ PushValue (Type.List [ Type.Word "print", Type.Word "\"word" ])
+                    , Eval
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+    describe "with eval on list" <|
+        [ test "environment contains printed line" <|
+            \_ -> Expect.equal vm.environment.history [ ( 0, Output "word" ) ]
+        ]
+
+
+vmWithEvalOnWord : Test
+vmWithEvalOnWord =
+    let
+        vm =
+            { emptyVm
+                | instructions =
+                    [ PushValue (Type.Int 90)
+                    , Command1 { name = "forward", f = C.forward }
+                    , PushValue (Type.Word "home")
+                    , Eval
+                    , PushValue (Type.Int 90)
+                    , Command1 { name = "back", f = C.back }
+                    ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+    describe "with eval on word" <|
+        [ test "turtle is reset before moving back" <|
+            -- `runAndUnwrap` swallows errors, so we can’t expect `y` to be `0`
+            -- which it would be if the program failed.
+            \_ -> Expect.equal vm.environment.turtle.y 90
         ]
