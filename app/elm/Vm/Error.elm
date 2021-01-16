@@ -19,6 +19,8 @@ type Internal
     | NoIterator
     | NoReturnAddress
     | NoInstruction
+    | ParsingFailed
+    | EvalFailed
 
 
 type Error

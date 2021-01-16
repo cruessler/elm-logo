@@ -16,6 +16,7 @@ type Instruction
     | LocalVariable String
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1
+    | Eval
     | Eval1 P.Primitive1
     | Eval2 P.Primitive2
     | EvalN P.PrimitiveN Int
