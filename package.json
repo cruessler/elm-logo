@@ -20,7 +20,7 @@
     "elm-format": "^0.8.4",
     "elm-test": "^0.19.1-revision4",
     "node-elm-compiler": "^5.0.5",
-    "parcel": "^2.0.0-nightly.560",
+    "parcel": "^2.0.0-nightly.574",
     "prettier": "^2.2.1"
   }
 }
