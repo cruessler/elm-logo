@@ -14,7 +14,6 @@
   ],
   "author": "Christoph Rüßler <christoph.ruessler@mailbox.org>",
   "license": "MIT",
-  "dependencies": {},
   "devDependencies": {
     "elm": "^0.19.1-5",
     "elm-format": "^0.8.5",
