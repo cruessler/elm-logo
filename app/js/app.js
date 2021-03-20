@@ -8,7 +8,7 @@ const app = Elm.Main.init({
   flags: initialCommandLine,
 });
 
-const worker = new Worker("./worker.js");
+const worker = new Worker(new URL("./worker.js", import.meta.url));
 
 app.ports.sendCommand.subscribe((command) => worker.postMessage(command));
 
