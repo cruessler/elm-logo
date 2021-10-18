@@ -18,7 +18,7 @@
             "elm/time": "1.0.0",
             "elm-explorations/linear-algebra": "1.0.3",
             "mgold/elm-nonempty-list": "4.2.0",
-            "rtfeldman/elm-css": "17.0.0"
+            "rtfeldman/elm-css": "17.0.1"
         },
         "indirect": {
             "elm/url": "1.0.0",
