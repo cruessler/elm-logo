@@ -14,7 +14,7 @@
   "author": "Christoph Rüßler <christoph.ruessler@mailbox.org>",
   "license": "MIT",
   "devDependencies": {
-    "@parcel/transformer-elm": "^2.0.1",
+    "@parcel/transformer-elm": "^2.2.1",
     "elm": "^0.19.1-5",
     "elm-format": "^0.8.5",
     "elm-test": "^0.19.1-revision7",
