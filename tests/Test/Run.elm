@@ -86,6 +86,15 @@ repeatWithVariable =
         ]
 
 
+until : Test
+until =
+    describe "until" <|
+        [ printsLines
+            "make \"i 1 until :i = 5 [ print :i make \"i :i + 1 ]"
+            [ "1", "2", "3", "4" ]
+        ]
+
+
 printSeveralVariables : Test
 printSeveralVariables =
     describe "print several variables" <|

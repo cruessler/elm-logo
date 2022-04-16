@@ -65,6 +65,7 @@ type alias CompiledFunctionInstance =
 type Node
     = Sequence (List Node) Node
     | Repeat Node (List Node)
+    | Until Node (List Node)
     | Foreach Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
@@ -147,6 +148,9 @@ typeOfCallee node =
 
         Repeat _ _ ->
             Command { name = "repeat" }
+
+        Until _ _ ->
+            Command { name = "until" }
 
         Foreach _ _ ->
             Command { name = "foreach" }
@@ -354,6 +358,32 @@ compile context node =
               , Instruction.Raise (Exception.WrongInput "repeat")
               ]
             , body
+            ]
+                |> List.concat
+
+        Until condition children ->
+            let
+                compiledCondition =
+                    compileInContext (Expression { caller = "until" }) condition
+
+                compiledChildren =
+                    compileBranch "until" context children
+            in
+            [ compiledCondition
+            , [ Duplicate
+              , Eval1 { name = "boolp", f = P.boolp }
+              , JumpIfTrue 2
+              , Instruction.Raise (Exception.WrongInput "until")
+              , JumpIfTrue (List.length compiledChildren + 2)
+              ]
+            , compiledChildren
+            , [ Jump
+                    (List.length compiledChildren
+                        + 5
+                        + List.length compiledCondition
+                        |> negate
+                    )
+              ]
             ]
                 |> List.concat
 

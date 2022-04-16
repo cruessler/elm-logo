@@ -270,6 +270,7 @@ statement state =
             , P.lazy (\_ -> ifElse state)
             , P.lazy (\_ -> foreach state)
             , P.lazy (\_ -> repeat state)
+            , P.lazy (\_ -> until state)
             , P.lazy (\_ -> if_ state)
             , P.lazy (\_ -> output state)
             , stop
@@ -360,6 +361,11 @@ foreach state =
 repeat : State -> Parser Context Problem Ast.Node
 repeat state =
     controlStructure state { keyword = "repeat", constructor = Ast.Repeat }
+
+
+until : State -> Parser Context Problem Ast.Node
+until state =
+    controlStructure state { keyword = "until", constructor = Ast.Until }
 
 
 ifElse : State -> Parser Context Problem Ast.Node
