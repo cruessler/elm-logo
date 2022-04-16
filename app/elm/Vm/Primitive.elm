@@ -1,6 +1,7 @@
 module Vm.Primitive exposing
     ( Primitive1
     , Primitive2
+    , PrimitiveN
     , bitand
     , boolp
     , butfirst
@@ -21,6 +22,7 @@ module Vm.Primitive exposing
     , remainder
     , sentence
     , sum
+    , sum2
     , word
     )
 
@@ -54,6 +56,16 @@ type alias Primitive2 =
     { name : String
     , f :
         Type.Value -> Type.Value -> Result Error Type.Value
+    }
+
+
+{-| Represent a builtin function that takes a variable number of arguments.
+-}
+type alias PrimitiveN =
+    { name : String
+    , f :
+        List Type.Value -> Result Error Type.Value
+    , numberOfDefaultArguments : Int
     }
 
 
@@ -326,6 +338,30 @@ remainder value1 value2 =
             Result.map2 (\int1 int2 -> Type.Int <| remainderBy int2 int1) result1 result2
 
 
+{-| Calculate the sum of `values`.
+
+    sum [ Int 20, Int 3 ] == Ok (Float 23)
+
+    sum [ Word "20", Int 4 ] == Ok (Float 24)
+
+-}
+sum : List Type.Value -> Result Error Type.Value
+sum values =
+    values
+        |> List.map
+            (\value ->
+                value
+                    |> Type.toFloat
+                    |> Result.mapError (always (Type.toDebugString value) >> WrongInput "sum")
+            )
+        |> List.foldl
+            (\value acc ->
+                Result.map2 (\value1 value2 -> value1 + value2) value acc
+            )
+            (Ok 0)
+        |> Result.map Type.Float
+
+
 {-| Calculate the sum of `value1` and `value2`.
 
     sum (Int 20) (Int 3) == Ok (Int 23)
@@ -333,8 +369,8 @@ remainder value1 value2 =
     sum (Word "20") (Int 4) == Ok (Float 24)
 
 -}
-sum : Type.Value -> Type.Value -> Result Error Type.Value
-sum value1 value2 =
+sum2 : Type.Value -> Type.Value -> Result Error Type.Value
+sum2 value1 value2 =
     case ( value1, value2 ) of
         ( Type.Int int1, Type.Int int2 ) ->
             Ok <| Type.Int (int1 + int2)

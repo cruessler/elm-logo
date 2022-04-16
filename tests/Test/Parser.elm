@@ -176,6 +176,7 @@ arithmetic =
         , parsesArithmeticExpression "(sum :zr (1 + 1))"
         , parsesArithmeticExpression "(sum :zr (:count + 1))"
         , parsesArithmeticExpression "(sum (:count + 1) (:zi + 2*:bar))"
+        , parsesArithmeticExpression "(sum 1 2 3)"
         ]
 
 

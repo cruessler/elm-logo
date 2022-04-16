@@ -106,6 +106,9 @@ encodeInstruction instruction =
                 Eval2 { name } ->
                     "Eval2 " ++ name
 
+                EvalN { name } n ->
+                    "EvalN [" ++ String.fromInt n ++ "] " ++ name
+
                 Command0 { name } ->
                     "Command0 " ++ name
 
@@ -251,6 +254,51 @@ eval2 primitive vm =
 
         _ ->
             Err <| Internal InvalidStack
+
+
+evalN : P.PrimitiveN -> Int -> Vm -> Result Error Vm
+evalN primitive n vm =
+    let
+        stackSize =
+            List.length vm.stack
+    in
+    if stackSize < n then
+        Err <| Internal InvalidStack
+
+    else
+        let
+            arguments =
+                List.take n vm.stack
+                    |> List.map
+                        (\value ->
+                            case value of
+                                Stack.Value value_ ->
+                                    Ok value_
+
+                                _ ->
+                                    Err <| Internal InvalidStack
+                        )
+                    |> List.foldl
+                        (\value acc ->
+                            Result.map2 (\value_ acc_ -> value_ :: acc_) value acc
+                        )
+                        (Ok [])
+
+            rest =
+                List.drop n vm.stack
+        in
+        arguments
+            |> Result.mapError (always <| Internal InvalidStack)
+            |> Result.andThen
+                (\arguments_ ->
+                    primitive.f arguments_
+                        |> Result.map
+                            (\value ->
+                                { vm | stack = Stack.Value value :: rest }
+                                    |> incrementProgramCounter
+                            )
+                        |> Result.mapError (mapWrongInput primitive.name)
+                )
 
 
 {-| Run a command that takes no argument.
@@ -629,6 +677,9 @@ execute instruction vm =
 
         Eval2 primitive ->
             eval2 primitive vm
+
+        EvalN primitive n ->
+            evalN primitive n vm
 
         Command0 command ->
             command0 command vm

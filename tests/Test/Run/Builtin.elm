@@ -48,6 +48,8 @@ primitives =
         , printsLine "print notequal? 1 1" "false"
         , printsLine "print minus 1" "-1"
         , printsLine "print sum 1 1" "2"
+        , printsLine "print (sum 1 2 3)" "6"
+        , printsLine "print equalp (sum 1 2 3) 1 + 2 + 3" "true"
         , printsLine "print difference 1 1" "0"
         , printsLine "print product 1 1" "1"
         , printsLine "print quotient 1 1" "1"
