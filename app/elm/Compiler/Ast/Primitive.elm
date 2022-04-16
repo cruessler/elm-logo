@@ -41,6 +41,7 @@ all =
     , Primitive2 { name = "se", f = P.sentence }
     , Primitive2 { name = "word", f = P.word }
     , Primitive1 { name = "char", f = P.char }
+    , Primitive2 { name = "bitand", f = P.bitand }
     ]
 
 
