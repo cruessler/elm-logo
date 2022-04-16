@@ -1,6 +1,7 @@
 module Vm.Primitive exposing
     ( Primitive1
     , Primitive2
+    , bitand
     , boolp
     , butfirst
     , char
@@ -33,6 +34,7 @@ manual][ucb-manual].
 
 -}
 
+import Bitwise
 import Vm.Error exposing (Error(..), Internal(..))
 import Vm.Type as Type
 
@@ -601,3 +603,23 @@ boolp value =
 
         _ ->
             Ok Type.false
+
+
+{-| Calculate the bitwise and of `value1` and `value2` which must be integers.
+
+    bitand (Int 1) (Int 3) == Ok (Int 1)
+
+-}
+bitand : Type.Value -> Type.Value -> Result Error Type.Value
+bitand value1 value2 =
+    Type.toInt value1
+        |> Result.mapError (always <| WrongInput "bitand" (Type.toDebugString value1))
+        |> Result.andThen
+            (\int1 ->
+                Type.toInt value2
+                    |> Result.mapError (always <| WrongInput "bitand" (Type.toDebugString value2))
+                    |> Result.map
+                        (\int2 ->
+                            Bitwise.and int1 int2 |> Type.Int
+                        )
+            )
