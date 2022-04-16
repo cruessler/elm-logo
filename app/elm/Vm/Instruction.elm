@@ -18,6 +18,7 @@ type Instruction
     | Introspect1 I.Introspect1
     | Eval1 P.Primitive1
     | Eval2 P.Primitive2
+    | EvalN P.PrimitiveN Int
     | Command0 C.Command0
     | Command1 C.Command1
     | Command2 C.Command2

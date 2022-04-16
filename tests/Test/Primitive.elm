@@ -91,11 +91,17 @@ primitives =
             , test "returns false" <|
                 \_ -> Expect.equal (Ok <| T.false) (P.equalp (T.Int 5) (T.Int 3))
             ]
-        , describe "sum"
-            [ test "works with number" <|
-                \_ -> Expect.equal (Ok <| T.Int 23) (P.sum (T.Int 20) (T.Int 3))
+        , describe "sum2"
+            [ test "works with numbers" <|
+                \_ -> Expect.equal (Ok <| T.Int 23) (P.sum2 (T.Int 20) (T.Int 3))
             , test "works with words" <|
-                \_ -> Expect.equal (Ok <| T.Float 23) (P.sum (T.Word "20") (T.Word "3"))
+                \_ -> Expect.equal (Ok <| T.Float 23) (P.sum2 (T.Word "20") (T.Word "3"))
+            ]
+        , describe "sum"
+            [ test "works with numbers" <|
+                \_ -> Expect.equal (Ok <| T.Float 23) (P.sum [ T.Int 20, T.Int 3 ])
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Float 23) (P.sum [ T.Word "20", T.Word "3" ])
             ]
         , describe "difference"
             [ test "works with number" <|

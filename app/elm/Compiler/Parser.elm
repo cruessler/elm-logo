@@ -579,7 +579,7 @@ arithmeticExpression state =
         leftAssociative
             { operators =
                 [ BinaryOperator (Helper.operator "+") <|
-                    Ast.Primitive2 { name = "+", f = Primitive.sum }
+                    Ast.Primitive2 { name = "+", f = Primitive.sum2 }
                 , BinaryOperator (Helper.operator "-") <|
                     Ast.Primitive2 { name = "-", f = Primitive.difference }
                 ]

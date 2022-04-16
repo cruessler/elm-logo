@@ -1,9 +1,9 @@
 module Compiler.Ast.Primitive exposing
     ( Primitive(..)
     , all
-    , arguments
     , find
     , name
+    , numberOfDefaultArguments
     )
 
 import Vm.Primitive as P
@@ -12,6 +12,7 @@ import Vm.Primitive as P
 type Primitive
     = Primitive1 P.Primitive1
     | Primitive2 P.Primitive2
+    | PrimitiveN P.PrimitiveN
 
 
 all : List Primitive
@@ -28,7 +29,7 @@ all =
     , Primitive2 { name = "notequalp", f = P.notequalp }
     , Primitive2 { name = "notequal?", f = P.notequalp }
     , Primitive1 { name = "minus", f = P.minus }
-    , Primitive2 { name = "sum", f = P.sum }
+    , PrimitiveN { name = "sum", f = P.sum, numberOfDefaultArguments = 2 }
     , Primitive2 { name = "difference", f = P.difference }
     , Primitive2 { name = "product", f = P.product }
     , Primitive2 { name = "quotient", f = P.quotient }
@@ -60,12 +61,18 @@ name primitive =
         Primitive2 primitive2 ->
             primitive2.name
 
+        PrimitiveN primitiveN ->
+            primitiveN.name
 
-arguments : Primitive -> Int
-arguments primitive =
+
+numberOfDefaultArguments : Primitive -> Int
+numberOfDefaultArguments primitive =
     case primitive of
         Primitive1 _ ->
             1
 
         Primitive2 _ ->
             2
+
+        PrimitiveN primitiveN ->
+            primitiveN.numberOfDefaultArguments

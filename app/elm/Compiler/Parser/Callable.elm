@@ -118,6 +118,9 @@ makePrimitive arguments primitive =
         ( Primitive.Primitive2 primitive2, [ first, second ] ) ->
             succeed <| Ast.Primitive2 primitive2 first second
 
+        ( Primitive.PrimitiveN primitiveN, _ ) ->
+            succeed <| Ast.PrimitiveN primitiveN arguments
+
         _ ->
             problem <| InvalidPrimitive (Primitive.name primitive)
 
@@ -207,7 +210,7 @@ numberOfDefaultArguments callable =
             Command.arguments command
 
         Primitive primitive ->
-            Primitive.arguments primitive
+            Primitive.numberOfDefaultArguments primitive
 
         Introspect introspect ->
             Introspect.arguments introspect
