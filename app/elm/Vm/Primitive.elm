@@ -713,7 +713,11 @@ ashift : Type.Value -> Type.Value -> Result Error Type.Value
 ashift value1 value2 =
     case ( Type.toInt value1, Type.toInt value2 ) of
         ( Ok int1, Ok int2 ) ->
-            Ok <| Type.Int <| Bitwise.shiftLeftBy int2 int1
+            if int2 > 0 then
+                Ok <| Type.Int <| Bitwise.shiftLeftBy int2 int1
+
+            else
+                Ok <| Type.Int <| Bitwise.shiftRightBy (negate int2) int1
 
         ( Err _, _ ) ->
             Err <| WrongInput "ashift" (Type.toDebugString value1)
