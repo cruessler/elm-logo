@@ -3,6 +3,7 @@ module Vm.Primitive exposing
     , Primitive2
     , PrimitiveN
     , bitand
+    , bitnot
     , boolp
     , butfirst
     , char
@@ -661,3 +662,11 @@ bitand values =
             )
             (Ok <| Bitwise.complement 0)
         |> Result.map Type.Int
+
+
+bitnot : Type.Value -> Result Error Type.Value
+bitnot value =
+    value
+        |> Type.toInt
+        |> Result.map (Bitwise.complement >> Type.Int)
+        |> Result.mapError (always (Type.toDebugString value) >> WrongInput "bitnot")

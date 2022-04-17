@@ -203,4 +203,17 @@ primitives =
                         (P.bitand [ T.Word "word", T.Word "word" ])
                         (Err <| Error.WrongInput "bitand" "word")
             ]
+        , describe "bitnot"
+            [ test "works with an integer" <|
+                \_ ->
+                    Expect.equal (P.bitnot (T.Int 5)) (Ok <| T.Int -6)
+            , test "works with a string that can be parsed as an integer" <|
+                \_ ->
+                    Expect.equal (P.bitnot (T.Word "5")) (Ok <| T.Int -6)
+            , test "fails with a string" <|
+                \_ ->
+                    Expect.equal
+                        (P.bitnot (T.Word "word"))
+                        (Err <| Error.WrongInput "bitnot" "word")
+            ]
         ]
