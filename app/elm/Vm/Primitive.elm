@@ -664,6 +664,11 @@ bitand values =
         |> Result.map Type.Int
 
 
+{-| Calculate the bitwise not of `value` which must be an integer.
+
+    bitnot (Int 6) == Ok (Int -7)
+
+-}
 bitnot : Type.Value -> Result Error Type.Value
 bitnot value =
     value
