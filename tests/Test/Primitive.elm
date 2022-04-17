@@ -193,6 +193,18 @@ primitives =
                 \_ ->
                     Expect.equal (P.word (T.List []) (T.List [])) (Err <| Error.WrongInput "word" "[]")
             ]
+        , describe "fput"
+            [ test "works with 2 strings" <|
+                \_ ->
+                    Expect.equal
+                        (P.fput (T.Word "w") (T.List [ T.Word "o" ]))
+                        (Ok <| T.List [ T.Word "w", T.Word "o" ])
+            , test "fails with 2 words if first word has more than one character" <|
+                \_ ->
+                    Expect.equal
+                        (P.fput (T.Word "wo") (T.Word "rd"))
+                        (Err <| Error.WrongInput "fput" "wo")
+            ]
         , describe "bitand"
             [ test "works with 2 integers" <|
                 \_ ->

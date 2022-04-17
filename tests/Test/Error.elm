@@ -65,6 +65,7 @@ functionsWithInvalidArguments =
         , printsError "print 1 / []" "/ doesn’t like [] as input"
         , printsError "print quotient 1 []" "quotient doesn’t like [] as input"
         , printsError "print minus []" "minus doesn’t like [] as input"
+        , printsError "print fput \"wo \"rd" "fput doesn’t like wo as input"
         ]
 
 
