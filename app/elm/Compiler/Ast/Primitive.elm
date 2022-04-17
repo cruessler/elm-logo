@@ -43,6 +43,7 @@ all =
     , Primitive2 { name = "word", f = P.word }
     , Primitive1 { name = "char", f = P.char }
     , PrimitiveN { name = "bitand", f = P.bitand, numberOfDefaultArguments = 2 }
+    , Primitive1 { name = "bitnot", f = P.bitnot }
     ]
 
 
