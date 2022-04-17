@@ -491,7 +491,7 @@ compile context node =
                         |> List.concatMap (compileInContext (Expression { caller = p.name }))
 
                 numberOfArguments =
-                    List.length compiledArguments
+                    List.length nodes
             in
             [ compiledArguments
             , [ EvalN p numberOfArguments ]
