@@ -2,6 +2,7 @@ module Vm.Primitive exposing
     ( Primitive1
     , Primitive2
     , PrimitiveN
+    , ashift
     , bitand
     , bitnot
     , boolp
@@ -675,3 +676,21 @@ bitnot value =
         |> Type.toInt
         |> Result.map (Bitwise.complement >> Type.Int)
         |> Result.mapError (always (Type.toDebugString value) >> WrongInput "bitnot")
+
+
+{-| Shift bits of `value1` to the left by `value2`. Both values must be integers.
+
+    ashift (Int 2) (Int 3) == Ok (Int 8)
+
+-}
+ashift : Type.Value -> Type.Value -> Result Error Type.Value
+ashift value1 value2 =
+    case ( Type.toInt value1, Type.toInt value2 ) of
+        ( Ok int1, Ok int2 ) ->
+            Ok <| Type.Int <| Bitwise.shiftLeftBy int2 int1
+
+        ( Err _, _ ) ->
+            Err <| WrongInput "ashift" (Type.toDebugString value1)
+
+        ( _, Err _ ) ->
+            Err <| WrongInput "ashift" (Type.toDebugString value2)
