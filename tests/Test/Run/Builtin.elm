@@ -63,6 +63,7 @@ primitives =
         , printsLine "print word 1 1" "11"
         , printsLine "print char 65" "A"
         , printsLine "print (bitand 7 5 4)" "4"
+        , printsLine "print bitand 7 minus 4" "4"
         , printsLine "print bitnot 6" "-7"
         , printsLine "print ashift 1 3" "8"
         , printsLine "print fput \"w \"ord" "word"
