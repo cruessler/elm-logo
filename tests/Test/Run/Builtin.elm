@@ -62,4 +62,5 @@ primitives =
         , printsLine "print se 1 1" "1 1"
         , printsLine "print word 1 1" "11"
         , printsLine "print char 65" "A"
+        , printsLine "print (bitand 7 5 4)" "4"
         ]

@@ -641,21 +641,23 @@ boolp value =
             Ok Type.false
 
 
-{-| Calculate the bitwise and of `value1` and `value2` which must be integers.
+{-| Calculate the bitwise and of `values` which must be integers.
 
-    bitand (Int 1) (Int 3) == Ok (Int 1)
+    bitand [ Int 1, Int 3 ] == Ok (Int 1)
 
 -}
-bitand : Type.Value -> Type.Value -> Result Error Type.Value
-bitand value1 value2 =
-    Type.toInt value1
-        |> Result.mapError (always <| WrongInput "bitand" (Type.toDebugString value1))
-        |> Result.andThen
-            (\int1 ->
-                Type.toInt value2
-                    |> Result.mapError (always <| WrongInput "bitand" (Type.toDebugString value2))
-                    |> Result.map
-                        (\int2 ->
-                            Bitwise.and int1 int2 |> Type.Int
-                        )
+bitand : List Type.Value -> Result Error Type.Value
+bitand values =
+    values
+        |> List.map
+            (\value ->
+                value
+                    |> Type.toInt
+                    |> Result.mapError (always (Type.toDebugString value) >> WrongInput "bitand")
             )
+        |> List.foldl
+            (\value acc ->
+                Result.map2 (\value1 value2 -> Bitwise.and value1 value2) value acc
+            )
+            (Ok <| Bitwise.complement 0)
+        |> Result.map Type.Int
