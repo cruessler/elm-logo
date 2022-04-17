@@ -216,4 +216,10 @@ primitives =
                         (P.bitnot (T.Word "word"))
                         (Err <| Error.WrongInput "bitnot" "word")
             ]
+        , describe "ashift"
+            [ test "works with 2 integers" <|
+                \_ -> Expect.equal (Ok <| T.Int 8) (P.ashift (T.Int 1) (T.Int 3))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Int 8) (P.ashift (T.Word "1") (T.Word "3"))
+            ]
         ]
