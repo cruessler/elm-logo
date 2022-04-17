@@ -14,6 +14,7 @@ module Vm.Primitive exposing
     , equalp
     , first
     , floatp
+    , fput
     , greaterp
     , integerp
     , lessp
@@ -533,6 +534,31 @@ sentence value1 value2 =
             toList value2
     in
     Ok <| Type.List <| List.append list1 list2
+
+
+{-|
+
+> outputs a list equal to its second input with one extra member, the first
+> input, at the beginning. If the second input is a word, then the first input
+> must be a one-letter word, and FPUT is equivalent to WORD.
+
+-}
+fput : Type.Value -> Type.Value -> Result Error Type.Value
+fput value1 value2 =
+    case ( value1, value2 ) of
+        ( _, Type.List list ) ->
+            Ok <| Type.List <| value1 :: list
+
+        _ ->
+            let
+                word_ =
+                    Type.toString value1
+            in
+            if String.length word_ == 1 then
+                Ok <| Type.Word <| word_ ++ Type.toString value2
+
+            else
+                Err <| WrongInput "fput" word_
 
 
 {-| Convert an integer to a character. The actual work is delegated to Elm’s
