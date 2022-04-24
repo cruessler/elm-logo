@@ -14,6 +14,7 @@ module Vm.Command exposing
     , right
     , setpencolor
     , setxy
+    , show
     , type_
     )
 
@@ -61,6 +62,11 @@ type alias Command2 =
 print : Type.Value -> Environment -> Result Error Environment
 print value env =
     Ok <| E.print (Type.toString value) env
+
+
+show : Type.Value -> Environment -> Result Error Environment
+show value env =
+    Ok <| E.print (Type.toDebugString value) env
 
 
 type_ : Type.Value -> Environment -> Result Error Environment

@@ -19,6 +19,7 @@ all : List Command
 all =
     [ Command1 { name = "print", f = C.print }
     , Command1 { name = "pr", f = C.print }
+    , Command1 { name = "show", f = C.show }
     , Command1 { name = "type", f = C.type_ }
     , Command1 { name = "forward", f = C.forward }
     , Command1 { name = "fd", f = C.forward }
