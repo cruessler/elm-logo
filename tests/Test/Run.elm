@@ -484,6 +484,44 @@ quine =
         ]
 
 
+{-| The following code comes from [rosettacode].
+
+  - `-1` has been replaced by `minus 1`
+  - `until [:safe = 0]` has been replaced by `until :safe = 0`
+  - the body of the `until` loop has been joined into one line
+  - the problem is solved for 6 queens instead of 8 queens for performance
+    reasons
+
+[rosettacode]: https://rosettacode.org/wiki/N-queens_problem#Logo
+
+-}
+nQueensProblem : Test
+nQueensProblem =
+    let
+        program =
+            """to try :files :diag1 :diag2 :tried
+  if :files = 0 [make "solutions :solutions+1 show :tried stop]
+  localmake "safe (bitand :files :diag1 :diag2)
+  until :safe = 0 [ localmake "f bitnot bitand :safe minus :safe try bitand :files :f ashift bitand :diag1 :f minus 1 (ashift bitand :diag2 :f 1)+1 fput bitnot :f :tried localmake "safe bitand :safe :safe-1 ]
+end
+to queens :n
+  make "solutions 0
+  try (lshift 1 :n)-1 minus 1 minus 1 []
+  output :solutions
+end
+print queens 6"""
+    in
+    describe "solves the n-queens problem for 6 queens"
+        [ printsLines program
+            [ "[16 4 1 32 8 2]"
+            , "[8 1 16 2 32 4]"
+            , "[4 32 2 16 1 8]"
+            , "[2 8 32 1 4 16]"
+            , "4"
+            ]
+        ]
+
+
 environmentIsKept : Test
 environmentIsKept =
     test "the environment is kept" <|
