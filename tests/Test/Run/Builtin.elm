@@ -1,4 +1,4 @@
-module Test.Run.Builtin exposing (commands, primitives)
+module Test.Run.Builtin exposing (commands, primitives, show)
 
 import Test exposing (Test, describe)
 import Test.Helper exposing (printsLine, runsWithoutError)
@@ -73,4 +73,15 @@ primitives =
         , printsLine "print lshift 1 minus 32" "1"
         , printsLine "print fput \"w \"ord" "word"
         , printsLine "print fput \"w [ o r d ]" "w o r d"
+        ]
+
+
+show : Test
+show =
+    describe "show" <|
+        [ printsLine "show [ 1 1 ]" "[1 1]"
+        , printsLine "show [ 1 [ 2 ] ]" "[1 [2]]"
+        , printsLine "show 1" "1"
+        , printsLine "show \"word" "word"
+        , printsLine "show sentence 1 1" "[1 1]"
         ]
