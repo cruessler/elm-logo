@@ -236,4 +236,12 @@ primitives =
             , test "works with words" <|
                 \_ -> Expect.equal (Ok <| T.Int 8) (P.ashift (T.Word "1") (T.Word "3"))
             ]
+        , describe "lshift"
+            [ test "works with 2 integers" <|
+                \_ -> Expect.equal (Ok <| T.Int 8) (P.lshift (T.Int 1) (T.Int 3))
+            , test "works if second argument is negative" <|
+                \_ -> Expect.equal (Ok <| T.Int 4) (P.lshift (T.Int 8) (T.Int -1))
+            , test "works with words" <|
+                \_ -> Expect.equal (Ok <| T.Int 8) (P.lshift (T.Word "1") (T.Word "3"))
+            ]
         ]

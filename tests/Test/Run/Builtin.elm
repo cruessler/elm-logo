@@ -67,6 +67,10 @@ primitives =
         , printsLine "print bitnot 6" "-7"
         , printsLine "print ashift 1 3" "8"
         , printsLine "print ashift 8 minus 1" "4"
+        , printsLine "print lshift 1 3" "8"
+        , printsLine "print lshift 1 minus 2" "0"
+        , printsLine "print lshift 8 minus 1" "4"
+        , printsLine "print lshift 1 minus 32" "1"
         , printsLine "print fput \"w \"ord" "word"
         , printsLine "print fput \"w [ o r d ]" "w o r d"
         ]

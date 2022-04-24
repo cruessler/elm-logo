@@ -18,6 +18,7 @@ module Vm.Primitive exposing
     , greaterp
     , integerp
     , lessp
+    , lshift
     , minus
     , notequalp
     , product
@@ -704,9 +705,13 @@ bitnot value =
         |> Result.mapError (always (Type.toDebugString value) >> WrongInput "bitnot")
 
 
-{-| Shift bits of `value1` to the left by `value2`. Both values must be integers.
+{-| Shift bits of `value1` to the left by `value2`. Both values must be
+integers. This is called an [arithmetic shift].
 
-    ashift (Int 2) (Int 3) == Ok (Int 8)
+    ashift (Int 2) (Int 3) == Ok (Int 16)
+
+[bitwise operations]: https://en.wikipedia.org/wiki/Bitwise_operation#Arithmetic_shift
+[arithmetic shift]: https://en.wikipedia.org/wiki/Arithmetic_shift
 
 -}
 ashift : Type.Value -> Type.Value -> Result Error Type.Value
@@ -724,3 +729,29 @@ ashift value1 value2 =
 
         ( _, Err _ ) ->
             Err <| WrongInput "ashift" (Type.toDebugString value2)
+
+
+{-| Shift bits of `value1` to the left by `value2`. Both values must be
+integers. This is called a [locical shift].
+
+    lshift (Int 2) (Int 3) == Ok (Int 16)
+
+[bitwise operations]: https://en.wikipedia.org/wiki/Bitwise_operation#Logical_shift
+[logical shift]: https://en.wikipedia.org/wiki/Logical_shift
+
+-}
+lshift : Type.Value -> Type.Value -> Result Error Type.Value
+lshift value1 value2 =
+    case ( Type.toInt value1, Type.toInt value2 ) of
+        ( Ok int1, Ok int2 ) ->
+            if int2 > 0 then
+                Ok <| Type.Int <| Bitwise.shiftLeftBy int2 int1
+
+            else
+                Ok <| Type.Int <| Bitwise.shiftRightZfBy (negate int2) int1
+
+        ( Err _, _ ) ->
+            Err <| WrongInput "lshift" (Type.toDebugString value1)
+
+        ( _, Err _ ) ->
+            Err <| WrongInput "lshift" (Type.toDebugString value2)
