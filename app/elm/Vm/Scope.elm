@@ -238,8 +238,15 @@ local : String -> List Scope -> List Scope
 local name scopes =
     case scopes of
         (Local returnAddress { variables }) :: rest ->
-            Local returnAddress { variables = Dict.insert name Undefined variables }
-                :: rest
+            let
+                newVariables =
+                    if Dict.member name variables then
+                        variables
+
+                    else
+                        Dict.insert name Undefined variables
+            in
+            Local returnAddress { variables = newVariables } :: rest
 
         _ ->
             scopes

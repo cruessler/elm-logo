@@ -204,6 +204,20 @@ foo "true"""
         ]
 
 
+localmakeTwice : Test
+localmakeTwice =
+    describe "localmake uses previous value" <|
+        [ printsLines
+            """to foo
+localmake "bar 1
+localmake "bar :bar + 1
+print :bar
+end
+foo"""
+            [ "2" ]
+        ]
+
+
 optionalArguments : Test
 optionalArguments =
     describe "define function with default value for optional parameter" <|
