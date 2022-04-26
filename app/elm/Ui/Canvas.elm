@@ -43,7 +43,7 @@ pointsToString =
 
 
 line : Line -> Svg msg
-line { start, end, color } =
+line { start, end, width, color } =
     let
         { red, green, blue, alpha } =
             Color.toRgba color
@@ -60,6 +60,8 @@ line { start, end, color } =
                 ++ ","
                 ++ String.fromFloat alpha
                 ++ ")"
+        , A.strokeWidth (String.fromInt width)
+        , A.strokeLinecap "round"
         , A.points
             ([ start, end ]
                 |> List.map pointToString

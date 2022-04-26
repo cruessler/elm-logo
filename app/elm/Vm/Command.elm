@@ -13,6 +13,7 @@ module Vm.Command exposing
     , print
     , right
     , setpencolor
+    , setpensize
     , setxy
     , show
     , type_
@@ -128,6 +129,13 @@ setpencolor : Type.Value -> Environment -> Result Error Environment
 setpencolor value env =
     Type.toInt value
         |> Result.map (\int -> E.setpencolor int env)
+        |> Result.mapError (Internal << Type)
+
+
+setpensize : Type.Value -> Environment -> Result Error Environment
+setpensize value env =
+    Type.toInt value
+        |> Result.map (\int -> E.setpensize int env)
         |> Result.mapError (Internal << Type)
 
 
