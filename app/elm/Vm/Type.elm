@@ -4,6 +4,7 @@ module Vm.Type exposing
     , false
     , fromBool
     , fromFloat
+    , fromInt
     , toBool
     , toDebugString
     , toFloat
@@ -182,6 +183,13 @@ false =
 fromFloat : Float -> Value
 fromFloat =
     Float
+
+
+{-| Convert an int to a `Value`.
+-}
+fromInt : Int -> Value
+fromInt =
+    Int
 
 
 {-| Convert a bool to a `Value`.
