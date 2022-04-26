@@ -14,6 +14,7 @@ module Environment exposing
     , print
     , right
     , setpencolor
+    , setpensize
     , setxy
     , toValue
     , type_
@@ -39,6 +40,7 @@ type alias Environment =
     { history : History
     , objects : List ( Int, Object )
     , turtle : Turtle
+    , penSize : Int
     , color : Color
     , nextId : Int
     }
@@ -55,6 +57,7 @@ empty =
     , objects = []
     , turtle = Turtle.initialize
     , color = defaultColor
+    , penSize = 1
     , nextId = 0
     }
 
@@ -89,6 +92,7 @@ encodeLine id line =
         , ( "id", E.int id )
         , ( "start", encodeVec2 line.start )
         , ( "end", encodeVec2 line.end )
+        , ( "width", E.int line.width )
         , ( "color", encodeColor line.color )
         ]
 
@@ -260,7 +264,7 @@ forward by env =
                 Turtle.forward by env.turtle
 
             newLine =
-                Line.line env.turtle newTurtle env.color
+                Line.line env.turtle newTurtle env.penSize env.color
         in
         { env | turtle = newTurtle }
             |> pushObject (Line newLine)
@@ -282,7 +286,7 @@ back by env =
                 Turtle.back by env.turtle
 
             newLine =
-                Line.line env.turtle newTurtle env.color
+                Line.line env.turtle newTurtle env.penSize env.color
         in
         { env | turtle = newTurtle }
             |> pushObject (Line newLine)
@@ -384,6 +388,16 @@ setpencolor color_ env =
                     defaultColor
     in
     { env | color = newColor }
+
+
+{-| Set the pen’s size.
+
+This affects objects that are drawn by turtle movements.
+
+-}
+setpensize : Int -> Environment -> Environment
+setpensize penSize env =
+    { env | penSize = penSize }
 
 
 {-| Move the turtle to a specified position.

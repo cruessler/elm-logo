@@ -89,9 +89,10 @@ decoderForObject : String -> D.Decoder Object
 decoderForObject type_ =
     case type_ of
         "Line" ->
-            D.map3 Line.Line
+            D.map4 Line.Line
                 (D.field "start" vec2)
                 (D.field "end" vec2)
+                (D.field "width" D.int)
                 (D.field "color" color)
                 |> D.map Line
 

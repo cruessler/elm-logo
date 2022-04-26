@@ -36,6 +36,7 @@ all =
     , Command0 { name = "pu", f = C.penup }
     , Command1 { name = "setpencolor", f = C.setpencolor }
     , Command1 { name = "setpc", f = C.setpencolor }
+    , Command1 { name = "setpensize", f = C.setpensize }
     , Command0 { name = "home", f = C.home }
     , Command0 { name = "clean", f = C.clean }
     , Command0 { name = "clearscreen", f = C.clearscreen }
