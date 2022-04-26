@@ -33,6 +33,7 @@ all =
     , Primitive2 { name = "difference", f = P.difference }
     , Primitive2 { name = "product", f = P.product }
     , Primitive2 { name = "quotient", f = P.quotient }
+    , Primitive1 { name = "round", f = P.round_ }
     , Primitive2 { name = "greaterp", f = P.greaterp }
     , Primitive2 { name = "greater?", f = P.greaterp }
     , Primitive2 { name = "lessp", f = P.lessp }

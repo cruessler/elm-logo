@@ -24,6 +24,7 @@ module Vm.Primitive exposing
     , product
     , quotient
     , remainder
+    , round_
     , sentence
     , sum
     , sum2
@@ -476,6 +477,28 @@ quotient value1 value2 =
 
                 ( _, Err _ ) ->
                     Err <| WrongInput "quotient" (Type.toDebugString value2)
+
+
+{-| Round `value` to the nearest integer.
+
+      round_ (Int -1.5) == Ok (Int -2)
+      round_ (Int -1.2) == Ok (Int -1)
+
+-}
+round_ : Type.Value -> Result Error Type.Value
+round_ value =
+    let
+        roundAwayFromZero : Float -> Int
+        roundAwayFromZero float =
+            if float < 0 then
+                float |> negate |> round |> negate
+
+            else
+                round float
+    in
+    Type.toFloat value
+        |> Result.map (roundAwayFromZero >> Type.fromInt)
+        |> Result.mapError (always <| WrongInput "round" (Type.toDebugString value))
 
 
 {-| Negate `value`.
