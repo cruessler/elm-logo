@@ -28,8 +28,9 @@ jobs:
           # Otherwise, parcel would compile both files in parallel which can
           # lead to data races and let one of the compiler processes fail with
           # an error about corrupt files.
-          ./node_modules/.bin/elm make app/elm/Main.elm --output /dev/null
-          ./node_modules/.bin/elm make app/elm/Worker.elm --output /dev/null
+          npx elm --version
+          npx elm make app/elm/Main.elm --output /dev/null
+          npx elm make app/elm/Worker.elm --output /dev/null
 
       - name: Run tests
         run: npm test
