@@ -88,12 +88,12 @@ functionDefinition =
                     , requiredArguments = [ "bar" ]
                     , optionalArguments = []
                     , body =
-                        [ Ast.Command1
-                            { name = "print", f = C.print }
-                            (Ast.Variable "bar")
-                        , Ast.Command1
-                            { name = "print", f = C.print }
-                            (Ast.Variable "baz")
+                        [ Ast.CommandN
+                            { name = "print", f = C.printN, numberOfDefaultArguments = 1 }
+                            [ Ast.Variable "bar" ]
+                        , Ast.CommandN
+                            { name = "print", f = C.printN, numberOfDefaultArguments = 1 }
+                            [ Ast.Variable "baz" ]
                         ]
                     }
         , test "with optional arguments" <|
@@ -103,9 +103,9 @@ functionDefinition =
                     , requiredArguments = [ "bar" ]
                     , optionalArguments = [ ( "baz", Ast.Value <| Type.Word <| "baz" ) ]
                     , body =
-                        [ Ast.Command1
-                            { name = "print", f = C.print }
-                            (Ast.Variable "bar")
+                        [ Ast.CommandN
+                            { name = "print", f = C.printN, numberOfDefaultArguments = 1 }
+                            [ Ast.Variable "bar" ]
                         ]
                     }
         , test "without arguments" <|

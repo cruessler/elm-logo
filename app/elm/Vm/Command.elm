@@ -2,6 +2,7 @@ module Vm.Command exposing
     ( Command0
     , Command1
     , Command2
+    , CommandN
     , back
     , clean
     , clearscreen
@@ -11,6 +12,7 @@ module Vm.Command exposing
     , pendown
     , penup
     , print
+    , printN
     , right
     , setpencolor
     , setpensize
@@ -60,9 +62,30 @@ type alias Command2 =
     }
 
 
+{-| Represent a builtin command that takes a variable number of arguments.
+-}
+type alias CommandN =
+    { name : String
+    , f :
+        List Type.Value -> Environment -> Result Error Environment
+    , numberOfDefaultArguments : Int
+    }
+
+
 print : Type.Value -> Environment -> Result Error Environment
 print value env =
     Ok <| E.print (Type.toString value) env
+
+
+printN : List Type.Value -> Environment -> Result Error Environment
+printN values env =
+    let
+        value =
+            values
+                |> List.map Type.toString
+                |> String.join " "
+    in
+    Ok <| E.print value env
 
 
 show : Type.Value -> Environment -> Result Error Environment

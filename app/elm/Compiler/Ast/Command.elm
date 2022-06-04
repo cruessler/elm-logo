@@ -1,9 +1,9 @@
 module Compiler.Ast.Command exposing
     ( Command(..)
     , all
-    , arguments
     , find
     , name
+    , numberOfDefaultArguments
     )
 
 import Vm.Command as C
@@ -13,12 +13,13 @@ type Command
     = Command0 C.Command0
     | Command1 C.Command1
     | Command2 C.Command2
+    | CommandN C.CommandN
 
 
 all : List Command
 all =
-    [ Command1 { name = "print", f = C.print }
-    , Command1 { name = "pr", f = C.print }
+    [ CommandN { name = "print", f = C.printN, numberOfDefaultArguments = 1 }
+    , CommandN { name = "pr", f = C.printN, numberOfDefaultArguments = 1 }
     , Command1 { name = "show", f = C.show }
     , Command1 { name = "type", f = C.type_ }
     , Command1 { name = "forward", f = C.forward }
@@ -62,9 +63,12 @@ name command =
         Command2 command2 ->
             command2.name
 
+        CommandN commandN ->
+            commandN.name
 
-arguments : Command -> Int
-arguments command =
+
+numberOfDefaultArguments : Command -> Int
+numberOfDefaultArguments command =
     case command of
         Command0 _ ->
             0
@@ -74,3 +78,6 @@ arguments command =
 
         Command2 _ ->
             2
+
+        CommandN commandN ->
+            commandN.numberOfDefaultArguments
