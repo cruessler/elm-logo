@@ -20,6 +20,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate intermediate files
+        run: |
+          # By compiling both `Main.elm` and `Worker.elm`, we make sure all
+          # intermediate files are present before the next steps run.
+          #
+          # Otherwise, parcel would compile both files in parallel which can
+          # lead to data races and let one of the compiler processes fail with
+          # an error about corrupt files.
+          ./node_modules/.bin/elm make app/elm/Main.elm --output /dev/null
+          ./node_modules/.bin/elm make app/elm/Worker.elm --output /dev/null
+
       - name: Run tests
         run: npm test
 
