@@ -522,6 +522,44 @@ print queens 6"""
         ]
 
 
+{-| The following code comes from [rosettacode].
+
+[rosettacode]: https://rosettacode.org/wiki/Towers_of_Hanoi#Logo
+
+-}
+towersOfHanoi : Test
+towersOfHanoi =
+    let
+        program =
+            """to move :n :from :to :via
+  if :n = 0 [stop]
+  move :n-1 :from :via :to
+  (print [Move disk from] :from [to] :to)
+  move :n-1 :via :to :from
+end
+move 4 "left "middle "right"""
+    in
+    describe "solves the towers of Hanoi problem"
+        [ printsLines program
+            [ "Move disk from left to right"
+            , "Move disk from left to middle"
+            , "Move disk from right to middle"
+            , "Move disk from left to right"
+            , "Move disk from middle to left"
+            , "Move disk from middle to right"
+            , "Move disk from left to right"
+            , "Move disk from left to middle"
+            , "Move disk from right to middle"
+            , "Move disk from right to left"
+            , "Move disk from middle to left"
+            , "Move disk from right to middle"
+            , "Move disk from left to right"
+            , "Move disk from left to middle"
+            , "Move disk from right to middle"
+            ]
+        ]
+
+
 environmentIsKept : Test
 environmentIsKept =
     test "the environment is kept" <|

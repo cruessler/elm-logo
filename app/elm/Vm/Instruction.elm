@@ -22,6 +22,7 @@ type Instruction
     | Command0 C.Command0
     | Command1 C.Command1
     | Command2 C.Command2
+    | CommandN C.CommandN Int
     | PushLoopScope
     | EnterLoopScope
     | PopLoopScope

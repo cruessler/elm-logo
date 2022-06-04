@@ -105,6 +105,9 @@ makeCommand arguments command =
         ( Command.Command2 command2, [ first, second ] ) ->
             succeed <| Ast.Command2 command2 first second
 
+        ( Command.CommandN commandN, _ ) ->
+            succeed <| Ast.CommandN commandN arguments
+
         _ ->
             problem <| InvalidPrimitive (Command.name command)
 
@@ -207,7 +210,7 @@ numberOfDefaultArguments : Callable -> Int
 numberOfDefaultArguments callable =
     case callable of
         Command command ->
-            Command.arguments command
+            Command.numberOfDefaultArguments command
 
         Primitive primitive ->
             Primitive.numberOfDefaultArguments primitive

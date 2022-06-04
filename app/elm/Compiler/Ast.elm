@@ -72,6 +72,7 @@ type Node
     | Command0 C.Command0
     | Command1 C.Command1 Node
     | Command2 C.Command2 Node Node
+    | CommandN C.CommandN (List Node)
     | Primitive1 P.Primitive1 Node
     | Primitive2 P.Primitive2 Node Node
     | PrimitiveN P.PrimitiveN (List Node)
@@ -163,6 +164,9 @@ typeOfCallee node =
             Command { name = c.name }
 
         Command2 c _ _ ->
+            Command { name = c.name }
+
+        CommandN c _ ->
             Command { name = c.name }
 
         Primitive1 p _ ->
@@ -467,6 +471,21 @@ compile context node =
             [ compileInContext (Expression { caller = c.name }) second
             , compileInContext (Expression { caller = c.name }) first
             , [ Instruction.Command2 c ]
+            ]
+                |> List.concat
+
+        CommandN c nodes ->
+            let
+                compiledArguments =
+                    nodes
+                        |> List.reverse
+                        |> List.concatMap (compileInContext (Expression { caller = c.name }))
+
+                numberOfArguments =
+                    List.length nodes
+            in
+            [ compiledArguments
+            , [ Instruction.CommandN c numberOfArguments ]
             ]
                 |> List.concat
 
