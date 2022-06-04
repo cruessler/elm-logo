@@ -6,7 +6,7 @@ jobs:
 
     strategy:
       matrix:
-        node: [ 12.x, 14.x ]
+        node: [16.x, 18.x]
 
     name: Node.js ${{ matrix.node }}
     steps:
@@ -21,7 +21,11 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test
+        run: |
+          # See comment to `Build assets`.
+          npx elm make app/elm/Main.elm --output /dev/null
+          npx elm make app/elm/Worker.elm --output /dev/null
+          npm test
 
       - name: Build assets
         run: |
