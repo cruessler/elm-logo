@@ -6,7 +6,7 @@ jobs:
 
     strategy:
       matrix:
-        node: [16.x, 18.x]
+        node: [16.x]
 
     name: Node.js ${{ matrix.node }}
     steps:
