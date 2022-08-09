@@ -14,12 +14,12 @@
   "author": "Christoph Rüßler <christoph.ruessler@mailbox.org>",
   "license": "MIT",
   "devDependencies": {
-    "@parcel/transformer-elm": "^2.6.2",
+    "@parcel/transformer-elm": "^2.7.0",
     "elm": "^0.19.1-5",
     "elm-format": "^0.8.5",
     "elm-test": "^0.19.1-revision9",
     "node-elm-compiler": "^5.0.6",
-    "parcel": "^2.6.2",
+    "parcel": "^2.7.0",
     "prettier": "^2.7.1"
   }
 }
