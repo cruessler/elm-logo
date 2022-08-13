@@ -1,5 +1,8 @@
 {
     "type": "application",
+    "name": "elm-logo",
+    "summary": "A Logo interpreter, written in Elm",
+    "license": "MIT",
     "source-directories": [
         "app/elm"
     ],
