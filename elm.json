@@ -1,8 +1,5 @@
 {
     "type": "application",
-    "name": "elm-logo",
-    "summary": "A Logo interpreter, written in Elm",
-    "license": "MIT",
     "source-directories": [
         "app/elm"
     ],
@@ -32,6 +29,8 @@
         "direct": {
             "elm-explorations/test": "2.0.1"
         },
-        "indirect": {}
+        "indirect": {
+            "elm/bytes": "1.0.8"
+        }
     }
 }
