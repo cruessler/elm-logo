@@ -26,7 +26,9 @@ commands =
                                 |> C.print (Type.Word string)
 
                         lines =
-                            String.lines string
+                            string
+                                |> String.replace "\u{000D}\n" "\n"
+                                |> String.lines
 
                         entries =
                             lines
