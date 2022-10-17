@@ -195,7 +195,9 @@ appendCharacter : Char -> Environment -> Environment
 appendCharacter char env =
     case env.history of
         ( id, PartialOutput output_ ) :: rest ->
-            if char == '\n' then
+            -- '\u{000D}' is '\r'.
+            -- This doesn’t properly handle "\r\n".
+            if char == '\n' || char == '\u{000D}' then
                 { env | history = ( id, Output output_ ) :: rest }
 
             else
@@ -206,7 +208,9 @@ appendCharacter char env =
                 nextId =
                     env.nextId + 1
             in
-            if char == '\n' then
+            -- '\u{000D}' is '\r'.
+            -- This doesn’t properly handle "\r\n".
+            if char == '\n' || char == '\u{000D}' then
                 { env
                     | nextId = nextId
                     , history = ( env.nextId, Output "" ) :: env.history
@@ -236,7 +240,11 @@ add a newline.
 -}
 type_ : String -> Environment -> Environment
 type_ string env =
-    String.foldl appendCharacter env string
+    -- Since `appendCharacter` doesn’t properly handle "\r\n", we replace it by
+    -- "\n". This is not optimal, but sufficient for the time being.
+    string
+        |> String.replace "\u{000D}\n" "\n"
+        |> String.foldl appendCharacter env
 
 
 pushObject : Object -> Environment -> Environment
