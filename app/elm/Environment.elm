@@ -206,7 +206,9 @@ appendCharacter char env =
                 nextId =
                     env.nextId + 1
             in
-            if char == '\n' then
+            -- '\u{000D}' is '\r'.
+            -- This doesn’t properly handle "\r\n".
+            if char == '\n' || char == '\u{000D}' then
                 { env
                     | nextId = nextId
                     , history = ( env.nextId, Output "" ) :: env.history
