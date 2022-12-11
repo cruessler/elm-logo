@@ -227,7 +227,12 @@ appendCharacter char env =
 -}
 print : String -> Environment -> Environment
 print string env =
-    String.foldl appendCharacter env string |> appendCharacter '\n'
+    -- Since `appendCharacter` doesn’t properly handle "\r\n", we replace it by
+    -- "\n". This is not optimal, but sufficient for the time being.
+    string
+        |> String.replace "\u{000D}\n" "\n"
+        |> String.foldl appendCharacter env
+        |> appendCharacter '\n'
 
 
 {-| Print characters to the console output, but don’t append a newline or space
