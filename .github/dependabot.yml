@@ -1,37 +1,20 @@
 version: 2
 updates:
-- package-ecosystem: elm
-  directory: "/"
-  schedule:
-    interval: weekly
-    time: "02:00"
-  open-pull-requests-limit: 2
-- package-ecosystem: npm
-  directory: "/"
-  schedule:
-    interval: weekly
-    time: "02:00"
-  open-pull-requests-limit: 2
-  ignore:
-  - dependency-name: "@parcel/transformer-elm"
-    versions:
-    - 2.0.0-nightly.2254
-    - 2.0.0-nightly.2255
-    - 2.0.0-nightly.2258
-    - 2.0.0-nightly.2261
-  - dependency-name: parcel
-    versions:
-    - 2.0.0-nightly.574
-    - 2.0.0-nightly.596
-    - 2.0.0-nightly.603
-    - 2.0.0-nightly.605
-    - 2.0.0-nightly.610
-    - 2.0.0-nightly.619
-    - 2.0.0-nightly.626
-    - 2.0.0-nightly.627
-    - 2.0.0-nightly.630
-    - 2.0.0-nightly.631
-    - 2.0.0-nightly.634
-  - dependency-name: elm-test
-    versions:
-    - 0.19.1-revision6
+  - package-ecosystem: elm
+    directory: "/"
+    schedule:
+      interval: weekly
+      time: "02:00"
+    open-pull-requests-limit: 2
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      time: "02:00"
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+      time: "02:00"
+    open-pull-requests-limit: 2
