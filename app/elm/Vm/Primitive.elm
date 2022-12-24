@@ -29,6 +29,7 @@ module Vm.Primitive exposing
     , sum
     , sum2
     , word
+    , wordp
     )
 
 {-| This module contains types and functions related to Logo’s builtin
@@ -600,6 +601,33 @@ char value =
     Type.toInt value
         |> Result.map (Char.fromCode >> String.fromChar >> Type.Word)
         |> Result.mapError (always <| WrongInput "char" (Type.toDebugString value))
+
+
+{-| Check whether a given `Value` is a word.
+
+    wordp (Word "a") == Ok (Word "true")
+
+    wordp (Int 1) == Ok (Word "true")
+
+    wordp (Float 1.0) == Ok (Word "true")
+
+    wordp (List []) == Ok (Word "false")
+
+-}
+wordp : Type.Value -> Result Error Type.Value
+wordp value =
+    case value of
+        Type.Int _ ->
+            Ok Type.true
+
+        Type.Float _ ->
+            Ok Type.true
+
+        Type.Word _ ->
+            Ok Type.true
+
+        Type.List _ ->
+            Ok Type.false
 
 
 {-| Check whether a given `Value` is an integer.
