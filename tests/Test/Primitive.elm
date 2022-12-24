@@ -131,6 +131,11 @@ primitives =
             , test "works with words" <|
                 \_ -> Expect.equal (Ok <| T.Float -20) (P.minus (T.Word "20"))
             ]
+        , describe "wordp"
+            [ test "works with a word" <|
+                \_ ->
+                    Expect.equal (P.wordp <| T.Word <| "word") (Ok <| T.true)
+            ]
         , describe "integerp"
             [ test "works with an integer" <|
                 \_ ->
