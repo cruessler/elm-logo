@@ -664,7 +664,7 @@ integerp value =
             Ok Type.false
 
 
-{-| Check whether a given `Value` is an integer.
+{-| Check whether a given `Value` is a float.
 
     floatp (Word "a") == Ok (Word "false")
 
