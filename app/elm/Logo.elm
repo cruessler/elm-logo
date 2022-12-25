@@ -18,6 +18,7 @@ import Dict
 import Environment exposing (Environment)
 import Environment.History exposing (History)
 import Parser.Advanced as Parser exposing (DeadEnd)
+import StandardLibrary
 import Vm.Vm as Vm exposing (State(..), Vm)
 
 
@@ -31,7 +32,12 @@ type Error context problem
 
 empty : Logo
 empty =
-    Logo <| Done Vm.empty
+    let
+        vm =
+            Vm.empty
+                |> Vm.withCompiledFunctions StandardLibrary.compiledFunctions
+    in
+    Logo <| Done vm
 
 
 continue : Logo -> Logo
