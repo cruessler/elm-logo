@@ -6,6 +6,7 @@ module Vm.Vm exposing
     , run
     , step
     , toValue
+    , withCompiledFunctions
     , withEnvironment
     )
 
@@ -66,6 +67,13 @@ initialize { instructions, functionTable, compiledFunctions, startAddress } =
     , environment = Environment.empty
     , functionTable = functionTable
     , compiledFunctions = compiledFunctions
+    }
+
+
+withCompiledFunctions : List CompiledFunction -> Vm -> Vm
+withCompiledFunctions compiledFunctions vm =
+    { vm
+        | compiledFunctions = compiledFunctions
     }
 
 
