@@ -10,11 +10,11 @@ import Parser.Advanced as Parser
 elm-logo’s standard library. As far as possible, UCBLogo’s implementation is
 copied.
 
-The first function, `combine`, was taken from UCBLogo’s [source code][combine]
-and only slightly modified. `bury "combine` was removed because burying is not
-yet implemented in elm-logo.
+The only thing omitted so far are the calls to `bury` because burying is not yet
+implemented in elm-logo.
 
 [combine]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/combine
+[reverse]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/reverse
 
 -}
 functions : String
@@ -22,6 +22,11 @@ functions =
     """to combine :this :those
 if wordp :those [output word :this :those]
 output fput :this :those
+end
+
+to reverse :in [:out ifelse listp :in [[]] ["]]
+if emptyp :in [output :out]
+output (reverse bf :in combine first :in :out)
 end
 """
 
