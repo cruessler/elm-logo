@@ -18,6 +18,7 @@ module Vm.Primitive exposing
     , greaterp
     , integerp
     , lessp
+    , listp
     , lshift
     , minus
     , notequalp
@@ -627,6 +628,27 @@ wordp value =
             Ok Type.true
 
         Type.List _ ->
+            Ok Type.false
+
+
+{-| Check whether a given `Value` is a list.
+
+    listp (Word "a") == Ok (Word "false")
+
+    listp (Int 1) == Ok (Word "false")
+
+    listp (Float 1.0) == Ok (Word "false")
+
+    listp (List []) == Ok (Word "true")
+
+-}
+listp : Type.Value -> Result Error Type.Value
+listp value =
+    case value of
+        Type.List _ ->
+            Ok Type.true
+
+        _ ->
             Ok Type.false
 
 
