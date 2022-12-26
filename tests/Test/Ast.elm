@@ -10,6 +10,7 @@ import Vm.Primitive as P
 import Vm.Type as Type
 
 
+intLiteral : Ast.Node
 intLiteral =
     Ast.Value (Type.Int 10)
 
