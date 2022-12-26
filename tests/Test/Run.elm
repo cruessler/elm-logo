@@ -4,7 +4,7 @@ import Environment.History exposing (Entry(..))
 import Expect
 import Logo
 import Test exposing (Test, describe, test)
-import Test.Helper exposing (printsLines)
+import Test.Helper exposing (printsLine, printsLines)
 
 
 statements : Test
@@ -76,6 +76,25 @@ foreachWithTemplateVariable =
         [ printsLines "foreach [ 1 2 ] [ print ?rest ]" [ "2", "" ]
         , printsLines "foreach \"word [ print ?rest ]" [ "ord", "rd", "d", "" ]
         , printsLines "foreach \"word [ print ?1 ]" [ "w", "o", "r", "d" ]
+        ]
+
+
+map : Test
+map =
+    describe "map" <|
+        [ printsLine "print map [ 1 ] [ 1 2 3 4 ]" "1 1 1 1"
+        ]
+
+
+mapWithTemplateVariable : Test
+mapWithTemplateVariable =
+    describe "map with template variable" <|
+        [ printsLines "print map [ ?1 ] [ 1 2 3 4 ]" [ "1 2 3 4" ]
+        , printsLines "print map [ ?rest ] [ 1 2 3 4 ]" [ "[2 3 4] [3 4] [4] []" ]
+        , printsLines "print map [ ?1 ] \"word" [ "word" ]
+        , printsLines "print map [ ?rest ] \"word" [ "ordrdd" ]
+        , printsLines "print map [? * ?] [2 3 4 5]" [ "4 9 16 25" ]
+        , printsLines "print map [? * ?] 2345" [ "491625" ]
         ]
 
 
