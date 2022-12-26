@@ -180,6 +180,9 @@ encodeInstruction instruction =
                 Duplicate ->
                     "Duplicate"
 
+                Flip ->
+                    "Flip"
+
                 Raise _ ->
                     "Raise"
     in
@@ -646,6 +649,24 @@ duplicate vm =
             Err <| Internal InvalidStack
 
 
+flip : Vm -> Result Error Vm
+flip vm =
+    case vm.stack of
+        (Stack.Value first) :: (Stack.Value second) :: rest ->
+            Ok
+                ({ vm
+                    | stack =
+                        Stack.Value second
+                            :: Stack.Value first
+                            :: rest
+                 }
+                    |> incrementProgramCounter
+                )
+
+        _ ->
+            Err <| Internal InvalidStack
+
+
 raise : Exception -> Vm -> Result Error Vm
 raise exception vm =
     case exception of
@@ -805,6 +826,9 @@ execute instruction vm =
 
         Duplicate ->
             duplicate vm
+
+        Flip ->
+            flip vm
 
         Raise exception ->
             raise exception vm

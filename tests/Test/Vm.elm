@@ -254,6 +254,31 @@ vmWithLocalScope =
         ]
 
 
+vmWithFlip : Test
+vmWithFlip =
+    let
+        vm =
+            { emptyVm
+                | stack =
+                    [ Stack.Value (Type.Word "a")
+                    , Stack.Value (Type.Word "b")
+                    ]
+                , instructions =
+                    [ Flip ]
+                        |> Array.fromList
+            }
+                |> runAndUnwrap
+    in
+    describe "Flip" <|
+        [ test "flips topmost stack values" <|
+            \_ ->
+                Expect.equal vm.stack
+                    [ Stack.Value (Type.Word "b")
+                    , Stack.Value (Type.Word "a")
+                    ]
+        ]
+
+
 vmWithSampleProgram : Test
 vmWithSampleProgram =
     {- This test is a manual translation of the sample program given at
