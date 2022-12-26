@@ -40,4 +40,5 @@ type Instruction
     | Return
     | CheckReturn
     | Duplicate
+    | Flip
     | Raise Exception
