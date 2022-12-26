@@ -55,6 +55,11 @@ primitives =
             , printsLine "print wordp 1.0" "true"
             , printsLine "print wordp []" "false"
             ]
+        , describe "listp" <|
+            [ printsLine "print listp []" "true"
+            , printsLine "print listp \"a" "false"
+            , printsLine "print listp [a b]" "true"
+            ]
         , describe "equalp" <|
             [ printsLine "print equalp 1 1" "true"
             , printsLine "print equal? 1 1" "true"
