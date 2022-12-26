@@ -66,6 +66,7 @@ type Node
     | Repeat Node (List Node)
     | Until Node (List Node)
     | Foreach Node (List Node)
+    | Map Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
     | Command0 C.Command0
@@ -155,6 +156,9 @@ typeOfCallee node =
 
         Foreach _ _ ->
             Command { name = "foreach" }
+
+        Map _ _ ->
+            Primitive { name = "map" }
 
         Command0 c ->
             Command { name = c.name }
@@ -329,6 +333,88 @@ compileInContext context node =
                     instructions
 
 
+{-| Compile a `Map` node to a list of VM instructions.
+
+This has been extracted into its own function because it is considerably more
+effort than is necessary to compile other nodes. This is mostly due to more
+helper code being necessary.
+
+This implementation deviates quite a lot from UCBLogo’s [implementation][map].
+This is due to architectural differences between UCBLogo and elm-logo. In
+particular, elm-logo does not have `apply` yet which is used by UCBLogo.
+
+[map]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/map
+
+-}
+compileMap : Node -> List Node -> List Instruction
+compileMap iterator children =
+    let
+        mapContext =
+            Expression { caller = "map" }
+
+        compiledIterator =
+            compileInContext mapContext iterator
+
+        compiledChildren =
+            compileBranch "map" mapContext children
+
+        {- A collector is the value the results of each iteration are added to.
+           Its type depends on the type of the value `map` iterates over.
+
+           The name is a reference to Rust’s `collect()` function.
+        -}
+        setupCollector =
+            [ PushValue (Type.Word "rest")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , Eval1 { name = "listp", f = P.listp }
+            , JumpIfTrue 3
+            , PushValue (Type.Word "")
+            , Jump 2
+            , PushValue (Type.List [])
+            ]
+
+        {- If the value being iterated over is a word, we flip the 2 values on
+           top of the stack to append the new value to the collector. This is
+           not necessary for lists because for lists, `reverse` is called after
+           the iterator is exhausted.
+        -}
+        addItemToCollector =
+            [ PushValue (Type.Word "rest")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , Eval1 { name = "listp", f = P.listp }
+            , JumpIfTrue 2
+            , Flip
+            , Instruction.CallByName "combine2"
+            ]
+
+        {- If the value being iterated over is a list, we reverse the collector
+           because `fput` prepends items, so the collector’s items are in the
+           wrong order. This is not necessary for words because for words, the
+           values have been prepended using `Flip` during the iteration.
+        -}
+        reverseCollectorIfList =
+            [ PushValue (Type.Word "rest")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , Eval1 { name = "listp", f = P.listp }
+            , JumpIfFalse 2
+            , Instruction.CallByName "reverse1"
+            ]
+    in
+    [ compiledIterator
+    , [ PushTemplateScope ]
+    , setupCollector
+    , [ EnterTemplateScope
+      , JumpIfTrue (List.length compiledChildren + List.length addItemToCollector + 2)
+      ]
+    , compiledChildren
+    , addItemToCollector
+    , [ Jump (List.length compiledChildren + List.length addItemToCollector + 2 |> negate) ]
+    , reverseCollectorIfList
+    , [ PopTemplateScope ]
+    ]
+        |> List.concat
+
+
 {-| Compile an AST node to a list of VM instructions.
 -}
 compile : Context -> Node -> List Instruction
@@ -413,6 +499,9 @@ compile context node =
               ]
             ]
                 |> List.concat
+
+        Map iterator children ->
+            compileMap iterator children
 
         If condition children ->
             let

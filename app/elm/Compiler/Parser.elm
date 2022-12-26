@@ -269,6 +269,7 @@ statement state =
             [ inParentheses state
             , P.lazy (\_ -> ifElse state)
             , P.lazy (\_ -> foreach state)
+            , P.lazy (\_ -> map state)
             , P.lazy (\_ -> repeat state)
             , P.lazy (\_ -> until state)
             , P.lazy (\_ -> if_ state)
@@ -319,6 +320,20 @@ controlStructure state { keyword, constructor } =
             |= instructionList state
 
 
+invertedControlStructure :
+    State
+    -> { keyword : String, constructor : Ast.Node -> List Ast.Node -> Ast.Node }
+    -> Parser Context Problem Ast.Node
+invertedControlStructure state { keyword, constructor } =
+    P.inContext (Keyword keyword) <|
+        P.succeed (\a b -> constructor b a)
+            |. Helper.keyword keyword
+            |. Helper.spaces
+            |= instructionList state
+            |. Helper.spaces
+            |= booleanExpression state
+
+
 controlStructure2 :
     State
     ->
@@ -356,6 +371,11 @@ if_ state =
 foreach : State -> Parser Context Problem Ast.Node
 foreach state =
     P.lazy (\_ -> controlStructure state { keyword = "foreach", constructor = Ast.Foreach })
+
+
+map : State -> Parser Context Problem Ast.Node
+map state =
+    P.lazy (\_ -> invertedControlStructure state { keyword = "map", constructor = Ast.Map })
 
 
 repeat : State -> Parser Context Problem Ast.Node
