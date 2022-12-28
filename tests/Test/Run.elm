@@ -577,6 +577,36 @@ print queens 6"""
 
 {-| The following code comes from [rosettacode].
 
+  - `small?` has been slightly changed. The original uses `or`, but `or` does
+    not short-circuit in elm-logo where function arguments are eagerly evaluated
+  - square brackets in `small?` have been removed
+  - line breaks in `quicksort` have been removed
+
+[rosettacode]: https://rosettacode.org/wiki/Sorting_algorithms/Quicksort#Logo
+
+-}
+quicksort : Test
+quicksort =
+    let
+        program =
+            """to small? :list
+  if empty? :list [output "true]
+  output empty? butfirst :list
+end
+to quicksort :list
+  if small? :list [output :list]
+  localmake "pivot first :list
+  output (sentence quicksort filter [? < :pivot] butfirst :list filter [? = :pivot] :list quicksort filter [? > :pivot] butfirst :list)
+end
+
+show quicksort [1 3 5 7 9 8 6 4 2]"""
+    in
+    describe "runs quicksort on a list"
+        [ printsLine program "[1 2 3 4 5 6 7 8 9]" ]
+
+
+{-| The following code comes from [rosettacode].
+
 [rosettacode]: https://rosettacode.org/wiki/Towers_of_Hanoi#Logo
 
 -}
