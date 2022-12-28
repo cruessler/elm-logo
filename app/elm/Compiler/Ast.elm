@@ -67,6 +67,7 @@ type Node
     | Until Node (List Node)
     | Foreach Node (List Node)
     | Map Node (List Node)
+    | Filter Node (List Node)
     | If Node (List Node)
     | IfElse Node (List Node) (List Node)
     | Command0 C.Command0
@@ -159,6 +160,9 @@ typeOfCallee node =
 
         Map _ _ ->
             Primitive { name = "map" }
+
+        Filter _ _ ->
+            Primitive { name = "filter" }
 
         Command0 c ->
             Command { name = c.name }
@@ -415,6 +419,96 @@ compileMap iterator children =
         |> List.concat
 
 
+{-| Compile a `Filter` node to a list of VM instructions.
+
+This has been extracted into its own function because it is considerably more
+effort than is necessary to compile other nodes. This is mostly due to more
+helper code being necessary.
+
+This implementation deviates quite a lot from UCBLogo’s
+[implementation][filter]. This is due to architectural differences between
+UCBLogo and elm-logo. In particular, elm-logo does not have `apply` yet which is
+used by UCBLogo.
+
+[filter]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/filter
+
+-}
+compileFilter : Node -> List Node -> List Instruction
+compileFilter iterator children =
+    let
+        filterContext =
+            Expression { caller = "filter" }
+
+        compiledIterator =
+            compileInContext filterContext iterator
+
+        compiledChildren =
+            compileBranch "filter" filterContext children
+
+        {- A collector is the value to which the values for which the filter
+           function returns true are added. Its type depends on the type of the
+           value `filter` iterates over.
+
+           The name is a reference to Rust’s `collect()` function.
+        -}
+        setupCollector =
+            [ PushValue (Type.Word "rest")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , Eval1 { name = "listp", f = P.listp }
+            , JumpIfTrue 3
+            , PushValue (Type.Word "")
+            , Jump 2
+            , PushValue (Type.List [])
+            ]
+
+        {- If the value being iterated over is a word, we flip the 2 values on
+           top of the stack to append the new value to the collector. This is
+           not necessary for lists because for lists, `reverse` is called after
+           the iterator is exhausted.
+
+           Only items for which the filter function returned true are added to
+           the collector.
+        -}
+        addItemToCollector =
+            [ JumpIfFalse 9
+            , PushValue (Type.Word "1")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , PushValue (Type.Word "rest")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , Eval1 { name = "listp", f = P.listp }
+            , JumpIfTrue 2
+            , Flip
+            , Instruction.CallByName "combine2"
+            ]
+
+        {- If the value being iterated over is a list, we reverse the collector
+           because `fput` prepends items, so the collector’s items are in the
+           wrong order. This is not necessary for words because for words, the
+           values have been prepended using `Flip` during the iteration.
+        -}
+        reverseCollectorIfList =
+            [ PushValue (Type.Word "rest")
+            , Instruction.Introspect1 { name = "?", f = I.templateVariable }
+            , Eval1 { name = "listp", f = P.listp }
+            , JumpIfFalse 2
+            , Instruction.CallByName "reverse1"
+            ]
+    in
+    [ compiledIterator
+    , [ PushTemplateScope ]
+    , setupCollector
+    , [ EnterTemplateScope
+      , JumpIfTrue (List.length compiledChildren + List.length addItemToCollector + 2)
+      ]
+    , compiledChildren
+    , addItemToCollector
+    , [ Jump (List.length compiledChildren + List.length addItemToCollector + 2 |> negate) ]
+    , reverseCollectorIfList
+    , [ PopTemplateScope ]
+    ]
+        |> List.concat
+
+
 {-| Compile an AST node to a list of VM instructions.
 -}
 compile : Context -> Node -> List Instruction
@@ -502,6 +596,9 @@ compile context node =
 
         Map iterator children ->
             compileMap iterator children
+
+        Filter iterator children ->
+            compileFilter iterator children
 
         If condition children ->
             let
