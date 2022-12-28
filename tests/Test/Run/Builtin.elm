@@ -100,6 +100,8 @@ primitives =
         , describe "sentence" <|
             [ printsLine "print sentence 1 1" "1 1"
             , printsLine "print se 1 1" "1 1"
+            , printsLine "print (se 1 1)" "1 1"
+            , printsLine "print (se 1 1 1)" "1 1 1"
             ]
         , describe "word" <|
             [ printsLine "print word 1 1" "11" ]

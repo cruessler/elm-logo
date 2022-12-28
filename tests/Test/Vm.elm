@@ -334,7 +334,7 @@ vmWithSampleProgram =
                     , PushValue (Type.Word "1")
                     , Introspect1 { name = "?", f = I.templateVariable }
                     , PushVariable "sofar"
-                    , Eval2 { name = "sentence", f = P.sentence }
+                    , EvalN { name = "sentence", f = P.sentence, numberOfDefaultArguments = 2 } 2
 
                     -- butfirst :menu
                     , PushVariable "menu"

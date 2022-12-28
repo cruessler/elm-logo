@@ -41,9 +41,9 @@ all =
     , Primitive2 { name = "lessp", f = P.lessp }
     , Primitive2 { name = "less?", f = P.lessp }
     , Primitive2 { name = "remainder", f = P.remainder }
-    , Primitive2 { name = "sentence", f = P.sentence }
     , Primitive2 { name = "fput", f = P.fput }
-    , Primitive2 { name = "se", f = P.sentence }
+    , PrimitiveN { name = "sentence", f = P.sentence, numberOfDefaultArguments = 2 }
+    , PrimitiveN { name = "se", f = P.sentence, numberOfDefaultArguments = 2 }
     , Primitive2 { name = "word", f = P.word }
     , Primitive1 { name = "char", f = P.char }
     , PrimitiveN { name = "bitand", f = P.bitand, numberOfDefaultArguments = 2 }
