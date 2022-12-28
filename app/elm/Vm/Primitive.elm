@@ -535,14 +535,14 @@ word value1 value2 =
             Ok <| Type.Word <| (Type.toString value1 ++ Type.toString value2)
 
 
-{-| Join two values into a list. One level of nesting will be flattened.
+{-| Join a list of values into a list. One level of nesting will be flattened.
 
-    sentence (Word "a") (Word "b) == Ok (List [ Word "a", Word "b" ])
-    sentence (Word "a") (List [ Word "b" ]) == Ok (List [ Word "a", Word "b" ])
+    sentence [ Word "a", Word "b ] == Ok (List [ Word "a", Word "b" ])
+    sentence [ Word "a", List [ Word "b" ] ] == Ok (List [ Word "a", Word "b" ])
 
 -}
-sentence : Type.Value -> Type.Value -> Result Error Type.Value
-sentence value1 value2 =
+sentence : List Type.Value -> Result Error Type.Value
+sentence =
     let
         toList : Type.Value -> List Type.Value
         toList value =
@@ -552,14 +552,8 @@ sentence value1 value2 =
 
                 _ ->
                     [ value ]
-
-        list1 =
-            toList value1
-
-        list2 =
-            toList value2
     in
-    Ok <| Type.List <| List.append list1 list2
+    Ok << Type.List << List.concatMap toList
 
 
 {-|
