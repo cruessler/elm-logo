@@ -270,6 +270,7 @@ statement state =
             , P.lazy (\_ -> ifElse state)
             , P.lazy (\_ -> foreach state)
             , P.lazy (\_ -> map state)
+            , P.lazy (\_ -> filter state)
             , P.lazy (\_ -> repeat state)
             , P.lazy (\_ -> until state)
             , P.lazy (\_ -> if_ state)
@@ -376,6 +377,11 @@ foreach state =
 map : State -> Parser Context Problem Ast.Node
 map state =
     P.lazy (\_ -> invertedControlStructure state { keyword = "map", constructor = Ast.Map })
+
+
+filter : State -> Parser Context Problem Ast.Node
+filter state =
+    P.lazy (\_ -> invertedControlStructure state { keyword = "filter", constructor = Ast.Filter })
 
 
 repeat : State -> Parser Context Problem Ast.Node

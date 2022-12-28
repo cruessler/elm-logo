@@ -98,6 +98,26 @@ mapWithTemplateVariable =
         ]
 
 
+filter : Test
+filter =
+    describe "filter" <|
+        [ printsLine "print filter [ \"true ] [ 1 2 3 4 ]" "1 2 3 4"
+        , printsLine "print filter [ \"false ] [ 1 2 3 4 ]" ""
+        , printsLine "print filter [ \"true ] \"word" "word"
+        , printsLine "print filter [ \"false ] \"word" ""
+        ]
+
+
+filterWithTemplateVariable : Test
+filterWithTemplateVariable =
+    describe "filter with template variable" <|
+        [ printsLines "print filter [ ?1 = ?1 ] [ 1 2 3 4 ]" [ "1 2 3 4" ]
+        , printsLines "print filter [ ?rest = ?rest ] \"word" [ "word" ]
+        , printsLines "print filter [? * ? = 9] [2 3 4 5]" [ "3" ]
+        , printsLines "print filter [? * ? = 9] 2345" [ "3" ]
+        ]
+
+
 repeatWithVariable : Test
 repeatWithVariable =
     describe "repeat with variable" <|
