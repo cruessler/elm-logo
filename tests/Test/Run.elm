@@ -328,6 +328,20 @@ equality =
         ]
 
 
+comparisons : Test
+comparisons =
+    describe "comparisons" <|
+        [ describe "<" <|
+            [ printsLine "print 1 < 1" "false"
+            , printsLine "print 1 < 2" "true"
+            ]
+        , describe ">" <|
+            [ printsLine "print 1 > 1" "false"
+            , printsLine "print 2 > 1" "true"
+            ]
+        ]
+
+
 associativity : Test
 associativity =
     describe "associativity" <|

@@ -591,6 +591,8 @@ booleanExpression state =
                     Ast.Primitive2 { name = "=", f = Primitive.equalp }
                 , BinaryOperator (Helper.operator "<>") <|
                     Ast.Primitive2 { name = "<>", f = Primitive.notequalp }
+                , BinaryOperator (Helper.operator "<") <|
+                    Ast.Primitive2 { name = "<", f = Primitive.lessp }
                 , BinaryOperator (Helper.operator ">") <|
                     Ast.Primitive2 { name = ">", f = Primitive.greaterp }
                 ]
