@@ -42,6 +42,7 @@ all =
     , Primitive2 { name = "less?", f = P.lessp }
     , Primitive2 { name = "remainder", f = P.remainder }
     , Primitive2 { name = "fput", f = P.fput }
+    , PrimitiveN { name = "array", f = P.array, numberOfDefaultArguments = 1 }
     , PrimitiveN { name = "sentence", f = P.sentence, numberOfDefaultArguments = 2 }
     , PrimitiveN { name = "se", f = P.sentence, numberOfDefaultArguments = 2 }
     , Primitive2 { name = "word", f = P.word }
