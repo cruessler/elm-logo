@@ -2,6 +2,7 @@ module Vm.Primitive exposing
     ( Primitive1
     , Primitive2
     , PrimitiveN
+    , array
     , ashift
     , bitand
     , bitnot
@@ -43,6 +44,7 @@ manual][ucb-manual].
 
 -}
 
+import Array exposing (Array)
 import Bitwise
 import Vm.Error exposing (Error(..), Internal(..))
 import Vm.Type as Type
@@ -106,6 +108,9 @@ first value =
         Type.List [] ->
             Err <| WrongInput "first" (Type.toDebugString value)
 
+        Type.Array _ origin ->
+            Ok <| Type.Word <| String.fromInt origin
+
 
 {-| Get all but the first element of a `Value`.
 
@@ -137,6 +142,9 @@ butfirst value =
         Type.List [] ->
             Err <| WrongInput "butfirst" (Type.toDebugString value)
 
+        Type.Array _ _ ->
+            Err <| WrongInput "butfirst" (Type.toDebugString value)
+
 
 {-| Count the number of characters in a `Word` or the number of elements in a
 `List`.
@@ -162,6 +170,9 @@ count value =
 
                 Type.List list ->
                     List.length list
+
+                Type.Array array_ _ ->
+                    Array.length array_
     in
     length |> String.fromInt |> Type.Word |> Ok
 
@@ -273,6 +284,15 @@ equalp_ value1 value2 =
             False
 
         ( _, Type.List _ ) ->
+            False
+
+        ( Type.Array _ _, Type.Array _ _ ) ->
+            value1 == value2
+
+        ( Type.Array _ _, _ ) ->
+            False
+
+        ( _, Type.Array _ _ ) ->
             False
 
         ( Type.Word word1, Type.Word word2 ) ->
@@ -581,6 +601,51 @@ fput value1 value2 =
                 Err <| WrongInput "fput" word_
 
 
+{-|
+
+> outputs an array of "size" members (must be a positive integer), each of which
+> initially is an empty list. Array members can be selected with ITEM and
+> changed with SETITEM. The first member of the array is member number 1 unless
+> an "origin" input (must be an integer) is given, in which case the first
+> member of the array has that number as its index. (Typically 0 is used as the
+> origin if anything.)
+
+-}
+array : List Type.Value -> Result Error Type.Value
+array values =
+    let
+        initializeArray : Type.Value -> Result Error (Array Type.Value)
+        initializeArray value =
+            Type.toInt value
+                |> Result.map (\len -> Array.initialize len (always (Type.List [])))
+                |> Result.mapError (always <| WrongInput "always" (Type.toDebugString value))
+    in
+    case values of
+        [ first_, second ] ->
+            let
+                array_ =
+                    initializeArray first_
+
+                origin =
+                    Type.toInt second
+                        |> Result.mapError (always <| WrongInput "always" (Type.toDebugString second))
+            in
+            Result.map2 Type.Array array_ origin
+
+        [ first_ ] ->
+            let
+                array_ =
+                    initializeArray first_
+            in
+            Result.map2 Type.Array array_ (Ok 1)
+
+        [] ->
+            Err <| NotEnoughInputs "array"
+
+        _ ->
+            Err <| TooManyInputs "array"
+
+
 {-| Convert an integer to a character. The actual work is delegated to Elm’s
 `Char.fromCode`.
 
@@ -622,6 +687,9 @@ wordp value =
             Ok Type.true
 
         Type.List _ ->
+            Ok Type.false
+
+        Type.Array _ _ ->
             Ok Type.false
 
 

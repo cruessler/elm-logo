@@ -44,10 +44,15 @@ primitives =
             , printsLine "print empty? []" "true"
             ]
         , describe "first" <|
-            [ printsLine "print first [ 1 ]" "1" ]
+            [ printsLine "print first [ 1 ]" "1"
+
+            -- In UCBLogo, `first` prints an array’s `origin`.
+            , printsLine "print first (array 2 10)" "10"
+            ]
         , describe "count" <|
             [ printsLine "print count [ 1 ]" "1"
             , printsLine "print count \"ab" "2"
+            , printsLine "print count (array 2 10)" "2"
             ]
         , describe "integerp" <|
             [ printsLine "print integerp 1" "true" ]
@@ -141,6 +146,7 @@ print =
         , printsLine
             "(print [Move disk from] \"from [to] \"to)"
             "Move disk from from to to"
+        , printsLine "print (array 2 10)" "{[] []}"
         ]
 
 
@@ -152,4 +158,5 @@ show =
         , printsLine "show 1" "1"
         , printsLine "show \"word" "word"
         , printsLine "show sentence 1 1" "[1 1]"
+        , printsLine "show (array 2 10)" "{[] []}"
         ]

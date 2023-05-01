@@ -48,6 +48,9 @@ functionsWithInvalidArguments : Test
 functionsWithInvalidArguments =
     describe "functions fail given argument of wrong type" <|
         [ printsError "print butfirst []" "butfirst doesn’t like [] as input"
+
+        -- In UCBLogo, passing an array to `butfirst` causes a crash.
+        , printsError "print butfirst (array 2 10)" "butfirst doesn’t like {[] []} as input"
         , printsError "print first []" "first doesn’t like [] as input"
         , printsError "print first butfirst \"a" "first doesn’t like || as input"
         , printsError "first butfirst \"a" "first doesn’t like || as input"
@@ -156,6 +159,7 @@ end
         , printsError "minus   " "not enough inputs to minus"
         , printsError "sum print 3" "not enough inputs to sum"
         , printsError "difference print 3  " "not enough inputs to difference"
+        , printsError "(array)" "not enough inputs to array"
         ]
 
 
@@ -168,6 +172,7 @@ print :bar
 end
 (foo "bar "baz)"""
             "too many inputs to foo"
+        , printsError "(array 1 2 3)" "too many inputs to array"
         ]
 
 

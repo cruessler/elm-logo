@@ -16,6 +16,8 @@ module Vm.Type exposing
 {-| This module contains types and functions related to Logo types.
 -}
 
+import Array exposing (Array)
+
 
 {-| Represent a Logo value. A Logo value can currently be either a `Word` (i.
 e. a string) or a `List`.
@@ -39,6 +41,7 @@ type Value
     | Int Int
     | Float Float
     | List (List Value)
+    | Array (Array Value) Int
 
 
 type Error
@@ -80,6 +83,16 @@ toString value =
             list
                 |> List.map inList
                 |> String.join " "
+
+        Array array _ ->
+            let
+                string =
+                    array
+                        |> Array.toList
+                        |> List.map toDebugString
+                        |> String.join " "
+            in
+            "{" ++ string ++ "}"
 
 
 {-| Create a string representation of a `Value` for use in debug messages.
