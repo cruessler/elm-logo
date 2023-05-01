@@ -45,6 +45,7 @@ all =
     , PrimitiveN { name = "sentence", f = P.sentence, numberOfDefaultArguments = 2 }
     , PrimitiveN { name = "se", f = P.sentence, numberOfDefaultArguments = 2 }
     , Primitive2 { name = "word", f = P.word }
+    , Primitive1 { name = "count", f = P.count }
     , Primitive1 { name = "char", f = P.char }
     , PrimitiveN { name = "bitand", f = P.bitand, numberOfDefaultArguments = 2 }
     , Primitive1 { name = "bitnot", f = P.bitnot }
