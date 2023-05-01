@@ -45,6 +45,10 @@ primitives =
             ]
         , describe "first" <|
             [ printsLine "print first [ 1 ]" "1" ]
+        , describe "count" <|
+            [ printsLine "print count [ 1 ]" "1"
+            , printsLine "print count \"ab" "2"
+            ]
         , describe "integerp" <|
             [ printsLine "print integerp 1" "true" ]
         , describe "floatp" <|
