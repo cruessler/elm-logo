@@ -657,7 +657,7 @@ array values =
         initializeItems value =
             Type.toInt value
                 |> Result.map (\len -> Array.initialize len (always (Type.List [])))
-                |> Result.mapError (always <| WrongInput "always" (Type.toDebugString value))
+                |> Result.mapError (always <| WrongInput "array" (Type.toDebugString value))
 
         initializeWithItemsAndOrigin : Array Type.Value -> Int -> Type.Value
         initializeWithItemsAndOrigin items origin =
@@ -671,7 +671,7 @@ array values =
 
                 origin =
                     Type.toInt second
-                        |> Result.mapError (always <| WrongInput "always" (Type.toDebugString second))
+                        |> Result.mapError (always <| WrongInput "array" (Type.toDebugString second))
             in
             Result.map2 initializeWithItemsAndOrigin items origin
 

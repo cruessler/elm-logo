@@ -51,6 +51,8 @@ functionsWithInvalidArguments =
 
         -- In UCBLogo, passing an array to `butfirst` causes a crash.
         , printsError "print butfirst (array 2 10)" "butfirst doesn’t like {[] []} as input"
+        , printsError "print (array 2 \"a)" "array doesn’t like a as input"
+        , printsError "print (array \"a \"b)" "array doesn’t like a as input"
         , printsError "print first []" "first doesn’t like [] as input"
         , printsError "print first butfirst \"a" "first doesn’t like || as input"
         , printsError "first butfirst \"a" "first doesn’t like || as input"
