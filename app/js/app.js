@@ -15,5 +15,5 @@ const worker = new Worker(new URL("./worker.js", import.meta.url), {
 app.ports.sendCommand.subscribe((command) => worker.postMessage(command));
 
 worker.addEventListener("message", (event) =>
-  app.ports.receiveResult.send(event.data)
+  app.ports.receiveResult.send(event.data),
 );
