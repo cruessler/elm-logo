@@ -11,6 +11,11 @@ updates:
     schedule:
       interval: weekly
       time: "02:00"
+    groups:
+      parcel:
+        patterns:
+          - "parcel"
+          - "@parcel/*"
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: "/"
