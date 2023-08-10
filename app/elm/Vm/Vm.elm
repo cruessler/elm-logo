@@ -287,6 +287,8 @@ parseAndEvalInstructions vm instructions =
                 |> Result.map (withEnvironment vm.environment)
                 |> Result.map run
     in
+    -- This code does not check yet for context (whether the caller expects a
+    -- value to be returned by `Eval` or not).
     case result of
         Ok (Done subVm) ->
             case subVm.stack of
