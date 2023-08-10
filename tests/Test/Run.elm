@@ -643,6 +643,28 @@ move 4 "left "middle "right"""
         ]
 
 
+{-| The following code comes from [rosettacode].
+
+[rosettacode]: https://rosettacode.org/wiki/Higher-order_functions#Logo
+
+-}
+higherOrderFunction : Test
+higherOrderFunction =
+    let
+        program =
+            """to printstuff
+  print "stuff
+end
+to runstuff :proc
+  run :proc
+end
+runstuff "printstuff
+runstuff [print [also stuff]]"""
+    in
+    describe "runs higher-order function"
+        [ printsLines program [ "stuff", "also stuff" ] ]
+
+
 environmentIsKept : Test
 environmentIsKept =
     test "the environment is kept" <|

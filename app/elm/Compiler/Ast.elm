@@ -81,6 +81,7 @@ type Node
     | Introspect1 I.Introspect1 Node
     | Call String (List Node)
     | Return (Maybe Node)
+    | Run Node
     | Make String Node
     | Local String
     | Variable String
@@ -210,6 +211,9 @@ typeOfCallee node =
             DoesNotApply
 
         Return _ ->
+            DoesNotApply
+
+        Run _ ->
             DoesNotApply
 
         Raise _ ->
@@ -735,6 +739,12 @@ compile context node =
             , PopLocalScope
             , Instruction.Return
             ]
+
+        Run node_ ->
+            [ compileInContext (Expression { caller = "run" }) node_
+            , [ Eval ]
+            ]
+                |> List.concat
 
         Make name node_ ->
             [ compileInContext (Expression { caller = "make" }) node_
