@@ -1,6 +1,7 @@
 module Vm.Primitive exposing
     ( Primitive1
     , Primitive2
+    , Primitive3
     , PrimitiveN
     , array
     , ashift
@@ -15,6 +16,7 @@ module Vm.Primitive exposing
     , equalp
     , first
     , floatp
+    , form
     , fput
     , greaterp
     , integerp
@@ -46,6 +48,7 @@ manual][ucb-manual].
 
 import Array exposing (Array)
 import Bitwise
+import Round
 import Vm.Error exposing (Error(..), Internal(..))
 import Vm.Type as Type
 
@@ -65,6 +68,15 @@ type alias Primitive2 =
     { name : String
     , f :
         Type.Value -> Type.Value -> Result Error Type.Value
+    }
+
+
+{-| Represent a builtin function that takes three arguments.
+-}
+type alias Primitive3 =
+    { name : String
+    , f :
+        Type.Value -> Type.Value -> Type.Value -> Result Error Type.Value
     }
 
 
@@ -803,6 +815,37 @@ boolp value =
 
         _ ->
             Ok Type.false
+
+
+{-|
+
+> outputs a word containing a printable representation of "num", possibly
+> preceded by spaces (and therefore not a number for purposes of performing
+> arithmetic operations), with at least "width" characters, including exactly
+> "precision" digits after the decimal point. (If "precision" is 0 then there
+> will be no decimal point in the output.)
+
+-}
+form : Type.Value -> Type.Value -> Type.Value -> Result Error Type.Value
+form value1 value2 value3 =
+    case ( Type.toFloat value1, Type.toInt value2, Type.toInt value3 ) of
+        ( Ok number, Ok width, Ok precision ) ->
+            let
+                paddedNumber =
+                    number
+                        |> Round.round precision
+                        |> String.padLeft width ' '
+            in
+            Ok <| Type.Word paddedNumber
+
+        ( Err _, _, _ ) ->
+            Err <| WrongInput "form" (Type.toDebugString value1)
+
+        ( _, Err _, _ ) ->
+            Err <| WrongInput "form" (Type.toDebugString value2)
+
+        ( _, _, Err _ ) ->
+            Err <| WrongInput "form" (Type.toDebugString value3)
 
 
 {-| Calculate the bitwise and of `values` which must be integers.

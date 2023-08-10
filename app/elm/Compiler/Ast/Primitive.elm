@@ -12,6 +12,7 @@ import Vm.Primitive as P
 type Primitive
     = Primitive1 P.Primitive1
     | Primitive2 P.Primitive2
+    | Primitive3 P.Primitive3
     | PrimitiveN P.PrimitiveN
 
 
@@ -48,6 +49,7 @@ all =
     , Primitive2 { name = "word", f = P.word }
     , Primitive1 { name = "count", f = P.count }
     , Primitive1 { name = "char", f = P.char }
+    , Primitive3 { name = "form", f = P.form }
     , PrimitiveN { name = "bitand", f = P.bitand, numberOfDefaultArguments = 2 }
     , Primitive1 { name = "bitnot", f = P.bitnot }
     , Primitive2 { name = "ashift", f = P.ashift }
@@ -70,6 +72,9 @@ name primitive =
         Primitive2 primitive2 ->
             primitive2.name
 
+        Primitive3 primitive3 ->
+            primitive3.name
+
         PrimitiveN primitiveN ->
             primitiveN.name
 
@@ -82,6 +87,9 @@ numberOfDefaultArguments primitive =
 
         Primitive2 _ ->
             2
+
+        Primitive3 _ ->
+            3
 
         PrimitiveN primitiveN ->
             primitiveN.numberOfDefaultArguments
