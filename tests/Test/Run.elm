@@ -665,8 +665,7 @@ runstuff [print [also stuff]]"""
         [ printsLines program [ "stuff", "also stuff" ] ]
 
 
-{-| The following code comes from [rosettacode]. It has been slightly modified
-to make it run in a reasonable amount of time.
+{-| The following code comes from [rosettacode].
 
   - lines containing I/O have been removed
   - the body of `koch` has been joined into one line
