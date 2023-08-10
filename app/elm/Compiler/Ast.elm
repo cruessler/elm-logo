@@ -76,6 +76,7 @@ type Node
     | CommandN C.CommandN (List Node)
     | Primitive1 P.Primitive1 Node
     | Primitive2 P.Primitive2 Node Node
+    | Primitive3 P.Primitive3 Node Node Node
     | PrimitiveN P.PrimitiveN (List Node)
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1 Node
@@ -181,6 +182,9 @@ typeOfCallee node =
             Primitive { name = p.name }
 
         Primitive2 p _ _ ->
+            Primitive { name = p.name }
+
+        Primitive3 p _ _ _ ->
             Primitive { name = p.name }
 
         PrimitiveN p _ ->
@@ -688,6 +692,14 @@ compile context node =
             [ compileInContext (Expression { caller = p.name }) second
             , compileInContext (Expression { caller = p.name }) first
             , [ Eval2 p ]
+            ]
+                |> List.concat
+
+        Primitive3 p first second third ->
+            [ compileInContext (Expression { caller = p.name }) third
+            , compileInContext (Expression { caller = p.name }) second
+            , compileInContext (Expression { caller = p.name }) first
+            , [ Eval3 p ]
             ]
                 |> List.concat
 

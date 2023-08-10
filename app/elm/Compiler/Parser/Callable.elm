@@ -121,6 +121,9 @@ makePrimitive arguments primitive =
         ( Primitive.Primitive2 primitive2, [ first, second ] ) ->
             succeed <| Ast.Primitive2 primitive2 first second
 
+        ( Primitive.Primitive3 primitive3, [ first, second, third ] ) ->
+            succeed <| Ast.Primitive3 primitive3 first second third
+
         ( Primitive.PrimitiveN primitiveN, _ ) ->
             succeed <| Ast.PrimitiveN primitiveN arguments
 

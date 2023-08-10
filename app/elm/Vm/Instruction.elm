@@ -19,6 +19,7 @@ type Instruction
     | Eval
     | Eval1 P.Primitive1
     | Eval2 P.Primitive2
+    | Eval3 P.Primitive3
     | EvalN P.PrimitiveN Int
     | Command0 C.Command0
     | Command1 C.Command1

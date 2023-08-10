@@ -116,6 +116,12 @@ primitives =
             [ printsLine "print word 1 1" "11" ]
         , describe "char" <|
             [ printsLine "print char 65" "A" ]
+        , describe "form" <|
+            [ printsLine "print form 1.2 0 2" "1.20"
+            , printsLine "print form 1.2 2 2" "1.20"
+            , printsLine "print form 1.2 6 2" "  1.20"
+            , printsLine "print form 1.2 2 0" " 1"
+            ]
         , describe "bitand" <|
             [ printsLine "print (bitand 7 5 4)" "4"
             , printsLine "print bitand 7 minus 4" "4"

@@ -128,6 +128,9 @@ encodeInstruction instruction =
                 Eval2 { name } ->
                     "Eval2 " ++ name
 
+                Eval3 { name } ->
+                    "Eval3 " ++ name
+
                 EvalN { name } n ->
                     "EvalN [" ++ String.fromInt n ++ "] " ++ name
 
@@ -381,6 +384,25 @@ eval2 primitive vm =
     case vm.stack of
         (Stack.Value first) :: (Stack.Value second) :: rest ->
             primitive.f first second
+                |> Result.map
+                    (\value ->
+                        { vm | stack = Stack.Value value :: rest }
+                            |> incrementProgramCounter
+                    )
+                |> Result.mapError (mapWrongInput primitive.name)
+
+        _ ->
+            Err <| Internal InvalidStack
+
+
+{-| Evaluate a primitive that takes 3 arguments and put the result on top of
+the stack.
+-}
+eval3 : P.Primitive3 -> Vm -> Result Error Vm
+eval3 primitive vm =
+    case vm.stack of
+        (Stack.Value first) :: (Stack.Value second) :: (Stack.Value third) :: rest ->
+            primitive.f first second third
                 |> Result.map
                     (\value ->
                         { vm | stack = Stack.Value value :: rest }
@@ -824,6 +846,9 @@ execute instruction vm =
 
         Eval2 primitive ->
             eval2 primitive vm
+
+        Eval3 primitive ->
+            eval3 primitive vm
 
         EvalN primitive n ->
             evalN primitive n vm
