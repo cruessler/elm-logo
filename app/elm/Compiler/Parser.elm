@@ -285,6 +285,7 @@ statement state =
             , P.lazy (\_ -> until state)
             , P.lazy (\_ -> if_ state)
             , P.lazy (\_ -> output state)
+            , P.lazy (\_ -> run state)
             , stop
             , localmake state
             , make state
@@ -308,6 +309,15 @@ output state =
     P.inContext Output <|
         P.succeed makeNode
             |. Helper.keyword "output"
+            |. Helper.spaces
+            |= booleanExpression state
+
+
+run : State -> Parser Ast.Node
+run state =
+    P.inContext Output <|
+        P.succeed Ast.Run
+            |. Helper.keyword "run"
             |. Helper.spaces
             |= booleanExpression state
 
