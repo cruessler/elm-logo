@@ -665,6 +665,54 @@ runstuff [print [also stuff]]"""
         [ printsLines program [ "stuff", "also stuff" ] ]
 
 
+{-| The following code comes from [rosettacode]. It has been slightly modified
+to make it run in a reasonable amount of time.
+
+  - lines containing I/O have been removed
+  - the body of `koch` has been joined into one line
+  - `lenght` has been changed to `length`
+  - the order of `koch` and `ff` has been changed because the former is
+    referenced by the latter
+
+[rosettacode]: https://rosettacode.org/wiki/Koch_curve#Logo
+
+-}
+kochCurve : Test
+kochCurve =
+    describe "Koch curve"
+        [ test "compiles and runs" <|
+            \_ ->
+                let
+                    program =
+                        """to koch :len :iterations
+ifelse :iterations = 1 [fd :len] [ koch :len :iterations - 1 left 60 koch :len :iterations - 1 right 120 koch :len :iterations - 1 left 60 koch :len :iterations - 1 ]
+end
+
+to ff :l :i
+cs
+right 90
+pd
+pr [length] show form :l 4 0
+pr [iterations] show form :i 4 0
+koch :l :i
+end
+
+ff 22 3"""
+
+                    env =
+                        Logo.empty
+                            |> Logo.run program
+                            |> Logo.getEnvironment
+
+                    -- The above program will create 2 ^ (2 * (3 - 1)) = 16
+                    -- lines.
+                    numberOfObjects =
+                        List.length env.objects
+                in
+                Expect.equal numberOfObjects 16
+        ]
+
+
 environmentIsKept : Test
 environmentIsKept =
     test "the environment is kept" <|
