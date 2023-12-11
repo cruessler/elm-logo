@@ -20,6 +20,6 @@
     "elm-test": "^0.19.1-revision12",
     "node-elm-compiler": "^5.0.6",
     "parcel": "^2.10.3",
-    "prettier": "^3.1.0"
+    "prettier": "^3.1.1"
   }
 }
