@@ -229,6 +229,21 @@ incrementProgramCounter vm =
     { vm | programCounter = vm.programCounter + 1 }
 
 
+{-| Take a single value from the stack. Return a value and the remaining stack.
+
+Return `Err (Internal InvalidStack)` if there is no `Stack.Value` on the stack.
+
+-}
+takeValue1 : Stack -> Result Error ( Type.Value, Stack )
+takeValue1 stack =
+    case stack of
+        (Stack.Value first) :: rest ->
+            Ok ( first, rest )
+
+        _ ->
+            Err <| Internal InvalidStack
+
+
 {-| Take a number of values from the stack. Return a list of values and the
 remaining stack.
 
@@ -314,27 +329,29 @@ parseAndEvalInstructions vm instructions =
 
 eval : Vm -> Result Error Vm
 eval vm =
-    case vm.stack of
-        (Stack.Value (Type.List instructions)) :: rest ->
-            instructions
-                |> parseAndEvalInstructions vm
-                |> Result.map
-                    (\newVm ->
-                        { newVm | stack = rest }
-                            |> incrementProgramCounter
-                    )
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                let
+                    instructions =
+                        case first of
+                            Type.List instructions_ ->
+                                Ok instructions_
 
-        (Stack.Value (Type.Word instruction)) :: rest ->
-            [ Type.Word instruction ]
-                |> parseAndEvalInstructions vm
-                |> Result.map
-                    (\newVm ->
-                        { newVm | stack = rest }
-                            |> incrementProgramCounter
-                    )
+                            Type.Word instruction ->
+                                Ok [ Type.Word instruction ]
 
-        _ ->
-            Err <| Internal InvalidStack
+                            _ ->
+                                Err <| Internal InvalidStack
+                in
+                instructions
+                    |> Result.andThen (parseAndEvalInstructions vm)
+                    |> Result.map
+                        (\newVm ->
+                            { newVm | stack = rest }
+                                |> incrementProgramCounter
+                        )
+            )
 
 
 {-| Evaluate a primitive that takes 1 argument and put the result on top of the
@@ -342,17 +359,16 @@ stack.
 -}
 eval1 : P.Primitive1 -> Vm -> Result Error Vm
 eval1 primitive vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            primitive.f first
-                |> Result.map
-                    (\value ->
-                        { vm | stack = Stack.Value value :: rest }
-                            |> incrementProgramCounter
-                    )
-
-        _ ->
-            Err <| Internal InvalidStack
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                primitive.f first
+                    |> Result.map
+                        (\value ->
+                            { vm | stack = Stack.Value value :: rest }
+                                |> incrementProgramCounter
+                        )
+            )
 
 
 {-| Boolean and arithmetic operators can be called in two ways, for example:
@@ -448,17 +464,16 @@ command0 command vm =
 -}
 command1 : C.Command1 -> Vm -> Result Error Vm
 command1 command vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            command.f first vm.environment
-                |> Result.map
-                    (\environment ->
-                        { vm | stack = rest, environment = environment }
-                            |> incrementProgramCounter
-                    )
-
-        _ ->
-            Err <| Internal InvalidStack
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                command.f first vm.environment
+                    |> Result.map
+                        (\environment ->
+                            { vm | stack = rest, environment = environment }
+                                |> incrementProgramCounter
+                        )
+            )
 
 
 {-| Run a command that takes two arguments.
@@ -512,18 +527,17 @@ introspect0 primitive vm =
 -}
 introspect1 : I.Introspect1 -> Vm -> Result Error Vm
 introspect1 primitive vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            primitive.f first vm.scopes
-                |> Result.map
-                    (\value ->
-                        { vm | stack = Stack.Value value :: rest }
-                            |> incrementProgramCounter
-                    )
-                |> Result.mapError (Internal << Scope)
-
-        _ ->
-            Err <| Internal InvalidStack
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                primitive.f first vm.scopes
+                    |> Result.map
+                        (\value ->
+                            { vm | stack = Stack.Value value :: rest }
+                                |> incrementProgramCounter
+                        )
+                    |> Result.mapError (Internal << Scope)
+            )
 
 
 pushVariable : String -> Vm -> Result Error Vm
@@ -539,18 +553,15 @@ pushVariable name vm =
 
 storeVariable : String -> Vm -> Result Error Vm
 storeVariable name vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            Ok
-                ({ vm
+    takeValue1 vm.stack
+        |> Result.map
+            (\( first, rest ) ->
+                { vm
                     | stack = rest
                     , scopes = Scope.make name first vm.scopes
-                 }
+                }
                     |> incrementProgramCounter
-                )
-
-        _ ->
-            Err <| Internal InvalidStack
+            )
 
 
 localVariable : String -> Vm -> Result Error Vm
@@ -563,22 +574,21 @@ localVariable name vm =
 
 pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            first
-                |> Type.toInt
-                |> Result.mapError (Internal << Type)
-                |> Result.map
-                    (\total ->
-                        { vm
-                            | scopes = Scope.pushLoopScope total vm.scopes
-                            , stack = rest
-                        }
-                    )
-                |> Result.map incrementProgramCounter
-
-        _ ->
-            Err <| Internal InvalidStack
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                first
+                    |> Type.toInt
+                    |> Result.mapError (Internal << Type)
+                    |> Result.map
+                        (\total ->
+                            { vm
+                                | scopes = Scope.pushLoopScope total vm.scopes
+                                , stack = rest
+                            }
+                        )
+                    |> Result.map incrementProgramCounter
+            )
 
 
 popLoopScope : Vm -> Result Error Vm
@@ -610,18 +620,15 @@ enterLoopScope vm =
 
 pushTemplateScope : Vm -> Result Error Vm
 pushTemplateScope vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            Ok
-                ({ vm
+    takeValue1 vm.stack
+        |> Result.map
+            (\( first, rest ) ->
+                { vm
                     | scopes = Scope.pushTemplateScope first vm.scopes
                     , stack = rest
-                 }
+                }
                     |> incrementProgramCounter
-                )
-
-        _ ->
-            Err <| Internal NoIterator
+            )
 
 
 popTemplateScope : Vm -> Result Error Vm
@@ -684,46 +691,44 @@ popLocalScope vm =
 
 jumpIfFalse : Int -> Vm -> Result Error Vm
 jumpIfFalse by vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            Type.toBool first
-                |> Result.map
-                    (\bool ->
-                        if not bool then
-                            { vm
-                                | stack = rest
-                                , programCounter = vm.programCounter + by
-                            }
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                Type.toBool first
+                    |> Result.map
+                        (\bool ->
+                            if not bool then
+                                { vm
+                                    | stack = rest
+                                    , programCounter = vm.programCounter + by
+                                }
 
-                        else
-                            { vm | stack = rest } |> incrementProgramCounter
-                    )
-                |> Result.mapError (Internal << Type)
-
-        _ ->
-            Err <| Internal InvalidStack
+                            else
+                                { vm | stack = rest } |> incrementProgramCounter
+                        )
+                    |> Result.mapError (Internal << Type)
+            )
 
 
 jumpIfTrue : Int -> Vm -> Result Error Vm
 jumpIfTrue by vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            Type.toBool first
-                |> Result.map
-                    (\bool ->
-                        if bool then
-                            { vm
-                                | stack = rest
-                                , programCounter = vm.programCounter + by
-                            }
+    takeValue1 vm.stack
+        |> Result.andThen
+            (\( first, rest ) ->
+                Type.toBool first
+                    |> Result.map
+                        (\bool ->
+                            if bool then
+                                { vm
+                                    | stack = rest
+                                    , programCounter = vm.programCounter + by
+                                }
 
-                        else
-                            { vm | stack = rest } |> incrementProgramCounter
-                    )
-                |> Result.mapError (Internal << Type)
-
-        _ ->
-            Err <| Internal InvalidStack
+                            else
+                                { vm | stack = rest } |> incrementProgramCounter
+                        )
+                    |> Result.mapError (Internal << Type)
+            )
 
 
 return : Vm -> Result Error Vm
@@ -742,20 +747,17 @@ return vm =
 
 duplicate : Vm -> Result Error Vm
 duplicate vm =
-    case vm.stack of
-        (Stack.Value first) :: rest ->
-            Ok
-                ({ vm
+    takeValue1 vm.stack
+        |> Result.map
+            (\( first, rest ) ->
+                { vm
                     | stack =
                         Stack.Value first
                             :: Stack.Value first
                             :: rest
-                 }
+                }
                     |> incrementProgramCounter
-                )
-
-        _ ->
-            Err <| Internal InvalidStack
+            )
 
 
 flip : Vm -> Result Error Vm
@@ -780,20 +782,18 @@ raise : Exception -> Vm -> Result Error Vm
 raise exception vm =
     case exception of
         Exception.WrongInput function ->
-            case vm.stack of
-                (Stack.Value first) :: _ ->
-                    Err <| WrongInput function (Type.toDebugString first)
-
-                _ ->
-                    Err <| Internal InvalidStack
+            takeValue1 vm.stack
+                |> Result.andThen
+                    (\( first, _ ) ->
+                        Err <| WrongInput function (Type.toDebugString first)
+                    )
 
         Exception.NoUseOfValue ->
-            case vm.stack of
-                (Stack.Value first) :: _ ->
-                    Err <| NoUseOfValue (Type.toDebugString first)
-
-                _ ->
-                    Err <| Internal InvalidStack
+            takeValue1 vm.stack
+                |> Result.andThen
+                    (\( first, _ ) ->
+                        Err <| NoUseOfValue (Type.toDebugString first)
+                    )
 
         Exception.NoOutput caller callee ->
             Err <| NoOutput caller callee
