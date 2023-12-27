@@ -244,15 +244,15 @@ takeValue1 stack =
             Err <| Internal InvalidStack
 
 
-{-| Take a number of values from the stack. Return a list of values and the
+{-| Pop a number of values from the stack. Return a list of values and the
 remaining stack.
 
 Return `Err (Internal InvalidStack)` if not enough values are on the stack or
 if not all items are a `Stack.Value`.
 
 -}
-takeValues : Int -> Stack -> Result Error ( List Type.Value, Stack )
-takeValues n stack =
+popValues : Int -> Stack -> Result Error ( List Type.Value, Stack )
+popValues n stack =
     let
         stackSize =
             List.length stack
@@ -435,7 +435,7 @@ the stack.
 -}
 evalN : P.PrimitiveN -> Int -> Vm -> Result Error Vm
 evalN primitive n vm =
-    takeValues n vm.stack
+    popValues n vm.stack
         |> Result.andThen
             (\( arguments, rest ) ->
                 primitive.f arguments
@@ -497,7 +497,7 @@ command2 command vm =
 -}
 commandN : C.CommandN -> Int -> Vm -> Result Error Vm
 commandN command n vm =
-    takeValues n vm.stack
+    popValues n vm.stack
         |> Result.andThen
             (\( arguments, rest ) ->
                 command.f arguments vm.environment
