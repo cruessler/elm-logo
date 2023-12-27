@@ -229,13 +229,13 @@ incrementProgramCounter vm =
     { vm | programCounter = vm.programCounter + 1 }
 
 
-{-| Take a single value from the stack. Return a value and the remaining stack.
+{-| Pop a single value from the stack. Return a value and the remaining stack.
 
 Return `Err (Internal InvalidStack)` if there is no `Stack.Value` on the stack.
 
 -}
-takeValue1 : Stack -> Result Error ( Type.Value, Stack )
-takeValue1 stack =
+popValue1 : Stack -> Result Error ( Type.Value, Stack )
+popValue1 stack =
     case stack of
         (Stack.Value first) :: rest ->
             Ok ( first, rest )
@@ -329,7 +329,7 @@ parseAndEvalInstructions vm instructions =
 
 eval : Vm -> Result Error Vm
 eval vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 let
@@ -359,7 +359,7 @@ stack.
 -}
 eval1 : P.Primitive1 -> Vm -> Result Error Vm
 eval1 primitive vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 primitive.f first
@@ -464,7 +464,7 @@ command0 command vm =
 -}
 command1 : C.Command1 -> Vm -> Result Error Vm
 command1 command vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 command.f first vm.environment
@@ -527,7 +527,7 @@ introspect0 primitive vm =
 -}
 introspect1 : I.Introspect1 -> Vm -> Result Error Vm
 introspect1 primitive vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 primitive.f first vm.scopes
@@ -553,7 +553,7 @@ pushVariable name vm =
 
 storeVariable : String -> Vm -> Result Error Vm
 storeVariable name vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.map
             (\( first, rest ) ->
                 { vm
@@ -574,7 +574,7 @@ localVariable name vm =
 
 pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 first
@@ -620,7 +620,7 @@ enterLoopScope vm =
 
 pushTemplateScope : Vm -> Result Error Vm
 pushTemplateScope vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.map
             (\( first, rest ) ->
                 { vm
@@ -691,7 +691,7 @@ popLocalScope vm =
 
 jumpIfFalse : Int -> Vm -> Result Error Vm
 jumpIfFalse by vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 Type.toBool first
@@ -712,7 +712,7 @@ jumpIfFalse by vm =
 
 jumpIfTrue : Int -> Vm -> Result Error Vm
 jumpIfTrue by vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.andThen
             (\( first, rest ) ->
                 Type.toBool first
@@ -747,7 +747,7 @@ return vm =
 
 duplicate : Vm -> Result Error Vm
 duplicate vm =
-    takeValue1 vm.stack
+    popValue1 vm.stack
         |> Result.map
             (\( first, rest ) ->
                 { vm
@@ -782,14 +782,14 @@ raise : Exception -> Vm -> Result Error Vm
 raise exception vm =
     case exception of
         Exception.WrongInput function ->
-            takeValue1 vm.stack
+            popValue1 vm.stack
                 |> Result.andThen
                     (\( first, _ ) ->
                         Err <| WrongInput function (Type.toDebugString first)
                     )
 
         Exception.NoUseOfValue ->
-            takeValue1 vm.stack
+            popValue1 vm.stack
                 |> Result.andThen
                     (\( first, _ ) ->
                         Err <| NoUseOfValue (Type.toDebugString first)
