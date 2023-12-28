@@ -229,16 +229,23 @@ incrementProgramCounter vm =
     { vm | programCounter = vm.programCounter + 1 }
 
 
+{-| Push a single value onto the stack.
+-}
+pushValue1 : Type.Value -> Vm -> Vm
+pushValue1 value vm =
+    { vm | stack = Stack.Value value :: vm.stack }
+
+
 {-| Pop a single value from the stack. Return a value and the remaining stack.
 
 Return `Err (Internal InvalidStack)` if there is no `Stack.Value` on the stack.
 
 -}
-popValue1 : Stack -> Result Error ( Type.Value, Stack )
-popValue1 stack =
-    case stack of
+popValue1 : Vm -> Result Error ( Type.Value, Vm )
+popValue1 vm =
+    case vm.stack of
         (Stack.Value first) :: rest ->
-            Ok ( first, rest )
+            Ok ( first, { vm | stack = rest } )
 
         _ ->
             Err <| Internal InvalidStack
@@ -329,9 +336,9 @@ parseAndEvalInstructions vm instructions =
 
 eval : Vm -> Result Error Vm
 eval vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
+            (\( first, newVm ) ->
                 let
                     instructions =
                         case first of
@@ -345,12 +352,8 @@ eval vm =
                                 Err <| Internal InvalidStack
                 in
                 instructions
-                    |> Result.andThen (parseAndEvalInstructions vm)
-                    |> Result.map
-                        (\newVm ->
-                            { newVm | stack = rest }
-                                |> incrementProgramCounter
-                        )
+                    |> Result.andThen (parseAndEvalInstructions newVm)
+                    |> Result.map incrementProgramCounter
             )
 
 
@@ -359,13 +362,14 @@ stack.
 -}
 eval1 : P.Primitive1 -> Vm -> Result Error Vm
 eval1 primitive vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
+            (\( first, newVm ) ->
                 primitive.f first
                     |> Result.map
                         (\value ->
-                            { vm | stack = Stack.Value value :: rest }
+                            newVm
+                                |> pushValue1 value
                                 |> incrementProgramCounter
                         )
             )
@@ -464,13 +468,13 @@ command0 command vm =
 -}
 command1 : C.Command1 -> Vm -> Result Error Vm
 command1 command vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
-                command.f first vm.environment
+            (\( first, newVm ) ->
+                command.f first newVm.environment
                     |> Result.map
                         (\environment ->
-                            { vm | stack = rest, environment = environment }
+                            { newVm | environment = environment }
                                 |> incrementProgramCounter
                         )
             )
@@ -527,13 +531,14 @@ introspect0 primitive vm =
 -}
 introspect1 : I.Introspect1 -> Vm -> Result Error Vm
 introspect1 primitive vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
-                primitive.f first vm.scopes
+            (\( first, newVm ) ->
+                primitive.f first newVm.scopes
                     |> Result.map
                         (\value ->
-                            { vm | stack = Stack.Value value :: rest }
+                            newVm
+                                |> pushValue1 value
                                 |> incrementProgramCounter
                         )
                     |> Result.mapError (Internal << Scope)
@@ -553,13 +558,10 @@ pushVariable name vm =
 
 storeVariable : String -> Vm -> Result Error Vm
 storeVariable name vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.map
-            (\( first, rest ) ->
-                { vm
-                    | stack = rest
-                    , scopes = Scope.make name first vm.scopes
-                }
+            (\( first, newVm ) ->
+                { newVm | scopes = Scope.make name first vm.scopes }
                     |> incrementProgramCounter
             )
 
@@ -574,18 +576,15 @@ localVariable name vm =
 
 pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
+            (\( first, newVm ) ->
                 first
                     |> Type.toInt
                     |> Result.mapError (Internal << Type)
                     |> Result.map
                         (\total ->
-                            { vm
-                                | scopes = Scope.pushLoopScope total vm.scopes
-                                , stack = rest
-                            }
+                            { newVm | scopes = Scope.pushLoopScope total vm.scopes }
                         )
                     |> Result.map incrementProgramCounter
             )
@@ -620,13 +619,10 @@ enterLoopScope vm =
 
 pushTemplateScope : Vm -> Result Error Vm
 pushTemplateScope vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.map
-            (\( first, rest ) ->
-                { vm
-                    | scopes = Scope.pushTemplateScope first vm.scopes
-                    , stack = rest
-                }
+            (\( first, newVm ) ->
+                { newVm | scopes = Scope.pushTemplateScope first vm.scopes }
                     |> incrementProgramCounter
             )
 
@@ -691,20 +687,17 @@ popLocalScope vm =
 
 jumpIfFalse : Int -> Vm -> Result Error Vm
 jumpIfFalse by vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
+            (\( first, newVm ) ->
                 Type.toBool first
                     |> Result.map
                         (\bool ->
                             if not bool then
-                                { vm
-                                    | stack = rest
-                                    , programCounter = vm.programCounter + by
-                                }
+                                { newVm | programCounter = vm.programCounter + by }
 
                             else
-                                { vm | stack = rest } |> incrementProgramCounter
+                                incrementProgramCounter newVm
                         )
                     |> Result.mapError (Internal << Type)
             )
@@ -712,20 +705,17 @@ jumpIfFalse by vm =
 
 jumpIfTrue : Int -> Vm -> Result Error Vm
 jumpIfTrue by vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.andThen
-            (\( first, rest ) ->
+            (\( first, newVm ) ->
                 Type.toBool first
                     |> Result.map
                         (\bool ->
                             if bool then
-                                { vm
-                                    | stack = rest
-                                    , programCounter = vm.programCounter + by
-                                }
+                                { newVm | programCounter = vm.programCounter + by }
 
                             else
-                                { vm | stack = rest } |> incrementProgramCounter
+                                incrementProgramCounter newVm
                         )
                     |> Result.mapError (Internal << Type)
             )
@@ -747,15 +737,12 @@ return vm =
 
 duplicate : Vm -> Result Error Vm
 duplicate vm =
-    popValue1 vm.stack
+    popValue1 vm
         |> Result.map
-            (\( first, rest ) ->
-                { vm
-                    | stack =
-                        Stack.Value first
-                            :: Stack.Value first
-                            :: rest
-                }
+            (\( first, newVm ) ->
+                newVm
+                    |> pushValue1 first
+                    |> pushValue1 first
                     |> incrementProgramCounter
             )
 
@@ -782,14 +769,14 @@ raise : Exception -> Vm -> Result Error Vm
 raise exception vm =
     case exception of
         Exception.WrongInput function ->
-            popValue1 vm.stack
+            popValue1 vm
                 |> Result.andThen
                     (\( first, _ ) ->
                         Err <| WrongInput function (Type.toDebugString first)
                     )
 
         Exception.NoUseOfValue ->
-            popValue1 vm.stack
+            popValue1 vm
                 |> Result.andThen
                     (\( first, _ ) ->
                         Err <| NoUseOfValue (Type.toDebugString first)
