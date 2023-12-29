@@ -251,6 +251,22 @@ popValue1 vm =
             Err <| Internal InvalidStack
 
 
+{-| Pop two values from the stack. Return both values and the remaining stack.
+
+Return `Err (Internal InvalidStack)` if the two topmost items are not a
+`Stack.Value`.
+
+-}
+popValue2 : Vm -> Result Error ( Type.Value, Type.Value, Vm )
+popValue2 vm =
+    case vm.stack of
+        (Stack.Value first) :: (Stack.Value second) :: rest ->
+            Ok ( first, second, { vm | stack = rest } )
+
+        _ ->
+            Err <| Internal InvalidStack
+
+
 {-| Pop a number of values from the stack. Return a list of values and the
 remaining stack.
 
@@ -401,18 +417,18 @@ the stack.
 -}
 eval2 : P.Primitive2 -> Vm -> Result Error Vm
 eval2 primitive vm =
-    case vm.stack of
-        (Stack.Value first) :: (Stack.Value second) :: rest ->
-            primitive.f first second
-                |> Result.map
-                    (\value ->
-                        { vm | stack = Stack.Value value :: rest }
-                            |> incrementProgramCounter
-                    )
-                |> Result.mapError (mapWrongInput primitive.name)
-
-        _ ->
-            Err <| Internal InvalidStack
+    popValue2 vm
+        |> Result.andThen
+            (\( first, second, newVm ) ->
+                primitive.f first second
+                    |> Result.map
+                        (\value ->
+                            newVm
+                                |> pushValue1 value
+                                |> incrementProgramCounter
+                        )
+                    |> Result.mapError (mapWrongInput primitive.name)
+            )
 
 
 {-| Evaluate a primitive that takes 3 arguments and put the result on top of
@@ -484,17 +500,16 @@ command1 command vm =
 -}
 command2 : C.Command2 -> Vm -> Result Error Vm
 command2 command vm =
-    case vm.stack of
-        (Stack.Value first) :: (Stack.Value second) :: rest ->
-            command.f first second vm.environment
-                |> Result.map
-                    (\environment ->
-                        { vm | stack = rest, environment = environment }
-                            |> incrementProgramCounter
-                    )
-
-        _ ->
-            Err <| Internal InvalidStack
+    popValue2 vm
+        |> Result.andThen
+            (\( first, second, newVm ) ->
+                command.f first second vm.environment
+                    |> Result.map
+                        (\environment ->
+                            { newVm | environment = environment }
+                                |> incrementProgramCounter
+                        )
+            )
 
 
 {-| Run a command that takes n arguments.
