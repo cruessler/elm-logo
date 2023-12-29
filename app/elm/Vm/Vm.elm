@@ -267,6 +267,36 @@ popValue2 vm =
             Err <| Internal InvalidStack
 
 
+type alias PoppedValues3 =
+    { first : Type.Value
+    , second : Type.Value
+    , third : Type.Value
+    , vm : Vm
+    }
+
+
+{-| Pop three values from the stack. Return all three values and the remaining
+stack.
+
+Return `Err (Internal InvalidStack)` if the three topmost items are not a
+`Stack.Value`.
+
+-}
+popValue3 : Vm -> Result Error PoppedValues3
+popValue3 vm =
+    case vm.stack of
+        (Stack.Value first) :: (Stack.Value second) :: (Stack.Value third) :: rest ->
+            Ok
+                { first = first
+                , second = second
+                , third = third
+                , vm = { vm | stack = rest }
+                }
+
+        _ ->
+            Err <| Internal InvalidStack
+
+
 {-| Pop a number of values from the stack. Return a list of values and the
 remaining stack.
 
@@ -436,18 +466,18 @@ the stack.
 -}
 eval3 : P.Primitive3 -> Vm -> Result Error Vm
 eval3 primitive vm =
-    case vm.stack of
-        (Stack.Value first) :: (Stack.Value second) :: (Stack.Value third) :: rest ->
-            primitive.f first second third
-                |> Result.map
-                    (\value ->
-                        { vm | stack = Stack.Value value :: rest }
-                            |> incrementProgramCounter
-                    )
-                |> Result.mapError (mapWrongInput primitive.name)
-
-        _ ->
-            Err <| Internal InvalidStack
+    popValue3 vm
+        |> Result.andThen
+            (\result ->
+                primitive.f result.first result.second result.third
+                    |> Result.map
+                        (\value ->
+                            result.vm
+                                |> pushValue1 value
+                                |> incrementProgramCounter
+                        )
+                    |> Result.mapError (mapWrongInput primitive.name)
+            )
 
 
 {-| Evaluate a primitive that takes n arguments and put the result on top of
