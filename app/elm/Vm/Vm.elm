@@ -229,22 +229,23 @@ incrementProgramCounter vm =
     { vm | programCounter = vm.programCounter + 1 }
 
 
-{-| Push a single value onto the stack.
+{-| Convert a `Type.Value` to a `Stack.Value`. If the value is a `Type.Array`,
+assign it an id and store it in the VM’s enviromnent.
 -}
-pushValue1 : Type.Value -> Vm -> Vm
-pushValue1 value vm =
+toStackValue : Type.Value -> Vm -> ( Stack.Value, Vm )
+toStackValue value vm =
     case value of
         Type.Word word ->
-            { vm | stack = Stack.Value (Stack.Word word) :: vm.stack }
+            ( Stack.Value (Stack.Word word), vm )
 
         Type.Int int ->
-            { vm | stack = Stack.Value (Stack.Int int) :: vm.stack }
+            ( Stack.Value (Stack.Int int), vm )
 
         Type.Float float ->
-            { vm | stack = Stack.Value (Stack.Float float) :: vm.stack }
+            ( Stack.Value (Stack.Float float), vm )
 
         Type.List list ->
-            { vm | stack = Stack.Value (Stack.List list) :: vm.stack }
+            ( Stack.Value (Stack.List list), vm )
 
         Type.Array { items, origin, id } ->
             case id of
@@ -268,15 +269,21 @@ pushValue1 value vm =
                                 , arrays = newArrays
                             }
                     in
-                    { vm
-                        | environment = newEnvironment
-                        , stack = Stack.ArrayId vm.environment.nextArrayId :: vm.stack
-                    }
+                    ( Stack.ArrayId vm.environment.nextArrayId, { vm | environment = newEnvironment } )
 
                 Just id_ ->
-                    { vm
-                        | stack = Stack.ArrayId id_ :: vm.stack
-                    }
+                    ( Stack.ArrayId id_, vm )
+
+
+{-| Push a single value onto the stack.
+-}
+pushValue1 : Type.Value -> Vm -> Vm
+pushValue1 value vm =
+    let
+        ( newValue, newVm ) =
+            toStackValue value vm
+    in
+    { newVm | stack = newValue :: newVm.stack }
 
 
 {-| Pop a single value from the stack. Return a value and the remaining stack.
