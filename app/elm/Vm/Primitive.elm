@@ -298,8 +298,8 @@ equalp_ value1 value2 =
         ( _, Type.List _ ) ->
             False
 
-        ( Type.Array _, Type.Array _ ) ->
-            value1 == value2
+        ( Type.Array array1, Type.Array array2 ) ->
+            array1.id == array2.id
 
         ( Type.Array _, _ ) ->
             False
