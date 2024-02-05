@@ -46,7 +46,7 @@ type alias Environment =
     , penSize : Int
     , color : Color
     , nextId : Int
-    , arrays : Dict Int ( Array Type.Value, Int )
+    , arrays : Dict Int { items : Array Type.Value, origin : Int, id : Maybe Int }
     , nextArrayId : Int
     }
 

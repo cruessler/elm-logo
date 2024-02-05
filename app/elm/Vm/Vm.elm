@@ -246,30 +246,37 @@ pushValue1 value vm =
         Type.List list ->
             { vm | stack = Stack.Value (Stack.List list) :: vm.stack }
 
-        Type.Array array origin ->
-            let
-                environment =
-                    vm.environment
+        Type.Array { items, origin, id } ->
+            case id of
+                Nothing ->
+                    let
+                        environment =
+                            vm.environment
 
-                nextArrayId =
-                    environment.nextArrayId + 1
+                        nextArrayId =
+                            environment.nextArrayId + 1
 
-                newArray =
-                    ( array, origin )
+                        newArray =
+                            { items = items, origin = origin, id = Just nextArrayId }
 
-                newArrays =
-                    Dict.insert environment.nextArrayId newArray environment.arrays
+                        newArrays =
+                            Dict.insert environment.nextArrayId newArray environment.arrays
 
-                newEnvironment =
-                    { environment
-                        | nextArrayId = nextArrayId
-                        , arrays = newArrays
+                        newEnvironment =
+                            { environment
+                                | nextArrayId = nextArrayId
+                                , arrays = newArrays
+                            }
+                    in
+                    { vm
+                        | environment = newEnvironment
+                        , stack = Stack.ArrayId vm.environment.nextArrayId :: vm.stack
                     }
-            in
-            { vm
-                | environment = newEnvironment
-                , stack = Stack.ArrayId vm.environment.nextArrayId :: vm.stack
-            }
+
+                Just id_ ->
+                    { vm
+                        | stack = Stack.ArrayId id_ :: vm.stack
+                    }
 
 
 {-| Pop a single value from the stack. Return a value and the remaining stack.
@@ -285,8 +292,8 @@ popValue1 vm =
 
         (Stack.ArrayId id) :: rest ->
             case Dict.get id vm.environment.arrays of
-                Just ( array, origin ) ->
-                    Ok ( Type.Array array origin, { vm | stack = rest } )
+                Just array ->
+                    Ok ( Type.Array array, { vm | stack = rest } )
 
                 _ ->
                     Err <| Internal ArrayNotFound
@@ -381,7 +388,7 @@ popValues n vm =
                         Stack.ArrayId id ->
                             Dict.get id vm.environment.arrays
                                 |> Result.fromMaybe (Internal ArrayNotFound)
-                                |> Result.map (\( array, origin ) -> Type.Array array origin)
+                                |> Result.map Type.Array
 
                         _ ->
                             Err <| Internal InvalidStack
