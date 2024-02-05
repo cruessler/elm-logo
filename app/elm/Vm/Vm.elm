@@ -304,17 +304,17 @@ Return `Err (Internal InvalidStack)` if not enough values are on the stack or
 if not all items are a `Stack.Value`.
 
 -}
-popValues : Int -> Stack -> Result Error ( List Type.Value, Stack )
-popValues n stack =
+popValues : Int -> Vm -> Result Error ( List Type.Value, Stack )
+popValues n vm =
     let
         stackSize =
-            List.length stack
+            List.length vm.stack
     in
     if stackSize < n then
         Err <| Internal InvalidStack
 
     else
-        List.take n stack
+        List.take n vm.stack
             |> List.map
                 (\value ->
                     case value of
@@ -329,7 +329,7 @@ popValues n stack =
                     Result.map2 (\value_ acc_ -> value_ :: acc_) value acc
                 )
                 (Ok [])
-            |> Result.map (\first -> ( first, List.drop n stack ))
+            |> Result.map (\first -> ( first, List.drop n vm.stack ))
 
 
 parseAndCompileProgram : Parser Program -> String -> Result Error CompiledProgram
@@ -485,7 +485,7 @@ the stack.
 -}
 evalN : P.PrimitiveN -> Int -> Vm -> Result Error Vm
 evalN primitive n vm =
-    popValues n vm.stack
+    popValues n vm
         |> Result.andThen
             (\( arguments, rest ) ->
                 primitive.f arguments
@@ -546,7 +546,7 @@ command2 command vm =
 -}
 commandN : C.CommandN -> Int -> Vm -> Result Error Vm
 commandN command n vm =
-    popValues n vm.stack
+    popValues n vm
         |> Result.andThen
             (\( arguments, rest ) ->
                 command.f arguments vm.environment
