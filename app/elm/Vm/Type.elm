@@ -41,7 +41,7 @@ type Value
     | Int Int
     | Float Float
     | List (List Value)
-    | Array (Array Value) Int
+    | Array { items : Array Value, origin : Int, id : Maybe Int }
 
 
 type Error
@@ -84,10 +84,10 @@ toString value =
                 |> List.map inList
                 |> String.join " "
 
-        Array array _ ->
+        Array { items } ->
             let
                 string =
-                    array
+                    items
                         |> Array.toList
                         |> List.map toDebugString
                         |> String.join " "

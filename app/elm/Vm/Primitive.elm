@@ -120,7 +120,7 @@ first value =
         Type.List [] ->
             Err <| WrongInput "first" (Type.toDebugString value)
 
-        Type.Array _ origin ->
+        Type.Array { origin } ->
             Ok <| Type.Word <| String.fromInt origin
 
 
@@ -154,7 +154,7 @@ butfirst value =
         Type.List [] ->
             Err <| WrongInput "butfirst" (Type.toDebugString value)
 
-        Type.Array _ _ ->
+        Type.Array _ ->
             Err <| WrongInput "butfirst" (Type.toDebugString value)
 
 
@@ -183,8 +183,8 @@ count value =
                 Type.List list ->
                     List.length list
 
-                Type.Array array_ _ ->
-                    Array.length array_
+                Type.Array { items } ->
+                    Array.length items
     in
     length |> String.fromInt |> Type.Word |> Ok
 
@@ -298,13 +298,13 @@ equalp_ value1 value2 =
         ( _, Type.List _ ) ->
             False
 
-        ( Type.Array _ _, Type.Array _ _ ) ->
+        ( Type.Array _, Type.Array _ ) ->
             value1 == value2
 
-        ( Type.Array _ _, _ ) ->
+        ( Type.Array _, _ ) ->
             False
 
-        ( _, Type.Array _ _ ) ->
+        ( _, Type.Array _ ) ->
             False
 
         ( Type.Word word1, Type.Word word2 ) ->
@@ -626,30 +626,31 @@ fput value1 value2 =
 array : List Type.Value -> Result Error Type.Value
 array values =
     let
-        initializeArray : Type.Value -> Result Error (Array Type.Value)
-        initializeArray value =
+        initializeItems : Type.Value -> Result Error (Array Type.Value)
+        initializeItems value =
             Type.toInt value
                 |> Result.map (\len -> Array.initialize len (always (Type.List [])))
                 |> Result.mapError (always <| WrongInput "always" (Type.toDebugString value))
+
+        initializeWithItemsAndOrigin : Array Type.Value -> Int -> Type.Value
+        initializeWithItemsAndOrigin items origin =
+            Type.Array { items = items, origin = origin, id = Nothing }
     in
     case values of
         [ first_, second ] ->
             let
-                array_ =
-                    initializeArray first_
+                items =
+                    initializeItems first_
 
                 origin =
                     Type.toInt second
                         |> Result.mapError (always <| WrongInput "always" (Type.toDebugString second))
             in
-            Result.map2 Type.Array array_ origin
+            Result.map2 initializeWithItemsAndOrigin items origin
 
         [ first_ ] ->
-            let
-                array_ =
-                    initializeArray first_
-            in
-            Result.map2 Type.Array array_ (Ok 1)
+            initializeItems first_
+                |> Result.map (\items -> Type.Array { items = items, origin = 1, id = Nothing })
 
         [] ->
             Err <| NotEnoughInputs "array"
@@ -701,7 +702,7 @@ wordp value =
         Type.List _ ->
             Ok Type.false
 
-        Type.Array _ _ ->
+        Type.Array _ ->
             Ok Type.false
 
 
