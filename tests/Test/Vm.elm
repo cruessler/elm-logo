@@ -71,7 +71,7 @@ vmWithTwoInstructions =
                 Expect.equal vm.programCounter 2
         , test "stack gets changed" <|
             \_ ->
-                Expect.equal vm.stack [ Stack.Value <| Type.Word "w" ]
+                Expect.equal vm.stack [ Stack.Value <| Stack.Word "w" ]
         ]
 
 
@@ -91,7 +91,7 @@ vmWithVariables =
     in
     test "setting and getting a variable" <|
         \_ ->
-            Expect.equal vm.stack [ Stack.Value <| Type.Word "word" ]
+            Expect.equal vm.stack [ Stack.Value <| Stack.Word "word" ]
 
 
 vmWithIntrospection : Test
@@ -107,7 +107,7 @@ vmWithIntrospection =
     in
     test "calling repcount outside a loop" <|
         \_ ->
-            Expect.equal vm.stack [ Stack.Value <| Type.Int -1 ]
+            Expect.equal vm.stack [ Stack.Value <| Stack.Int -1 ]
 
 
 vmWithConditionalPrint : Test
@@ -260,8 +260,8 @@ vmWithFlip =
         vm =
             { emptyVm
                 | stack =
-                    [ Stack.Value (Type.Word "a")
-                    , Stack.Value (Type.Word "b")
+                    [ Stack.Value (Stack.Word "a")
+                    , Stack.Value (Stack.Word "b")
                     ]
                 , instructions =
                     [ Flip ]
@@ -273,8 +273,8 @@ vmWithFlip =
         [ test "flips topmost stack values" <|
             \_ ->
                 Expect.equal vm.stack
-                    [ Stack.Value (Type.Word "b")
-                    , Stack.Value (Type.Word "a")
+                    [ Stack.Value (Stack.Word "b")
+                    , Stack.Value (Stack.Word "a")
                     ]
         ]
 

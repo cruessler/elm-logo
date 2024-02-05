@@ -24,12 +24,15 @@ module Environment exposing
 environment: the state of the turtle, console output etc.
 -}
 
+import Array exposing (Array)
 import Color exposing (Color)
+import Dict exposing (Dict)
 import Environment.History as History exposing (Entry(..), History)
 import Environment.Line as Line exposing (Line)
 import Environment.Turtle as Turtle exposing (State(..), Turtle)
 import Json.Encode as E
 import Math.Vector2 as Vec2 exposing (Vec2)
+import Vm.Type as Type
 
 
 type Object
@@ -43,6 +46,8 @@ type alias Environment =
     , penSize : Int
     , color : Color
     , nextId : Int
+    , arrays : Dict Int ( Array Type.Value, Int )
+    , nextArrayId : Int
     }
 
 
@@ -59,6 +64,8 @@ empty =
     , color = defaultColor
     , penSize = 1
     , nextId = 0
+    , arrays = Dict.empty
+    , nextArrayId = 0
     }
 
 
