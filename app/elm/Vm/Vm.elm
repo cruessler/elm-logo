@@ -298,13 +298,13 @@ popValue3 vm =
 
 
 {-| Pop a number of values from the stack. Return a list of values and the
-remaining stack.
+vm with the remaining stack.
 
 Return `Err (Internal InvalidStack)` if not enough values are on the stack or
 if not all items are a `Stack.Value`.
 
 -}
-popValues : Int -> Vm -> Result Error ( List Type.Value, Stack )
+popValues : Int -> Vm -> Result Error ( List Type.Value, Vm )
 popValues n vm =
     let
         stackSize =
@@ -329,7 +329,7 @@ popValues n vm =
                     Result.map2 (\value_ acc_ -> value_ :: acc_) value acc
                 )
                 (Ok [])
-            |> Result.map (\first -> ( first, List.drop n vm.stack ))
+            |> Result.map (\first -> ( first, { vm | stack = List.drop n vm.stack } ))
 
 
 parseAndCompileProgram : Parser Program -> String -> Result Error CompiledProgram
@@ -487,11 +487,12 @@ evalN : P.PrimitiveN -> Int -> Vm -> Result Error Vm
 evalN primitive n vm =
     popValues n vm
         |> Result.andThen
-            (\( arguments, rest ) ->
+            (\( arguments, newVm ) ->
                 primitive.f arguments
                     |> Result.map
                         (\value ->
-                            { vm | stack = Stack.Value value :: rest }
+                            newVm
+                                |> pushValue1 value
                                 |> incrementProgramCounter
                         )
                     |> Result.mapError (mapWrongInput primitive.name)
@@ -548,11 +549,11 @@ commandN : C.CommandN -> Int -> Vm -> Result Error Vm
 commandN command n vm =
     popValues n vm
         |> Result.andThen
-            (\( arguments, rest ) ->
+            (\( arguments, newVm ) ->
                 command.f arguments vm.environment
                     |> Result.map
                         (\environment ->
-                            { vm | stack = rest, environment = environment }
+                            { newVm | environment = environment }
                                 |> incrementProgramCounter
                         )
                     |> Result.mapError (mapWrongInput command.name)
