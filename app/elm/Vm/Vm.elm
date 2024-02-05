@@ -233,7 +233,43 @@ incrementProgramCounter vm =
 -}
 pushValue1 : Type.Value -> Vm -> Vm
 pushValue1 value vm =
-    { vm | stack = Stack.Value value :: vm.stack }
+    case value of
+        Type.Word word ->
+            { vm | stack = Stack.Value (Stack.Word word) :: vm.stack }
+
+        Type.Int int ->
+            { vm | stack = Stack.Value (Stack.Int int) :: vm.stack }
+
+        Type.Float float ->
+            { vm | stack = Stack.Value (Stack.Float float) :: vm.stack }
+
+        Type.List list ->
+            { vm | stack = Stack.Value (Stack.List list) :: vm.stack }
+
+        Type.Array array origin ->
+            let
+                environment =
+                    vm.environment
+
+                nextArrayId =
+                    environment.nextArrayId + 1
+
+                newArray =
+                    ( array, origin )
+
+                newArrays =
+                    Dict.insert environment.nextArrayId newArray environment.arrays
+
+                newEnvironment =
+                    { environment
+                        | nextArrayId = nextArrayId
+                        , arrays = newArrays
+                    }
+            in
+            { vm
+                | environment = newEnvironment
+                , stack = Stack.ArrayId vm.environment.nextArrayId :: vm.stack
+            }
 
 
 {-| Pop a single value from the stack. Return a value and the remaining stack.
@@ -245,7 +281,15 @@ popValue1 : Vm -> Result Error ( Type.Value, Vm )
 popValue1 vm =
     case vm.stack of
         (Stack.Value first) :: rest ->
-            Ok ( first, { vm | stack = rest } )
+            Ok ( Stack.toTypeValue first, { vm | stack = rest } )
+
+        (Stack.ArrayId id) :: rest ->
+            case Dict.get id vm.environment.arrays of
+                Just ( array, origin ) ->
+                    Ok ( Type.Array array origin, { vm | stack = rest } )
+
+                _ ->
+                    Err <| Internal ArrayNotFound
 
         _ ->
             Err <| Internal InvalidStack
@@ -259,12 +303,15 @@ Return `Err (Internal InvalidStack)` if the two topmost items are not a
 -}
 popValue2 : Vm -> Result Error ( Type.Value, Type.Value, Vm )
 popValue2 vm =
-    case vm.stack of
-        (Stack.Value first) :: (Stack.Value second) :: rest ->
-            Ok ( first, second, { vm | stack = rest } )
-
-        _ ->
-            Err <| Internal InvalidStack
+    popValue1 vm
+        |> Result.andThen
+            (\( first, vmAfterFirstPop ) ->
+                popValue1 vmAfterFirstPop
+                    |> Result.andThen
+                        (\( second, vmAfterSecondPop ) ->
+                            Ok ( first, second, vmAfterSecondPop )
+                        )
+            )
 
 
 type alias PoppedValues3 =
@@ -284,24 +331,34 @@ Return `Err (Internal InvalidStack)` if the three topmost items are not a
 -}
 popValue3 : Vm -> Result Error PoppedValues3
 popValue3 vm =
-    case vm.stack of
-        (Stack.Value first) :: (Stack.Value second) :: (Stack.Value third) :: rest ->
-            Ok
-                { first = first
-                , second = second
-                , third = third
-                , vm = { vm | stack = rest }
-                }
-
-        _ ->
-            Err <| Internal InvalidStack
+    popValue1 vm
+        |> Result.andThen
+            (\( first, vmAfterFirstPop ) ->
+                popValue1 vmAfterFirstPop
+                    |> Result.andThen
+                        (\( second, vmAfterSecondPop ) ->
+                            popValue1 vmAfterSecondPop
+                                |> Result.andThen
+                                    (\( third, vmAfterThirdPop ) ->
+                                        Ok
+                                            { first = first
+                                            , second = second
+                                            , third = third
+                                            , vm = vmAfterThirdPop
+                                            }
+                                    )
+                        )
+            )
 
 
 {-| Pop a number of values from the stack. Return a list of values and the
 vm with the remaining stack.
 
 Return `Err (Internal InvalidStack)` if not enough values are on the stack or
-if not all items are a `Stack.Value`.
+if not all items are a `Stack.Value` or a `Stack.ArrayId`.
+
+Returns `Err ArrayNotFound` for an `ArrayId` that can’t be resolved to an
+array.
 
 -}
 popValues : Int -> Vm -> Result Error ( List Type.Value, Vm )
@@ -319,7 +376,12 @@ popValues n vm =
                 (\value ->
                     case value of
                         Stack.Value value_ ->
-                            Ok value_
+                            Ok (Stack.toTypeValue value_)
+
+                        Stack.ArrayId id ->
+                            Dict.get id vm.environment.arrays
+                                |> Result.fromMaybe (Internal ArrayNotFound)
+                                |> Result.map (\( array, origin ) -> Type.Array array origin)
 
                         _ ->
                             Err <| Internal InvalidStack
@@ -567,7 +629,8 @@ introspect0 primitive vm =
     primitive.f vm.scopes
         |> Result.map
             (\value ->
-                { vm | stack = Stack.Value value :: vm.stack }
+                vm
+                    |> pushValue1 value
                     |> incrementProgramCounter
             )
         |> Result.mapError (Internal << Scope)
@@ -596,7 +659,10 @@ pushVariable name vm =
     case Scope.thing name vm.scopes of
         Just (Defined value) ->
             Ok
-                ({ vm | stack = Stack.Value value :: vm.stack } |> incrementProgramCounter)
+                (vm
+                    |> pushValue1 value
+                    |> incrementProgramCounter
+                )
 
         _ ->
             Err <| Error.VariableUndefined name
@@ -654,10 +720,8 @@ enterLoopScope vm =
         |> Scope.enterLoopScope
         |> Result.map
             (\( lastPass, scopes ) ->
-                { vm
-                    | scopes = scopes
-                    , stack = (Type.fromBool lastPass |> Stack.Value) :: vm.stack
-                }
+                { vm | scopes = scopes }
+                    |> pushValue1 (Type.fromBool lastPass)
                     |> incrementProgramCounter
             )
         |> Result.mapError (Internal << Scope)
@@ -691,10 +755,8 @@ enterTemplateScope vm =
         |> Scope.enterTemplateScope
         |> Result.map
             (\( lastPass, scopes ) ->
-                { vm
-                    | scopes = scopes
-                    , stack = (Type.fromBool lastPass |> Stack.Value) :: vm.stack
-                }
+                { vm | scopes = scopes }
+                    |> pushValue1 (Type.fromBool lastPass)
                     |> incrementProgramCounter
             )
         |> Result.mapError (Internal << Scope)
@@ -854,7 +916,9 @@ execute instruction vm =
     case instruction of
         PushValue value ->
             Ok
-                ({ vm | stack = Stack.Value value :: vm.stack } |> incrementProgramCounter)
+                (pushValue1 value vm
+                    |> incrementProgramCounter
+                )
 
         PushVariable name ->
             pushVariable name vm
@@ -959,13 +1023,15 @@ execute instruction vm =
             case vm.stack of
                 Stack.Void :: rest ->
                     Ok
-                        ({ vm | stack = Stack.Value Type.false :: rest }
+                        ({ vm | stack = rest }
+                            |> pushValue1 Type.false
                             |> incrementProgramCounter
                         )
 
                 (Stack.Value _) :: _ ->
                     Ok
-                        ({ vm | stack = Stack.Value Type.true :: vm.stack }
+                        (vm
+                            |> pushValue1 Type.true
                             |> incrementProgramCounter
                         )
 

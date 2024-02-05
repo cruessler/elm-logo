@@ -94,11 +94,6 @@ word =
     Type.Word "word"
 
 
-list : Type.Value
-list =
-    Type.List [ word, Type.List [ word ] ]
-
-
 encodeAndDecodeScope : Test
 encodeAndDecodeScope =
     describe "Scope" <|
@@ -129,7 +124,11 @@ encodeAndDecodeStack =
             \_ ->
                 let
                     stack =
-                        [ Stack.Void, Stack.Address 10, Stack.Value word, Stack.Value list ]
+                        [ Stack.Void
+                        , Stack.Address 10
+                        , Stack.Value <| Stack.Word "word"
+                        , Stack.Value <| Stack.List [ word, Type.List [ word ] ]
+                        ]
 
                     value =
                         Stack.toValue stack

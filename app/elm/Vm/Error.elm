@@ -21,6 +21,7 @@ type Internal
     | NoInstruction
     | ParsingFailed
     | EvalFailed
+    | ArrayNotFound
 
 
 type Error
