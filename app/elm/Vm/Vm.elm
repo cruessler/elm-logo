@@ -119,6 +119,9 @@ encodeInstruction instruction =
                 Localmake ->
                     "Localmake"
 
+                Thing ->
+                    "Thing"
+
                 Introspect0 { name } ->
                     "Introspect0 " ++ name
 
@@ -812,6 +815,30 @@ localmake vm =
             )
 
 
+thing : Vm -> Result Error Vm
+thing vm =
+    popValue1 vm
+        |> Result.andThen
+            (\( name, newVm ) ->
+                name
+                    |> Type.toWord
+                    |> Result.mapError (\_ -> WrongInput "thing" (Type.toDebugString name))
+                    |> Result.andThen
+                        (\word ->
+                            case Scope.thing word vm.scopes of
+                                Just (Defined value) ->
+                                    Ok
+                                        (newVm
+                                            |> pushValue1 value
+                                            |> incrementProgramCounter
+                                        )
+
+                                _ ->
+                                    Err <| Error.VariableUndefined word
+                        )
+            )
+
+
 pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
     popValue1 vm
@@ -1060,6 +1087,9 @@ execute instruction vm =
 
         Localmake ->
             localmake vm
+
+        Thing ->
+            thing vm
 
         Introspect0 primitive ->
             introspect0 primitive vm

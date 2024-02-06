@@ -17,6 +17,7 @@ type Context
     | TemplateVariable
     | Localmake
     | Make
+    | Thing
     | Variable
     | ValueOutsideList
     | ValueInList
