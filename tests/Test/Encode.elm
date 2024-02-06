@@ -6,6 +6,7 @@ module Test.Encode exposing
     , encodeAndDecodeVms
     )
 
+import Dict
 import Environment.History exposing (Entry(..))
 import Expect
 import Json.Decode as D
@@ -127,11 +128,11 @@ encodeAndDecodeStack =
                         [ Stack.Void
                         , Stack.Address 10
                         , Stack.Value <| Stack.Word "word"
-                        , Stack.Value <| Stack.List [ word, Type.List [ word ] ]
+                        , Stack.Value <| Stack.List [ Stack.Word "word", Stack.List [ Stack.Word "word" ] ]
                         ]
 
                     value =
-                        Stack.toValue stack
+                        Stack.toValue Dict.empty stack
                 in
                 D.decodeValue (D.list D.string) value
                     |> Expect.ok
