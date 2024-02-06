@@ -14,6 +14,7 @@ The only thing omitted so far are the calls to `bury` because burying is not yet
 implemented in elm-logo.
 
 [combine]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/combine
+[queue]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/queue
 [reverse]: https://github.com/jrincayc/ucblogo-code/blob/master/logolib/reverse
 
 -}
@@ -22,6 +23,10 @@ functions =
     """to combine :this :those
 if wordp :those [output word :this :those]
 output fput :this :those
+end
+
+to queue :the.queue.name :the.item.value
+make :the.queue.name lput :the.item.value thing :the.queue.name
 end
 
 to reverse :in [:out ifelse listp :in [[]] ["]]
