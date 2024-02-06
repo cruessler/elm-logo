@@ -1,4 +1,4 @@
-module Test.Run.Builtin exposing (commands, primitives, print, show)
+module Test.Run.Builtin exposing (commands, make, primitives, print, show)
 
 import Test exposing (Test, describe)
 import Test.Helper exposing (printsLine, runsWithoutError)
@@ -165,4 +165,13 @@ show =
         , printsLine "show \"word" "word"
         , printsLine "show sentence 1 1" "[1 1]"
         , printsLine "show (array 2 10)" "{[] []}"
+        ]
+
+
+make : Test
+make =
+    describe "make" <|
+        [ printsLine "make 1 [a b c] print :1" "a b c"
+        , printsLine "make 1.1 1 print :1.1" "1"
+        , printsLine "make 1.1 1 make :1.1 2 print :1" "2"
         ]

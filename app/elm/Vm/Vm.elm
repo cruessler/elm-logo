@@ -113,6 +113,12 @@ encodeInstruction instruction =
                 LocalVariable name ->
                     "LocalVariable " ++ name
 
+                Make ->
+                    "Make"
+
+                Localmake ->
+                    "Localmake"
+
                 Introspect0 { name } ->
                     "Introspect0 " ++ name
 
@@ -768,6 +774,44 @@ localVariable name vm =
         )
 
 
+make : Vm -> Result Error Vm
+make vm =
+    popValue2 vm
+        |> Result.andThen
+            (\( name, value, newVm ) ->
+                name
+                    |> Type.toWord
+                    |> Result.map
+                        (\word ->
+                            { newVm | scopes = Scope.make word value vm.scopes }
+                                |> incrementProgramCounter
+                        )
+                    |> Result.mapError (\_ -> WrongInput "make" (Type.toDebugString name))
+            )
+
+
+localmake : Vm -> Result Error Vm
+localmake vm =
+    popValue2 vm
+        |> Result.andThen
+            (\( name, value, newVm ) ->
+                name
+                    |> Type.toWord
+                    |> Result.map
+                        (\word ->
+                            let
+                                newScopes =
+                                    vm.scopes
+                                        |> Scope.local word
+                                        |> Scope.make word value
+                            in
+                            { newVm | scopes = newScopes }
+                                |> incrementProgramCounter
+                        )
+                    |> Result.mapError (\_ -> WrongInput "localmake" (Type.toDebugString name))
+            )
+
+
 pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
     popValue1 vm
@@ -1010,6 +1054,12 @@ execute instruction vm =
 
         LocalVariable name ->
             localVariable name vm
+
+        Make ->
+            make vm
+
+        Localmake ->
+            localmake vm
 
         Introspect0 primitive ->
             introspect0 primitive vm

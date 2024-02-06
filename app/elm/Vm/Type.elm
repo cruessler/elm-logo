@@ -10,6 +10,7 @@ module Vm.Type exposing
     , toFloat
     , toInt
     , toString
+    , toWord
     , true
     )
 
@@ -45,7 +46,8 @@ type Value
 
 
 type Error
-    = NoInt String
+    = NoWord String
+    | NoInt String
     | NoFloat String
     | NoBool String
 
@@ -115,6 +117,25 @@ toDebugString value =
 
         _ ->
             toString value
+
+
+{-| Unwrap `Value` if it is a word or any of its optimized variants that can be
+treated as a word.
+-}
+toWord : Value -> Result Error String
+toWord value =
+    case value of
+        Word word ->
+            Ok word
+
+        Int int ->
+            Ok (String.fromInt int)
+
+        Float float ->
+            Ok (String.fromFloat float)
+
+        _ ->
+            Err <| NoWord (toString value)
 
 
 {-| Parse `Value` as an integer.

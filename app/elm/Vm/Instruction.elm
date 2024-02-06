@@ -14,6 +14,8 @@ type Instruction
     | PushVariable String
     | StoreVariable String
     | LocalVariable String
+    | Make
+    | Localmake
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1
     | Eval
