@@ -142,6 +142,10 @@ primitives =
             [ printsLine "print fput \"w \"ord" "word"
             , printsLine "print fput \"w [ o r d ]" "w o r d"
             ]
+        , describe "lput" <|
+            [ printsLine "print lput \"w \"ord" "ordw"
+            , printsLine "print lput \"w [ o r d ]" "o r d w"
+            ]
         ]
 
 
