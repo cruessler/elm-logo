@@ -83,8 +83,8 @@ type Node
     | Call String (List Node)
     | Return (Maybe Node)
     | Run Node
-    | Make String Node
-    | Local String
+    | Make Node Node
+    | Localmake Node Node
     | Variable String
     | Value Type.Value
     | Raise Exception
@@ -202,6 +202,9 @@ typeOfCallee node =
         Make _ _ ->
             Command { name = "make" }
 
+        Localmake _ _ ->
+            Command { name = "localmake" }
+
         Variable name ->
             Primitive { name = name }
 
@@ -221,9 +224,6 @@ typeOfCallee node =
             DoesNotApply
 
         Raise _ ->
-            DoesNotApply
-
-        Local _ ->
             DoesNotApply
 
 
@@ -758,14 +758,33 @@ compile context node =
             ]
                 |> List.concat
 
-        Make name node_ ->
-            [ compileInContext (Expression { caller = "make" }) node_
-            , [ StoreVariable name ]
+        Make name value ->
+            let
+                compiledValue =
+                    compileInContext (Expression { caller = "make" }) value
+
+                compiledName =
+                    compileInContext (Expression { caller = "make" }) name
+            in
+            [ compiledValue
+            , compiledName
+            , [ Instruction.Make ]
             ]
                 |> List.concat
 
-        Local name ->
-            [ LocalVariable name ]
+        Localmake name value ->
+            let
+                compiledValue =
+                    compileInContext (Expression { caller = "localmake" }) value
+
+                compiledName =
+                    compileInContext (Expression { caller = "localmake" }) name
+            in
+            [ compiledValue
+            , compiledName
+            , [ Instruction.Localmake ]
+            ]
+                |> List.concat
 
         Variable name ->
             [ PushVariable name ]

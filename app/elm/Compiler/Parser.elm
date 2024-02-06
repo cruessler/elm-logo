@@ -680,47 +680,25 @@ templateVariable =
 
 localmake : State -> Parser Ast.Node
 localmake state =
-    let
-        makeNode : ( Type.Value, Ast.Node ) -> Parser Ast.Node
-        makeNode ( name, node ) =
-            case name of
-                Type.Word word ->
-                    P.succeed <| Ast.Sequence [ Ast.Local word ] (Ast.Make word node)
-
-                _ ->
-                    P.problem ExpectingWord
-    in
     P.inContext Localmake <|
-        (P.succeed (\a b -> ( a, b ))
+        (P.succeed Ast.Localmake
             |. Helper.keyword "localmake"
             |. Helper.spaces
-            |= Value.wordOutsideList
+            |= booleanExpression state
             |. Helper.spaces
             |= booleanExpression state
-            |> P.andThen makeNode
         )
 
 
 make : State -> Parser Ast.Node
 make state =
-    let
-        makeNode : ( Type.Value, Ast.Node ) -> Parser Ast.Node
-        makeNode ( name, node ) =
-            case name of
-                Type.Word word ->
-                    P.succeed <| Ast.Make word node
-
-                _ ->
-                    P.problem ExpectingWord
-    in
     P.inContext Make <|
-        (P.succeed (\a b -> ( a, b ))
+        (P.succeed Ast.Make
             |. Helper.keyword "make"
             |. Helper.spaces
-            |= Value.wordOutsideList
+            |= booleanExpression state
             |. Helper.spaces
             |= booleanExpression state
-            |> P.andThen makeNode
         )
 
 
