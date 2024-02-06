@@ -257,6 +257,27 @@ toTypeValue value vm =
         Stack.ArrayId id ->
             Dict.get id vm.environment.arrays
                 |> Result.fromMaybe (Internal ArrayNotFound)
+                |> Result.andThen
+                    (\array ->
+                        let
+                            { items, origin } =
+                                array
+
+                            typeItems =
+                                Array.foldl
+                                    (\value_ acc -> Result.map2 (::) (toTypeValue value_ vm) acc)
+                                    (Ok [])
+                                    items
+                        in
+                        typeItems
+                            |> Result.map
+                                (\typeItems_ ->
+                                    { items = Array.fromList typeItems_
+                                    , origin = origin
+                                    , id = Just id
+                                    }
+                                )
+                    )
                 |> Result.map Type.Array
 
 
@@ -301,8 +322,23 @@ toStackPrimitiveValue value vm =
                         nextArrayId =
                             environment.nextArrayId + 1
 
+                        ( stackItems, newVm ) =
+                            Array.foldl
+                                (\value_ ( accList, accVm ) ->
+                                    let
+                                        ( stackValue, newAccVm ) =
+                                            toStackPrimitiveValue value_ accVm
+                                    in
+                                    ( stackValue :: accList, newAccVm )
+                                )
+                                ( [], vm )
+                                items
+
                         newArray =
-                            { items = items, origin = origin, id = Just nextArrayId }
+                            { items = Array.fromList stackItems
+                            , origin = origin
+                            , id = Just nextArrayId
+                            }
 
                         newArrays =
                             Dict.insert environment.nextArrayId newArray environment.arrays
@@ -313,7 +349,7 @@ toStackPrimitiveValue value vm =
                                 , arrays = newArrays
                             }
                     in
-                    ( Stack.ArrayId vm.environment.nextArrayId, { vm | environment = newEnvironment } )
+                    ( Stack.ArrayId vm.environment.nextArrayId, { newVm | environment = newEnvironment } )
 
                 Just id_ ->
                     ( Stack.ArrayId id_, vm )
