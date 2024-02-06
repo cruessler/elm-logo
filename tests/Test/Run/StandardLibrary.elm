@@ -13,6 +13,9 @@ functions =
             , printsLine "print combine \"a [b [c]]" "a b [c]"
             , printsLine "print combine [a] [b c]" "[a] b c"
             ]
+        , describe "queue" <|
+            [ printsLine "make \"q [] queue \"q 1 queue \"q [2] print :q" "1 [2]"
+            ]
         , describe "reverse" <|
             [ printsLine "print reverse [a b c d]" "d c b a"
             , printsLine "print reverse \"word" "drow"
