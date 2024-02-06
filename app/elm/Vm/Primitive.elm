@@ -22,6 +22,7 @@ module Vm.Primitive exposing
     , integerp
     , lessp
     , listp
+    , lput
     , lshift
     , minus
     , notequalp
@@ -611,6 +612,32 @@ fput value1 value2 =
 
             else
                 Err <| WrongInput "fput" word_
+
+
+{-|
+
+> outputs a list equal to its second input with one extra member, the first
+> input, at the end. If the second input is a word, then the first input must
+> be a one-letter word, and LPUT is equivalent to WORD with its inputs in the
+> other order.
+
+-}
+lput : Type.Value -> Type.Value -> Result Error Type.Value
+lput value1 value2 =
+    case ( value1, value2 ) of
+        ( _, Type.List list ) ->
+            Ok <| Type.List <| list ++ [ value1 ]
+
+        _ ->
+            let
+                word_ =
+                    Type.toString value1
+            in
+            if String.length word_ == 1 then
+                Ok <| Type.Word <| Type.toString value2 ++ word_
+
+            else
+                Err <| WrongInput "lput" word_
 
 
 {-|

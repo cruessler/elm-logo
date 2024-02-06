@@ -210,6 +210,18 @@ primitives =
                         (P.fput (T.Word "wo") (T.Word "rd"))
                         (Err <| Error.WrongInput "fput" "wo")
             ]
+        , describe "lput"
+            [ test "works with 2 strings" <|
+                \_ ->
+                    Expect.equal
+                        (P.lput (T.Word "w") (T.List [ T.Word "o" ]))
+                        (Ok <| T.List [ T.Word "o", T.Word "w" ])
+            , test "fails with 2 words if first word has more than one character" <|
+                \_ ->
+                    Expect.equal
+                        (P.lput (T.Word "wo") (T.Word "rd"))
+                        (Err <| Error.WrongInput "lput" "wo")
+            ]
         , describe "bitand"
             [ test "works with 2 integers" <|
                 \_ ->
