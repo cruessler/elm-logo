@@ -1,12 +1,13 @@
 module Vm.Stack exposing
-    ( PrimitiveValue(..)
+    ( Arrays
+    , PrimitiveValue(..)
     , Stack
     , Value(..)
     , toValue
     )
 
-import Dict
-import Environment exposing (Arrays)
+import Array exposing (Array)
+import Dict exposing (Dict)
 import Json.Encode as E
 import Vm.Type as Type
 
@@ -30,6 +31,10 @@ type Value
 
 type alias Stack =
     List Value
+
+
+type alias Arrays =
+    Dict Int { items : Array PrimitiveValue, origin : Int, id : Maybe Int }
 
 
 encodeValue : Arrays -> Value -> E.Value
@@ -62,6 +67,17 @@ toTypeValue arrays value =
 
         ArrayId id ->
             Dict.get id arrays
+                |> Maybe.map
+                    (\array ->
+                        let
+                            { items, origin } =
+                                array
+
+                            typeItems =
+                                Array.map (toTypeValue arrays) items
+                        in
+                        { items = typeItems, origin = origin, id = Just id }
+                    )
                 |> Maybe.map Type.Array
                 |> Maybe.withDefault (Type.Word "<array not found>")
 
