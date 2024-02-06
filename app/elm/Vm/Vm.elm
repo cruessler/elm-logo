@@ -216,7 +216,7 @@ toValue { instructions, programCounter, stack, scopes, environment } =
     E.object
         [ ( "instructions", encodeInstructions instructions )
         , ( "programCounter", E.int programCounter )
-        , ( "stack", Stack.toValue stack )
+        , ( "stack", Stack.toValue environment.arrays stack )
         , ( "scopes", E.list Scope.toValue scopes )
         , ( "environment", Environment.toValue environment )
         ]
@@ -229,23 +229,67 @@ incrementProgramCounter vm =
     { vm | programCounter = vm.programCounter + 1 }
 
 
-{-| Convert a `Type.Value` to a `Stack.Value`. If the value is a `Type.Array`,
-assign it an id and store it in the VM’s enviromnent.
+{-| Convert a `Stack.PrimitiveValue` to a `Type.Value`. If the value is a
+`Stack.ArrayId`, use the VM’s enviromnent to resolve it to an array.
 -}
-toStackValue : Type.Value -> Vm -> ( Stack.Value, Vm )
-toStackValue value vm =
+toTypeValue : Stack.PrimitiveValue -> Vm -> Result Error Type.Value
+toTypeValue value vm =
+    case value of
+        Stack.Word string ->
+            Ok <| Type.Word string
+
+        Stack.Int int ->
+            Ok <| Type.Int int
+
+        Stack.Float float ->
+            Ok <| Type.Float float
+
+        Stack.List list ->
+            let
+                list_ =
+                    List.foldl
+                        (\value_ acc -> Result.map2 (::) (toTypeValue value_ vm) acc)
+                        (Ok [])
+                        list
+            in
+            Result.map Type.List list_
+
+        Stack.ArrayId id ->
+            Dict.get id vm.environment.arrays
+                |> Result.fromMaybe (Internal ArrayNotFound)
+                |> Result.map Type.Array
+
+
+{-| Convert a `Type.Value` to a `Stack.PrimitiveValue`. If the value is a
+`Type.Array`, assign it an id and store it in the VM’s enviromnent.
+-}
+toStackPrimitiveValue : Type.Value -> Vm -> ( Stack.PrimitiveValue, Vm )
+toStackPrimitiveValue value vm =
     case value of
         Type.Word word ->
-            ( Stack.Value (Stack.Word word), vm )
+            ( Stack.Word word, vm )
 
         Type.Int int ->
-            ( Stack.Value (Stack.Int int), vm )
+            ( Stack.Int int, vm )
 
         Type.Float float ->
-            ( Stack.Value (Stack.Float float), vm )
+            ( Stack.Float float, vm )
 
         Type.List list ->
-            ( Stack.Value (Stack.List list), vm )
+            let
+                ( stackList, newVm ) =
+                    List.foldl
+                        (\value_ ( accList, accVm ) ->
+                            let
+                                ( stackValue, newAccVm ) =
+                                    toStackPrimitiveValue value_ accVm
+                            in
+                            ( stackValue :: accList, newAccVm )
+                        )
+                        ( [], vm )
+                        list
+            in
+            ( Stack.List stackList, newVm )
 
         Type.Array { items, origin, id } ->
             case id of
@@ -281,9 +325,9 @@ pushValue1 : Type.Value -> Vm -> Vm
 pushValue1 value vm =
     let
         ( newValue, newVm ) =
-            toStackValue value vm
+            toStackPrimitiveValue value vm
     in
-    { newVm | stack = newValue :: newVm.stack }
+    { newVm | stack = Stack.Value newValue :: newVm.stack }
 
 
 {-| Pop a single value from the stack. Return a value and the remaining stack.
@@ -295,15 +339,8 @@ popValue1 : Vm -> Result Error ( Type.Value, Vm )
 popValue1 vm =
     case vm.stack of
         (Stack.Value first) :: rest ->
-            Ok ( Stack.toTypeValue first, { vm | stack = rest } )
-
-        (Stack.ArrayId id) :: rest ->
-            case Dict.get id vm.environment.arrays of
-                Just array ->
-                    Ok ( Type.Array array, { vm | stack = rest } )
-
-                _ ->
-                    Err <| Internal ArrayNotFound
+            toTypeValue first vm
+                |> Result.map (\value -> ( value, { vm | stack = rest } ))
 
         _ ->
             Err <| Internal InvalidStack
@@ -390,12 +427,7 @@ popValues n vm =
                 (\value ->
                     case value of
                         Stack.Value value_ ->
-                            Ok (Stack.toTypeValue value_)
-
-                        Stack.ArrayId id ->
-                            Dict.get id vm.environment.arrays
-                                |> Result.fromMaybe (Internal ArrayNotFound)
-                                |> Result.map Type.Array
+                            toTypeValue value_ vm
 
                         _ ->
                             Err <| Internal InvalidStack

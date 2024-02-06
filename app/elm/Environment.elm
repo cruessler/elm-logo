@@ -1,5 +1,6 @@
 module Environment exposing
-    ( Environment
+    ( Arrays
+    , Environment
     , Object(..)
     , back
     , clean
@@ -39,6 +40,10 @@ type Object
     = Line Line
 
 
+type alias Arrays =
+    Dict Int { items : Array Type.Value, origin : Int, id : Maybe Int }
+
+
 type alias Environment =
     { history : History
     , objects : List ( Int, Object )
@@ -46,7 +51,7 @@ type alias Environment =
     , penSize : Int
     , color : Color
     , nextId : Int
-    , arrays : Dict Int { items : Array Type.Value, origin : Int, id : Maybe Int }
+    , arrays : Arrays
     , nextArrayId : Int
     }
 
