@@ -229,10 +229,10 @@ incrementProgramCounter vm =
     { vm | programCounter = vm.programCounter + 1 }
 
 
-{-| Convert a `Stack.PrimitiveValue` to a `Type.Value`. If the value is a
+{-| Convert a `Stack.Value` to a `Type.Value`. If the value is a
 `Stack.ArrayId`, use the VM’s enviromnent to resolve it to an array.
 -}
-toTypeValue : Stack.PrimitiveValue -> Vm -> Result Error Type.Value
+toTypeValue : Stack.Value -> Vm -> Result Error Type.Value
 toTypeValue value vm =
     case value of
         Stack.Word string ->
@@ -281,11 +281,11 @@ toTypeValue value vm =
                 |> Result.map Type.Array
 
 
-{-| Convert a `Type.Value` to a `Stack.PrimitiveValue`. If the value is a
+{-| Convert a `Type.Value` to a `Stack.Value`. If the value is a
 `Type.Array`, assign it an id and store it in the VM’s enviromnent.
 -}
-toStackPrimitiveValue : Type.Value -> Vm -> ( Stack.PrimitiveValue, Vm )
-toStackPrimitiveValue value vm =
+toStackValue : Type.Value -> Vm -> ( Stack.Value, Vm )
+toStackValue value vm =
     case value of
         Type.Word word ->
             ( Stack.Word word, vm )
@@ -303,7 +303,7 @@ toStackPrimitiveValue value vm =
                         (\value_ ( accList, accVm ) ->
                             let
                                 ( stackValue, newAccVm ) =
-                                    toStackPrimitiveValue value_ accVm
+                                    toStackValue value_ accVm
                             in
                             ( stackValue :: accList, newAccVm )
                         )
@@ -327,7 +327,7 @@ toStackPrimitiveValue value vm =
                                 (\value_ ( accList, accVm ) ->
                                     let
                                         ( stackValue, newAccVm ) =
-                                            toStackPrimitiveValue value_ accVm
+                                            toStackValue value_ accVm
                                     in
                                     ( stackValue :: accList, newAccVm )
                                 )
@@ -361,7 +361,7 @@ pushValue1 : Type.Value -> Vm -> Vm
 pushValue1 value vm =
     let
         ( newValue, newVm ) =
-            toStackPrimitiveValue value vm
+            toStackValue value vm
     in
     { newVm | stack = Stack.Value newValue :: newVm.stack }
 

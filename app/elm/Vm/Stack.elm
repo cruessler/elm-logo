@@ -1,6 +1,6 @@
 module Vm.Stack exposing
     ( Arrays
-    , PrimitiveValue(..)
+    , Item(..)
     , Stack
     , Value(..)
     , toValue
@@ -15,29 +15,29 @@ import Vm.Type as Type
 {-| This module mainly holds the definition for a `Value` as it is represented
 on the stack.
 -}
-type PrimitiveValue
+type Value
     = Word String
     | Int Int
     | Float Float
-    | List (List PrimitiveValue)
+    | List (List Value)
     | ArrayId Int
 
 
-type Value
+type Item
     = Void
     | Address Int
-    | Value PrimitiveValue
+    | Value Value
 
 
 type alias Stack =
-    List Value
+    List Item
 
 
 type alias Arrays =
-    Dict Int { items : Array PrimitiveValue, origin : Int, id : Maybe Int }
+    Dict Int { items : Array Value, origin : Int, id : Maybe Int }
 
 
-encodeValue : Arrays -> Value -> E.Value
+encodeValue : Arrays -> Item -> E.Value
 encodeValue arrays value =
     case value of
         Void ->
@@ -50,7 +50,7 @@ encodeValue arrays value =
             E.string <| Type.toDebugString <| toTypeValue arrays primitive
 
 
-toTypeValue : Arrays -> PrimitiveValue -> Type.Value
+toTypeValue : Arrays -> Value -> Type.Value
 toTypeValue arrays value =
     case value of
         Word string ->
