@@ -16,6 +16,7 @@ type Instruction
     | LocalVariable String
     | Make
     | Localmake
+    | Thing
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1
     | Eval

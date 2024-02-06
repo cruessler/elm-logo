@@ -1,4 +1,4 @@
-module Test.Run.Builtin exposing (commands, make, primitives, print, show)
+module Test.Run.Builtin exposing (commands, make, primitives, print, show, thing)
 
 import Test exposing (Test, describe)
 import Test.Helper exposing (printsLine, runsWithoutError)
@@ -178,4 +178,13 @@ make =
         [ printsLine "make 1 [a b c] print :1" "a b c"
         , printsLine "make 1.1 1 print :1.1" "1"
         , printsLine "make 1.1 1 make :1.1 2 print :1" "2"
+        ]
+
+
+thing : Test
+thing =
+    describe "thing" <|
+        [ printsLine "make \"a \"word print thing \"a" "word"
+        , printsLine "make \"a \"word make \"b \"a print thing :b" "word"
+        , printsLine "make \"a \"word make \"b \"a print thing thing \"b" "word"
         ]
