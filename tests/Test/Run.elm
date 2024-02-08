@@ -79,6 +79,14 @@ foreachWithTemplateVariable =
         ]
 
 
+for : Test
+for =
+    describe "for" <|
+        [ printsLines "for [ i 0 3 ] [ print :i ]" [ "0", "1", "2", "3" ]
+        , printsLines "make \"a 0 make \"b 3 for [ i :a :b ] [ print :i ]" [ "0", "1", "2", "3" ]
+        ]
+
+
 map : Test
 map =
     describe "map" <|

@@ -99,10 +99,12 @@ primitives =
         , describe "greaterp" <|
             [ printsLine "print greaterp 1 1" "false"
             , printsLine "print greater? 1 1" "false"
+            , printsLine "print greaterp 2 1" "true"
             ]
         , describe "lessp" <|
             [ printsLine "print lessp 1 1" "false"
             , printsLine "print less? 1 1" "false"
+            , printsLine "print lessp 1 2" "true"
             ]
         , describe "remainder" <|
             [ printsLine "print remainder 1 1" "0" ]

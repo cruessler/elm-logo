@@ -7,6 +7,7 @@ module Compiler.Parser exposing
     , defaultState
     , functionDefinition
     , output
+    , statement
     , term
     , withExistingFunctions
     )
@@ -279,6 +280,7 @@ statement state =
             [ inParentheses state
             , P.lazy (\_ -> ifElse state)
             , P.lazy (\_ -> foreach state)
+            , P.lazy (\_ -> for state)
             , P.lazy (\_ -> map state)
             , P.lazy (\_ -> filter state)
             , P.lazy (\_ -> repeat state)
@@ -393,6 +395,25 @@ if_ state =
 foreach : State -> Parser Ast.Node
 foreach state =
     P.lazy (\_ -> controlStructure state { keyword = "foreach", constructor = Ast.Foreach })
+
+
+for : State -> Parser Ast.Node
+for state =
+    P.inContext (Keyword "for") <|
+        P.succeed Ast.For
+            |. Helper.keyword "for"
+            |. Helper.spaces
+            |. Helper.symbol "["
+            |. Helper.maybeSpaces
+            |= Value.rawWordInList
+            |. Helper.spaces
+            |= booleanExpression state
+            |. Helper.spaces
+            |= booleanExpression state
+            |. Helper.maybeSpaces
+            |. Helper.symbol "]"
+            |. Helper.spaces
+            |= instructionList state
 
 
 map : State -> Parser Ast.Node

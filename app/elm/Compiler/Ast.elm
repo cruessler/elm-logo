@@ -66,6 +66,7 @@ type Node
     | Repeat Node (List Node)
     | Until Node (List Node)
     | Foreach Node (List Node)
+    | For String Node Node (List Node)
     | Map Node (List Node)
     | Filter Node (List Node)
     | If Node (List Node)
@@ -160,6 +161,9 @@ typeOfCallee node =
 
         Foreach _ _ ->
             Command { name = "foreach" }
+
+        For _ _ _ _ ->
+            Command { name = "for" }
 
         Map _ _ ->
             Primitive { name = "map" }
@@ -602,6 +606,33 @@ compile context node =
             , compiledChildren
             , [ Jump (List.length compiledChildren + 2 |> negate)
               , PopTemplateScope
+              ]
+            ]
+                |> List.concat
+
+        For variable start end children ->
+            let
+                compiledStart =
+                    compileInContext (Expression { caller = "for" }) start
+
+                compiledEnd =
+                    compileInContext (Expression { caller = "for" }) end
+
+                compiledChildren =
+                    List.concatMap (compileInContext Statement) children
+            in
+            [ compiledStart
+            , [ StoreVariable variable ]
+            , compiledChildren
+            , [ PushVariable variable ]
+            , compiledEnd
+            , [ Eval2 { name = "greaterp", f = P.greaterp }
+              , JumpIfFalse 6
+              , PushVariable variable
+              , PushValue (Type.Int 1)
+              , Eval2 { name = "+", f = P.sum2 }
+              , StoreVariable variable
+              , Jump (List.length compiledChildren + List.length compiledEnd + 7 |> negate)
               ]
             ]
                 |> List.concat

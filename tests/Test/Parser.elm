@@ -208,3 +208,31 @@ booleanAlgebra =
         , parsesBooleanExpression "1 <> 1"
         , parsesBooleanExpression "2 * (3 + 1) = (4 + 4) * 7"
         ]
+
+
+parsesStatement : String -> Test
+parsesStatement statement =
+    let
+        match : Result (List (DeadEnd context problem)) Ast.Node -> Expectation
+        match result =
+            case result of
+                Ok _ ->
+                    Expect.pass
+
+                Err _ ->
+                    Expect.fail <| "could not parse statement \"" ++ statement ++ "\""
+    in
+    test statement <|
+        \_ ->
+            match
+                (Parser.run (Parser.statement defaultState) statement)
+
+
+controlStructures : Test
+controlStructures =
+    describe "control structures" <|
+        [ describe "for" <|
+            [ parsesStatement "for [ i 0 10 ] [ print :i ]"
+            , parsesStatement "for [i 0 10] [ print :i ]"
+            ]
+        ]
