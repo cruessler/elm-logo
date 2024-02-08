@@ -1,6 +1,6 @@
 module Compiler.Parser.Value exposing
-    ( value
-    , wordOutsideList
+    ( rawWordInList
+    , value
     )
 
 {-| This module provides functions for parsing Logo values.
@@ -22,7 +22,6 @@ import Parser.Advanced as P
         , map
         , oneOf
         , succeed
-        , symbol
         )
 import Vm.Type as Type
 
@@ -117,8 +116,8 @@ valueInList =
             ]
 
 
-wordInList : Parser context Problem Type.Value
-wordInList =
+rawWordInList : Parser context Problem String
+rawWordInList =
     let
         isWordCharacter : Char -> Bool
         isWordCharacter c =
@@ -136,10 +135,14 @@ wordInList =
                 && (c /= '<')
                 && (c /= '>')
     in
-    ((succeed ()
+    (succeed ()
         |. chompIf isWordCharacter ExpectingStartOfWord
         |. chompWhile isWordCharacter
-     )
-        |> getChompedString
     )
+        |> getChompedString
+
+
+wordInList : Parser context Problem Type.Value
+wordInList =
+    rawWordInList
         |> map Type.Word
