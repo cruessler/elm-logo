@@ -119,6 +119,46 @@ functionDefinition =
         ]
 
 
+parsesMacro : String -> Ast.Macro -> Expectation
+parsesMacro source macro =
+    let
+        result =
+            Parser.run (Parser.macroDefinition defaultState) source
+    in
+    Expect.equal result (Ok macro)
+
+
+macroDefinition : Test
+macroDefinition =
+    describe "define a macro" <|
+        [ test "with mandatory arguments and no body" <|
+            \_ ->
+                parsesMacro ".macro foo :bar :baz\nend\n"
+                    { name = "foo"
+                    , requiredArguments = [ "bar", "baz" ]
+                    , body = []
+                    }
+        , test "with mandatory argument and body" <|
+            \_ ->
+                parsesMacro ".macro foo :bar\nprint :bar\nend\n"
+                    { name = "foo"
+                    , requiredArguments = [ "bar" ]
+                    , body =
+                        [ Ast.CommandN
+                            { name = "print", f = C.printN, numberOfDefaultArguments = 1 }
+                            [ Ast.Variable "bar" ]
+                        ]
+                    }
+        , test "without arguments" <|
+            \_ ->
+                parsesMacro ".macro foo\nend\n"
+                    { name = "foo"
+                    , requiredArguments = []
+                    , body = []
+                    }
+        ]
+
+
 parsesArithmeticExpression : String -> Test
 parsesArithmeticExpression expression =
     let
