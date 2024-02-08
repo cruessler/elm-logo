@@ -3,6 +3,7 @@ module Compiler.Ast exposing
     , CompiledProgram
     , Context(..)
     , Function
+    , Macro
     , Node(..)
     , Program
     , compile
@@ -41,6 +42,13 @@ type alias Function =
     { name : String
     , requiredArguments : List String
     , optionalArguments : List ( String, Node )
+    , body : List Node
+    }
+
+
+type alias Macro =
+    { name : String
+    , requiredArguments : List String
     , body : List Node
     }
 

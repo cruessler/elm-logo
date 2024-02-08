@@ -6,6 +6,7 @@ module Compiler.Parser exposing
     , booleanExpression
     , defaultState
     , functionDefinition
+    , macroDefinition
     , output
     , statement
     , term
@@ -233,6 +234,37 @@ functionBody_ state acc =
         , line state
             |> P.andThen (\newLine -> functionBody_ state (acc ++ newLine))
         ]
+
+
+defineMacro : State -> Ast.Macro -> Parser Ast.Macro
+defineMacro state newMacro =
+    functionBody state
+        |> P.map (\body -> { newMacro | body = body })
+
+
+macroDefinition : State -> Parser Ast.Macro
+macroDefinition state =
+    P.inContext MacroDefinition <|
+        (macroHeader
+            |> P.andThen (defineMacro state)
+        )
+
+
+macroHeader : Parser Ast.Macro
+macroHeader =
+    P.succeed Ast.Macro
+        |. Helper.keyword ".macro"
+        |. Helper.spaces
+        |= Helper.functionName
+        |= P.oneOf
+            [ P.succeed identity
+                |. P.backtrackable Helper.spaces
+                |= requiredArguments
+            , P.succeed []
+            ]
+        |. Helper.maybeSpaces
+        |. Helper.symbol "\n"
+        |= P.succeed []
 
 
 line : State -> Parser (List Ast.Node)

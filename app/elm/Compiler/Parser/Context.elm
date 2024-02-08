@@ -6,6 +6,7 @@ type Context
     | Toplevel
     | FunctionDefinition
     | FunctionBody
+    | MacroDefinition
     | Line
     | Statements
     | Statement
