@@ -122,6 +122,9 @@ encodeInstruction instruction =
                 Thing ->
                     "Thing"
 
+                Setitem ->
+                    "Setitem"
+
                 Introspect0 { name } ->
                     "Introspect0 " ++ name
 
@@ -839,6 +842,86 @@ thing vm =
             )
 
 
+setitem : Vm -> Result Error Vm
+setitem vm =
+    popValue3 vm
+        |> Result.andThen
+            (\result ->
+                let
+                    index : Result Error Int
+                    index =
+                        Type.toInt result.first
+                            |> Result.mapError (\_ -> WrongInput "setitem" (Type.toDebugString result.first))
+
+                    array : Result Error { items : Array Type.Value, origin : Int, id : Maybe Int }
+                    array =
+                        case result.second of
+                            Type.Array array_ ->
+                                Ok array_
+
+                            _ ->
+                                Err <| Error.WrongInput "setitem" (Type.toDebugString result.second)
+
+                    arrayId : Result Error Int
+                    arrayId =
+                        Result.andThen (\{ id } -> Result.fromMaybe (Internal Error.ArrayNotFound) id) array
+
+                    newItems : Result Error ( List Stack.Value, Vm )
+                    newItems =
+                        Result.map2
+                            (\index_ { items, origin } ->
+                                items
+                                    |> Array.set (index_ - origin) result.third
+                                    |> Array.foldl
+                                        (\value_ ( accList, accVm ) ->
+                                            let
+                                                ( stackValue, newAccVm ) =
+                                                    toStackValue value_ accVm
+                                            in
+                                            ( stackValue :: accList, newAccVm )
+                                        )
+                                        ( [], vm )
+                            )
+                            index
+                            array
+
+                    newArray : Result Error ( { items : Array Stack.Value, origin : Int, id : Maybe Int }, Vm )
+                    newArray =
+                        Result.map2
+                            (\( items, vm_ ) { origin, id } ->
+                                ( { items = Array.fromList items
+                                  , origin = origin
+                                  , id = id
+                                  }
+                                , vm_
+                                )
+                            )
+                            newItems
+                            array
+
+                    newVm : Result Error Vm
+                    newVm =
+                        Result.map2
+                            (\id ( array_, vm_ ) ->
+                                let
+                                    newArrays =
+                                        Dict.insert id array_ vm_.environment.arrays
+
+                                    environment =
+                                        vm_.environment
+
+                                    newEnvironment =
+                                        { environment | arrays = newArrays }
+                                in
+                                { vm_ | environment = newEnvironment }
+                            )
+                            arrayId
+                            newArray
+                in
+                Result.map incrementProgramCounter newVm
+            )
+
+
 pushLoopScope : Vm -> Result Error Vm
 pushLoopScope vm =
     popValue1 vm
@@ -1090,6 +1173,9 @@ execute instruction vm =
 
         Thing ->
             thing vm
+
+        Setitem ->
+            setitem vm
 
         Introspect0 primitive ->
             introspect0 primitive vm

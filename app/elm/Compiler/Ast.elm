@@ -88,6 +88,7 @@ type Node
     | Localmake Node Node
     | Thing Node
     | Variable String
+    | Setitem Node Node Node
     | Value Type.Value
     | Raise Exception
 
@@ -215,6 +216,9 @@ typeOfCallee node =
 
         Variable name ->
             Primitive { name = name }
+
+        Setitem _ _ _ ->
+            Command { name = "setitem" }
 
         Value _ ->
             Primitive { name = "value" }
@@ -829,6 +833,24 @@ compile context node =
 
         Variable name ->
             [ PushVariable name ]
+
+        Setitem index array value ->
+            let
+                compiledValue =
+                    compileInContext (Expression { caller = "setitem" }) value
+
+                compiledArray =
+                    compileInContext (Expression { caller = "setitem" }) array
+
+                compiledIndex =
+                    compileInContext (Expression { caller = "setitem" }) index
+            in
+            [ compiledValue
+            , compiledArray
+            , compiledIndex
+            , [ Instruction.Setitem ]
+            ]
+                |> List.concat
 
         Value value ->
             [ PushValue value ]

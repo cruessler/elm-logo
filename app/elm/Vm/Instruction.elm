@@ -17,6 +17,7 @@ type Instruction
     | Make
     | Localmake
     | Thing
+    | Setitem
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1
     | Eval

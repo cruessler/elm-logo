@@ -7,6 +7,7 @@ module Compiler.Parser exposing
     , defaultState
     , functionDefinition
     , output
+    , setitem
     , statement
     , term
     , withExistingFunctions
@@ -294,6 +295,7 @@ statement state =
             , templateVariable
             , thing state
             , variable
+            , setitem state
             , P.lazy (\_ -> functionCall state)
             , Value.value
             ]
@@ -757,3 +759,17 @@ variable =
                                 && (c /= '>')
                         )
                )
+
+
+setitem : State -> Parser Ast.Node
+setitem state =
+    P.inContext Make <|
+        (P.succeed Ast.Setitem
+            |. Helper.keyword "setitem"
+            |. Helper.spaces
+            |= booleanExpression state
+            |. Helper.spaces
+            |= booleanExpression state
+            |. Helper.spaces
+            |= booleanExpression state
+        )

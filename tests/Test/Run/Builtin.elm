@@ -1,7 +1,7 @@
-module Test.Run.Builtin exposing (commands, make, primitives, print, show, thing)
+module Test.Run.Builtin exposing (commands, make, primitives, print, setitem, show, thing)
 
 import Test exposing (Test, describe)
-import Test.Helper exposing (printsLine, runsWithoutError)
+import Test.Helper exposing (printsLine, printsLines, runsWithoutError)
 
 
 commands : Test
@@ -189,4 +189,14 @@ thing =
         [ printsLine "make \"a \"word print thing \"a" "word"
         , printsLine "make \"a \"word make \"b \"a print thing :b" "word"
         , printsLine "make \"a \"word make \"b \"a print thing thing \"b" "word"
+        ]
+
+
+setitem : Test
+setitem =
+    describe "setitem" <|
+        [ printsLines "make \"a (array 2) print :a setitem 1 :a \"b print :a"
+            [ "{[] []}"
+            , "{b []}"
+            ]
         ]
