@@ -17,7 +17,7 @@ module Compiler.Parser exposing
 -}
 
 import Char
-import Compiler.Ast as Ast exposing (CompiledFunction)
+import Compiler.Ast as Ast exposing (CompiledFunction, CompiledMacro)
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Parser.Callable as Callable
 import Compiler.Parser.Context exposing (Context(..))
@@ -48,6 +48,8 @@ type alias Error =
 type alias State =
     { newFunctions : Dict String Ast.Function
     , existingFunctions : Dict String CompiledFunction
+    , newMacros : Dict String Ast.Macro
+    , existingMacros : Dict String CompiledMacro
     , parsedBody : List Ast.Node
     , inFunction : Bool
     }
@@ -57,6 +59,8 @@ defaultState : State
 defaultState =
     { newFunctions = Dict.empty
     , existingFunctions = Dict.empty
+    , newMacros = Dict.empty
+    , existingMacros = Dict.empty
     , parsedBody = []
     , inFunction = False
     }
@@ -77,6 +81,7 @@ toplevel state =
     let
         program =
             { functions = Dict.values state.newFunctions
+            , macros = Dict.values state.newMacros
             , body = state.parsedBody
             }
     in
@@ -95,6 +100,7 @@ toplevel_ state =
         |. Helper.maybeSpaces
         |= P.oneOf
             [ function state
+            , macro state
             , toplevelStatements state
             , P.succeed state
             ]
@@ -234,6 +240,33 @@ functionBody_ state acc =
         , line state
             |> P.andThen (\newLine -> functionBody_ state (acc ++ newLine))
         ]
+
+
+defineMacroUnlessDefined : State -> Ast.Macro -> State
+defineMacroUnlessDefined state newMacro =
+    if
+        Dict.member newMacro.name state.newMacros
+            || Dict.member newMacro.name state.existingMacros
+    then
+        let
+            parsedBody =
+                state.parsedBody
+                    ++ [ Ast.Raise (Exception.MacroAlreadyDefined newMacro.name) ]
+        in
+        { state | parsedBody = parsedBody }
+
+    else
+        let
+            newMacros =
+                Dict.insert newMacro.name newMacro state.newMacros
+        in
+        { state | newMacros = newMacros }
+
+
+macro : State -> Parser State
+macro state =
+    macroDefinition state
+        |> P.map (defineMacroUnlessDefined state)
 
 
 defineMacro : State -> Ast.Macro -> Parser Ast.Macro

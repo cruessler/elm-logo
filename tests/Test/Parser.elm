@@ -131,18 +131,18 @@ parsesMacro source macro =
 macroDefinition : Test
 macroDefinition =
     describe "define a macro" <|
-        [ test "with mandatory arguments and no body" <|
+        [ test "with arguments and no body" <|
             \_ ->
                 parsesMacro ".macro foo :bar :baz\nend\n"
                     { name = "foo"
-                    , requiredArguments = [ "bar", "baz" ]
+                    , arguments = [ "bar", "baz" ]
                     , body = []
                     }
-        , test "with mandatory argument and body" <|
+        , test "with argument and body" <|
             \_ ->
                 parsesMacro ".macro foo :bar\nprint :bar\nend\n"
                     { name = "foo"
-                    , requiredArguments = [ "bar" ]
+                    , arguments = [ "bar" ]
                     , body =
                         [ Ast.CommandN
                             { name = "print", f = C.printN, numberOfDefaultArguments = 1 }
@@ -153,7 +153,7 @@ macroDefinition =
             \_ ->
                 parsesMacro ".macro foo\nend\n"
                     { name = "foo"
-                    , requiredArguments = []
+                    , arguments = []
                     , body = []
                     }
         ]

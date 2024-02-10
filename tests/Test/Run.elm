@@ -231,6 +231,18 @@ end
         ]
 
 
+macroDefinition : Test
+macroDefinition =
+    describe "define macro" <|
+        [ printsLines
+            """.macro foo :bar
+output lput (word "" :bar) [print]
+end
+"""
+            []
+        ]
+
+
 parenthesesIndicatingPreference : Test
 parenthesesIndicatingPreference =
     describe "parentheses can indicate preference" <|

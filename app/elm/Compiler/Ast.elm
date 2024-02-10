@@ -1,5 +1,6 @@
 module Compiler.Ast exposing
     ( CompiledFunction
+    , CompiledMacro
     , CompiledProgram
     , Context(..)
     , Function
@@ -26,6 +27,7 @@ import Vm.Type as Type
 
 type alias Program =
     { functions : List Function
+    , macros : List Macro
     , body : List Node
     }
 
@@ -35,6 +37,7 @@ type alias Program =
 type alias CompiledProgram =
     { instructions : List Instruction
     , compiledFunctions : List CompiledFunction
+    , compiledMacros : List CompiledMacro
     }
 
 
@@ -48,7 +51,7 @@ type alias Function =
 
 type alias Macro =
     { name : String
-    , requiredArguments : List String
+    , arguments : List String
     , body : List Node
     }
 
@@ -65,6 +68,15 @@ type alias CompiledFunction =
 
 type alias CompiledFunctionInstance =
     { mangledName : String
+    , body : List Instruction
+    }
+
+
+{-| Represent a compiled macro.
+-}
+type alias CompiledMacro =
+    { name : String
+    , arguments : List String
     , body : List Instruction
     }
 
@@ -860,16 +872,20 @@ compile context node =
 
 
 compileProgram : Context -> Program -> CompiledProgram
-compileProgram context { functions, body } =
+compileProgram context { functions, macros, body } =
     let
         compiledFunctions =
             List.map compileFunction functions
+
+        compiledMacros =
+            List.map compileMacro macros
 
         instructions =
             List.concatMap (compileInContext context) body
     in
     { instructions = instructions
     , compiledFunctions = compiledFunctions
+    , compiledMacros = compiledMacros
     }
 
 
@@ -972,4 +988,36 @@ compileFunction ({ name, requiredArguments, optionalArguments } as function) =
     , requiredArguments = requiredArguments
     , optionalArguments = List.map Tuple.first optionalArguments
     , instances = compileFunctionInstances function
+    }
+
+
+{-| Compile a macro.
+-}
+compileMacro : Macro -> CompiledMacro
+compileMacro { name, arguments, body } =
+    let
+        instructionsForArguments =
+            [ [ PushLocalScope ]
+            , List.concatMap compileRequiredArgument arguments
+            ]
+                |> List.concat
+
+        instructionsForBody =
+            [ List.concatMap (compileInContext Statement) body
+            , [ PushVoid
+              , PopLocalScope
+              , Instruction.Return
+              ]
+            ]
+                |> List.concat
+
+        compiledBody =
+            [ instructionsForArguments
+            , instructionsForBody
+            ]
+                |> List.concat
+    in
+    { name = name
+    , arguments = arguments
+    , body = compiledBody
     }

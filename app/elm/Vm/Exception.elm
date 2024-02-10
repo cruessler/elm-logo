@@ -9,4 +9,5 @@ type Exception
     | NotEnoughInputs String
     | TooManyInputs String
     | FunctionAlreadyDefined String
+    | MacroAlreadyDefined String
     | CallableUndefined String

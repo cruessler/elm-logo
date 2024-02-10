@@ -34,6 +34,7 @@ type Error
     | NotEnoughInputs String
     | TooManyInputs String
     | FunctionAlreadyDefined String
+    | MacroAlreadyDefined String
     | CallableUndefined String
 
 
@@ -63,6 +64,9 @@ toString error =
 
         FunctionAlreadyDefined functionName ->
             functionName ++ " is already defined"
+
+        MacroAlreadyDefined macroName ->
+            macroName ++ " is already defined"
 
         CallableUndefined functionName ->
             "I don’t know how to " ++ functionName
