@@ -1095,6 +1095,9 @@ raise exception vm =
         Exception.FunctionAlreadyDefined functionName ->
             Err <| FunctionAlreadyDefined functionName
 
+        Exception.MacroAlreadyDefined macroName ->
+            Err <| MacroAlreadyDefined macroName
+
         Exception.CallableUndefined functionName ->
             Err <| CallableUndefined functionName
 
