@@ -10,7 +10,6 @@ import Css
         , boxShadow5
         , height
         , left
-        , none
         , overflowY
         , pct
         , position

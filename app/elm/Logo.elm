@@ -14,10 +14,9 @@ module Logo exposing
 import Compiler.Ast as Ast exposing (Context(..))
 import Compiler.Linker as Linker
 import Compiler.Parser as Parser
-import Dict
 import Environment exposing (Environment)
 import Environment.History exposing (History)
-import Parser.Advanced as Parser exposing (DeadEnd)
+import Parser.Advanced as Parser
 import StandardLibrary
 import Vm.Vm as Vm exposing (State(..), Vm)
 
@@ -85,7 +84,7 @@ compile program logo =
         Ok newVm ->
             Logo <| Paused { newVm | environment = Environment.input program newVm.environment }
 
-        Err error ->
+        Err _ ->
             Logo <| Done { vm | environment = Environment.error "parse error" vm.environment }
 
 
