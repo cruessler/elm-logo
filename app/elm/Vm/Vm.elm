@@ -16,7 +16,7 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
-import Compiler.Ast as Ast exposing (CompiledFunction, CompiledProgram, Program)
+import Compiler.Ast as Ast exposing (CompiledFunction, CompiledProgram, Context(..), Program)
 import Compiler.Linker as Linker exposing (LinkedProgram)
 import Compiler.Parser as Parser exposing (Parser)
 import Dict exposing (Dict)
@@ -489,7 +489,7 @@ parseAndCompileProgram : Parser Program -> String -> Result Error CompiledProgra
 parseAndCompileProgram parser =
     Parser.run parser
         >> Result.mapError (always <| Internal ParsingFailed)
-        >> Result.map Ast.compileProgram
+        >> Result.map (Ast.compileProgram Statement)
 
 
 parseAndEvalInstructions : Vm -> List Type.Value -> Result Error Vm
