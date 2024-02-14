@@ -1,6 +1,6 @@
 module StandardLibrary exposing (compiledFunctions)
 
-import Compiler.Ast as Ast exposing (CompiledFunction)
+import Compiler.Ast as Ast exposing (CompiledFunction, Context(..))
 import Compiler.Parser as Parser
 import Dict
 import Parser.Advanced as Parser
@@ -45,7 +45,7 @@ compiledFunctions =
         compiledProgram =
             functions
                 |> Parser.run parser
-                |> Result.map Ast.compileProgram
+                |> Result.map (Ast.compileProgram Statement)
     in
     compiledProgram
         |> Result.map .compiledFunctions

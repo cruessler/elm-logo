@@ -11,7 +11,7 @@ module Logo exposing
     , step
     )
 
-import Compiler.Ast as Ast
+import Compiler.Ast as Ast exposing (Context(..))
 import Compiler.Linker as Linker
 import Compiler.Parser as Parser
 import Dict
@@ -73,7 +73,7 @@ compile program logo =
             program
                 |> Parser.run parser
                 |> Result.mapError ParseError
-                |> Result.map Ast.compileProgram
+                |> Result.map (Ast.compileProgram Statement)
 
         result =
             compiledProgram

@@ -837,14 +837,14 @@ compile context node =
             [ Instruction.Raise error ]
 
 
-compileProgram : Program -> CompiledProgram
-compileProgram { functions, body } =
+compileProgram : Context -> Program -> CompiledProgram
+compileProgram context { functions, body } =
     let
         compiledFunctions =
             List.map compileFunction functions
 
         instructions =
-            List.concatMap (compileInContext Statement) body
+            List.concatMap (compileInContext context) body
     in
     { instructions = instructions
     , compiledFunctions = compiledFunctions
