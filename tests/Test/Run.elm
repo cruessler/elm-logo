@@ -238,8 +238,9 @@ macroDefinition =
             """.macro foo :bar
 output lput (word "" :bar) [print]
 end
+foo "a
 """
-            []
+            [ "a" ]
         ]
 
 

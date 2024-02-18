@@ -27,6 +27,7 @@ emptyVm =
     , environment = Environment.empty
     , functionTable = Dict.empty
     , compiledFunctions = []
+    , compiledMacros = []
     }
 
 

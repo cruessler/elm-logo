@@ -16,7 +16,7 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
-import Compiler.Ast as Ast exposing (CompiledFunction, CompiledProgram, Program)
+import Compiler.Ast as Ast exposing (CompiledFunction, CompiledMacro, CompiledProgram, Program)
 import Compiler.Linker as Linker exposing (LinkedProgram)
 import Compiler.Parser as Parser exposing (Parser)
 import Dict exposing (Dict)
@@ -45,6 +45,7 @@ type alias Vm =
     , environment : Environment
     , functionTable : Dict String Int
     , compiledFunctions : List CompiledFunction
+    , compiledMacros : List CompiledMacro
     }
 
 
@@ -56,6 +57,7 @@ empty =
         { instructions = []
         , functionTable = Dict.empty
         , compiledFunctions = []
+        , compiledMacros = []
         , startAddress = 0
         }
 
@@ -63,7 +65,7 @@ empty =
 {-| Initialize a `Vm` with a list of instructions and a program counter.
 -}
 initialize : LinkedProgram -> Vm
-initialize { instructions, functionTable, compiledFunctions, startAddress } =
+initialize { instructions, functionTable, compiledFunctions, compiledMacros, startAddress } =
     { instructions = Array.fromList instructions
     , programCounter = startAddress
     , executionHaltedDueToError = False
@@ -72,6 +74,7 @@ initialize { instructions, functionTable, compiledFunctions, startAddress } =
     , environment = Environment.empty
     , functionTable = functionTable
     , compiledFunctions = compiledFunctions
+    , compiledMacros = compiledMacros
     }
 
 
@@ -529,9 +532,12 @@ parseAndEvalInstructions context vm instructions =
                 |> Type.toString
                 |> parseAndCompileProgram context parser
 
+        linkProgram =
+            Linker.linkProgram vm.compiledFunctions vm.compiledMacros
+
         result =
             compiledProgram
-                |> Result.map (Linker.linkProgram vm.compiledFunctions)
+                |> Result.map linkProgram
                 |> Result.map initialize
                 |> Result.map (withEnvironment vm.environment)
                 |> Result.map run

@@ -101,7 +101,8 @@ type Node
     | PrimitiveN P.PrimitiveN (List Node)
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1 Node
-    | Call String (List Node)
+    | CallFunction String (List Node)
+    | CallMacro String (List Node)
     | Return (Maybe Node)
     | Run Node
     | Make Node Node
@@ -221,7 +222,10 @@ typeOfCallee node =
         Introspect1 i _ ->
             Primitive { name = i.name }
 
-        Call name _ ->
+        CallFunction name _ ->
+            UserDefinedFunction { name = name }
+
+        CallMacro name _ ->
             UserDefinedFunction { name = name }
 
         Make _ _ ->
@@ -792,7 +796,7 @@ compile context node =
             ]
                 |> List.concat
 
-        Call name arguments ->
+        CallFunction name arguments ->
             let
                 mangledName =
                     mangleName name (List.length arguments)
@@ -800,6 +804,28 @@ compile context node =
             [ List.reverse arguments
                 |> List.concatMap (compileInContext (Expression { caller = name }))
             , [ Instruction.CallByName mangledName ]
+            ]
+                |> List.concat
+
+        CallMacro name arguments ->
+            let
+                instructionContext =
+                    toInstructionContext context
+
+                epilogue =
+                    case context of
+                        Statement ->
+                            [ PushVoid ]
+
+                        Expression _ ->
+                            []
+            in
+            [ List.reverse arguments
+                |> List.concatMap (compileInContext (Expression { caller = name }))
+            , [ Instruction.CallByName name
+              , EvalInContext instructionContext
+              ]
+            , epilogue
             ]
                 |> List.concat
 
