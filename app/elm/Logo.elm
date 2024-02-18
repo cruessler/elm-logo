@@ -74,9 +74,12 @@ compile program logo =
                 |> Result.mapError ParseError
                 |> Result.map (Ast.compileProgram Statement)
 
+        linkProgram =
+            Linker.linkProgram vm.compiledFunctions vm.compiledMacros
+
         result =
             compiledProgram
-                |> Result.map (Linker.linkProgram vm.compiledFunctions)
+                |> Result.map linkProgram
                 |> Result.map Vm.initialize
                 |> Result.map (Vm.withEnvironment vm.environment)
     in

@@ -52,6 +52,7 @@ type alias State =
     , existingMacros : Dict String CompiledMacro
     , parsedBody : List Ast.Node
     , inFunction : Bool
+    , inMacro : Bool
     }
 
 
@@ -63,6 +64,7 @@ defaultState =
     , existingMacros = Dict.empty
     , parsedBody = []
     , inFunction = False
+    , inMacro = False
     }
 
 
@@ -151,9 +153,11 @@ defineFunction state newFunction =
         newFunctions =
             Dict.insert newFunction.name newFunction state.newFunctions
 
-        -- `temporaryState` never leaves this function. It is only used while
-        -- the function body is parsed to enable parsing of recursive
-        -- functions.
+        {- `temporaryState` never leaves this function. It is only used while
+           the function body is parsed to enable parsing of recursive
+           functions. It also sets `inFunction` to `True` which enables parsing
+           of `output` (which is an error outside a function or macro).
+        -}
         temporaryState =
             { state
                 | newFunctions = newFunctions
@@ -271,7 +275,22 @@ macro state =
 
 defineMacro : State -> Ast.Macro -> Parser Ast.Macro
 defineMacro state newMacro =
-    functionBody state
+    let
+        newMacros =
+            Dict.insert newMacro.name newMacro state.newMacros
+
+        {- `temporaryState` never leaves this function. It is only used while
+           the macro body is parsed to enable parsing of recursive macros. It
+           also sets `inMacro` to `True` which enables parsing of `output`
+           (which is an error outside a function or macro).
+        -}
+        temporaryState =
+            { state
+                | newMacros = newMacros
+                , inMacro = True
+            }
+    in
+    functionBody temporaryState
         |> P.map (\body -> { newMacro | body = body })
 
 
@@ -368,7 +387,7 @@ output : State -> Parser Ast.Node
 output state =
     let
         makeNode expr =
-            if state.inFunction then
+            if state.inFunction || state.inMacro then
                 Ast.Return <| Just expr
 
             else
@@ -520,6 +539,8 @@ functionCall_ state name =
         functions =
             { newFunctions = state.newFunctions
             , existingFunctions = state.existingFunctions
+            , newMacros = state.newMacros
+            , existingMacros = state.existingMacros
             }
     in
     Callable.find functions name
@@ -619,6 +640,8 @@ variableFunctionCall state name arguments_ =
         functions =
             { newFunctions = state.newFunctions
             , existingFunctions = state.existingFunctions
+            , newMacros = state.newMacros
+            , existingMacros = state.existingMacros
             }
     in
     Callable.find functions name

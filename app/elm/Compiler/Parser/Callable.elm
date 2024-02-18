@@ -1,6 +1,6 @@
 module Compiler.Parser.Callable exposing (find, makeNode, numberOfDefaultArguments)
 
-import Compiler.Ast as Ast exposing (CompiledFunction)
+import Compiler.Ast as Ast exposing (CompiledFunction, CompiledMacro)
 import Compiler.Ast.Command as Command
 import Compiler.Ast.Introspect as Introspect
 import Compiler.Ast.Primitive as Primitive
@@ -16,12 +16,20 @@ type Callable
     | Primitive Primitive.Primitive
     | NewFunction Ast.Function
     | ExistingFunction CompiledFunction
+    | NewMacro Ast.Macro
+    | ExistingMacro CompiledMacro
 
 
 type alias Function =
     { name : String
     , numberOfRequiredArguments : Int
     , numberOfOptionalArguments : Int
+    }
+
+
+type alias Macro =
+    { name : String
+    , numberOfArguments : Int
     }
 
 
@@ -92,6 +100,24 @@ makeNode arguments callable =
                 in
                 makeFunction arguments callableFunction
 
+            NewMacro macro ->
+                let
+                    callableMacro =
+                        { name = macro.name
+                        , numberOfArguments = numberOfRequiredArguments
+                        }
+                in
+                makeMacro arguments callableMacro
+
+            ExistingMacro macro ->
+                let
+                    callableMacro =
+                        { name = macro.name
+                        , numberOfArguments = numberOfRequiredArguments
+                        }
+                in
+                makeMacro arguments callableMacro
+
 
 makeCommand : List Ast.Node -> Command.Command -> Parser context Problem Ast.Node
 makeCommand arguments command =
@@ -155,10 +181,26 @@ makeFunction arguments function =
             <= function.numberOfRequiredArguments
             + function.numberOfOptionalArguments
     then
-        succeed <| Ast.Call function.name arguments
+        succeed <| Ast.CallFunction function.name arguments
 
     else
         succeed <| Ast.Raise (Exception.TooManyInputs function.name)
+
+
+makeMacro : List Ast.Node -> Macro -> Parser context Problem Ast.Node
+makeMacro arguments macro =
+    let
+        numberOfArguments =
+            List.length arguments
+    in
+    if
+        numberOfArguments
+            <= macro.numberOfArguments
+    then
+        succeed <| Ast.CallMacro macro.name arguments
+
+    else
+        succeed <| Ast.Raise (Exception.TooManyInputs macro.name)
 
 
 name : Callable -> String
@@ -179,15 +221,23 @@ name callable =
         ExistingFunction function ->
             function.name
 
+        NewMacro macro ->
+            macro.name
+
+        ExistingMacro macro ->
+            macro.name
+
 
 type alias Functions =
     { newFunctions : Dict String Ast.Function
     , existingFunctions : Dict String CompiledFunction
+    , newMacros : Dict String Ast.Macro
+    , existingMacros : Dict String CompiledMacro
     }
 
 
 find : Functions -> String -> Maybe Callable
-find { newFunctions, existingFunctions } name_ =
+find { newFunctions, existingFunctions, newMacros, existingMacros } name_ =
     let
         command =
             Command.find name_ |> Maybe.map Command
@@ -203,8 +253,21 @@ find { newFunctions, existingFunctions } name_ =
 
         existingFunction =
             Dict.get name_ existingFunctions |> Maybe.map ExistingFunction
+
+        macro =
+            Dict.get name_ newMacros |> Maybe.map NewMacro
+
+        existingMacro =
+            Dict.get name_ existingMacros |> Maybe.map ExistingMacro
     in
-    [ command, primitive, introspect, function, existingFunction ]
+    [ command
+    , primitive
+    , introspect
+    , function
+    , existingFunction
+    , macro
+    , existingMacro
+    ]
         |> List.filterMap identity
         |> List.head
 
@@ -226,3 +289,9 @@ numberOfDefaultArguments callable =
 
         ExistingFunction function ->
             List.length function.requiredArguments
+
+        NewMacro macro ->
+            List.length macro.arguments
+
+        ExistingMacro macro ->
+            List.length macro.arguments

@@ -125,6 +125,11 @@ output "bar
 end
 foo "baz"""
             "You don’t say what to do with bar"
+        , printsError """.macro m
+output [3]
+end
+m"""
+            "You don’t say what to do with 3"
         , printsError "3" "You don’t say what to do with 3"
         , printsError "repcount" "You don’t say what to do with -1"
         , printsError "foreach 1 [ 5 ]" "You don’t say what to do with 5"
@@ -177,6 +182,12 @@ end
 (foo "bar "baz)"""
             "too many inputs to foo"
         , printsError "(array 1 2 3)" "too many inputs to array"
+        , printsError
+            """.macro m
+print "a
+end
+(m "b)"""
+            "too many inputs to m"
         ]
 
 
