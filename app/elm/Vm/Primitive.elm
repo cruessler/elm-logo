@@ -21,6 +21,7 @@ module Vm.Primitive exposing
     , greaterp
     , integerp
     , lessp
+    , list
     , listp
     , lput
     , lshift
@@ -181,8 +182,8 @@ count value =
                 Type.Float float ->
                     float |> String.fromFloat |> String.length
 
-                Type.List list ->
-                    List.length list
+                Type.List list_ ->
+                    List.length list_
 
                 Type.Array { items } ->
                     Array.length items
@@ -568,6 +569,17 @@ word value1 value2 =
             Ok <| Type.Word <| (Type.toString value1 ++ Type.toString value2)
 
 
+{-|
+
+> outputs a list whose members are its inputs, which can be any Logo datum
+> (word, list, or array).
+
+-}
+list : List Type.Value -> Result Error Type.Value
+list =
+    Ok << Type.List
+
+
 {-| Join a list of values into a list. One level of nesting will be flattened.
 
     sentence [ Word "a", Word "b ] == Ok (List [ Word "a", Word "b" ])
@@ -580,8 +592,8 @@ sentence =
         toList : Type.Value -> List Type.Value
         toList value =
             case value of
-                Type.List list ->
-                    list
+                Type.List list_ ->
+                    list_
 
                 _ ->
                     [ value ]
@@ -599,8 +611,8 @@ sentence =
 fput : Type.Value -> Type.Value -> Result Error Type.Value
 fput value1 value2 =
     case ( value1, value2 ) of
-        ( _, Type.List list ) ->
-            Ok <| Type.List <| value1 :: list
+        ( _, Type.List list_ ) ->
+            Ok <| Type.List <| value1 :: list_
 
         _ ->
             let
@@ -625,8 +637,8 @@ fput value1 value2 =
 lput : Type.Value -> Type.Value -> Result Error Type.Value
 lput value1 value2 =
     case ( value1, value2 ) of
-        ( _, Type.List list ) ->
-            Ok <| Type.List <| list ++ [ value1 ]
+        ( _, Type.List list_ ) ->
+            Ok <| Type.List <| list_ ++ [ value1 ]
 
         _ ->
             let

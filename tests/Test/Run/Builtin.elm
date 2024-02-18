@@ -108,6 +108,10 @@ primitives =
             ]
         , describe "remainder" <|
             [ printsLine "print remainder 1 1" "0" ]
+        , describe "list" <|
+            [ printsLine "print (list 1 2)" "1 2"
+            , printsLine "print (list (list 3 4) 1 2)" "[3 4] 1 2"
+            ]
         , describe "sentence" <|
             [ printsLine "print sentence 1 1" "1 1"
             , printsLine "print se 1 1" "1 1"
