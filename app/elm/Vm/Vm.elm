@@ -16,7 +16,7 @@ machine as well as functions for running it.
 -}
 
 import Array exposing (Array)
-import Compiler.Ast as Ast exposing (CompiledFunction, CompiledProgram, Context(..), Program)
+import Compiler.Ast as Ast exposing (CompiledFunction, CompiledProgram, Program)
 import Compiler.Linker as Linker exposing (LinkedProgram)
 import Compiler.Parser as Parser exposing (Parser)
 import Dict exposing (Dict)
@@ -26,7 +26,7 @@ import Parser.Advanced as Parser
 import Vm.Command as C
 import Vm.Error as Error exposing (Error(..), Internal(..))
 import Vm.Exception as Exception exposing (Exception)
-import Vm.Instruction exposing (Instruction(..))
+import Vm.Instruction exposing (Context(..), Instruction(..))
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope exposing (Binding(..), Scope)
@@ -39,6 +39,7 @@ import Vm.Type as Type
 type alias Vm =
     { instructions : Array Instruction
     , programCounter : Int
+    , executionHaltedDueToError : Bool
     , stack : Stack
     , scopes : List Scope
     , environment : Environment
@@ -65,6 +66,7 @@ initialize : LinkedProgram -> Vm
 initialize { instructions, functionTable, compiledFunctions, startAddress } =
     { instructions = Array.fromList instructions
     , programCounter = startAddress
+    , executionHaltedDueToError = False
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
@@ -128,8 +130,17 @@ encodeInstruction instruction =
                 Introspect1 { name } ->
                     "Introspect1 " ++ name
 
-                Eval ->
-                    "Eval"
+                EvalInContext context ->
+                    let
+                        name =
+                            case context of
+                                Statement ->
+                                    "Statement"
+
+                                Expression { caller } ->
+                                    "[Expression " ++ caller ++ "]"
+                    in
+                    "EvalInContext " ++ name
 
                 Eval1 { name } ->
                     "Eval1 " ++ name
@@ -485,15 +496,29 @@ popValues n vm =
             |> Result.map (\first -> ( first, { vm | stack = List.drop n vm.stack } ))
 
 
-parseAndCompileProgram : Parser Program -> String -> Result Error CompiledProgram
-parseAndCompileProgram parser =
+toAstContext : Context -> Ast.Context
+toAstContext context =
+    case context of
+        Statement ->
+            Ast.Statement
+
+        Expression { caller } ->
+            Ast.Expression { caller = caller }
+
+
+parseAndCompileProgram : Context -> Parser Program -> String -> Result Error CompiledProgram
+parseAndCompileProgram context parser =
+    let
+        astContext =
+            toAstContext context
+    in
     Parser.run parser
         >> Result.mapError (always <| Internal ParsingFailed)
-        >> Result.map (Ast.compileProgram Statement)
+        >> Result.map (Ast.compileProgram astContext)
 
 
-parseAndEvalInstructions : Vm -> List Type.Value -> Result Error Vm
-parseAndEvalInstructions vm instructions =
+parseAndEvalInstructions : Context -> Vm -> List Type.Value -> Result Error Vm
+parseAndEvalInstructions context vm instructions =
     let
         parser =
             getParser vm
@@ -502,7 +527,7 @@ parseAndEvalInstructions vm instructions =
             instructions
                 |> Type.List
                 |> Type.toString
-                |> parseAndCompileProgram parser
+                |> parseAndCompileProgram context parser
 
         result =
             compiledProgram
@@ -511,30 +536,42 @@ parseAndEvalInstructions vm instructions =
                 |> Result.map (withEnvironment vm.environment)
                 |> Result.map run
     in
-    -- This code does not check yet for context (whether the caller expects a
-    -- value to be returned by `Eval` or not).
     case result of
         Ok (Done subVm) ->
-            case subVm.stack of
-                ((Stack.Value _) as value) :: _ ->
-                    let
-                        newVm =
-                            { vm | environment = subVm.environment, stack = value :: vm.stack }
-                    in
-                    Ok newVm
+            if subVm.executionHaltedDueToError then
+                { vm
+                    | executionHaltedDueToError = True
+                    , environment = subVm.environment
+                }
+                    |> Ok
 
-                [] ->
-                    vm |> withEnvironment subVm.environment |> Ok
+            else
+                case subVm.stack of
+                    {- To be more strict with respect to which programs to
+                       accept as valid, this could also be changed to just
+                       match a stack with a single value. At this point, I
+                       don’t know what arguments there are against such a
+                       change.
+                    -}
+                    ((Stack.Value _) as value) :: _ ->
+                        let
+                            newVm =
+                                { vm | environment = subVm.environment, stack = value :: vm.stack }
+                        in
+                        Ok newVm
 
-                _ ->
-                    Err <| Internal EvalFailed
+                    [] ->
+                        vm |> withEnvironment subVm.environment |> Ok
+
+                    _ ->
+                        Err <| Internal EvalFailed
 
         _ ->
             Err <| Internal EvalFailed
 
 
-eval : Vm -> Result Error Vm
-eval vm =
+evalInContext : Context -> Vm -> Result Error Vm
+evalInContext context vm =
     popValue1 vm
         |> Result.andThen
             (\( first, newVm ) ->
@@ -551,7 +588,7 @@ eval vm =
                                 Err <| Internal InvalidStack
                 in
                 instructions
-                    |> Result.andThen (parseAndEvalInstructions newVm)
+                    |> Result.andThen (parseAndEvalInstructions context newVm)
                     |> Result.map incrementProgramCounter
             )
 
@@ -1097,8 +1134,8 @@ execute instruction vm =
         Introspect1 primitive ->
             introspect1 primitive vm
 
-        Eval ->
-            eval vm
+        EvalInContext context ->
+            evalInContext context vm
 
         Eval1 primitive ->
             eval1 primitive vm
@@ -1223,17 +1260,25 @@ step vm =
         instruction =
             Array.get vm.programCounter vm.instructions
     in
-    case instruction of
-        Just instruction_ ->
-            case execute instruction_ vm of
-                Ok newVm ->
-                    Paused newVm
+    if vm.executionHaltedDueToError then
+        Done vm
 
-                Err error ->
-                    Done { vm | environment = Environment.error (Error.toString error) vm.environment }
+    else
+        case instruction of
+            Just instruction_ ->
+                case execute instruction_ vm of
+                    Ok newVm ->
+                        Paused newVm
 
-        _ ->
-            Done vm
+                    Err error ->
+                        Done
+                            { vm
+                                | executionHaltedDueToError = True
+                                , environment = Environment.error (Error.toString error) vm.environment
+                            }
+
+            _ ->
+                Done vm
 
 
 {-| Run a `Vm` until the program counter points to an invalid instruction.
@@ -1245,6 +1290,7 @@ returns a value or calls itself.
 run : Vm -> State
 run vm =
     let
+        run_ : Result Error Vm -> State
         run_ result =
             case result of
                 Ok newVm ->
@@ -1252,14 +1298,22 @@ run vm =
                         instruction =
                             Array.get newVm.programCounter newVm.instructions
                     in
-                    case instruction of
-                        Just instruction_ ->
-                            run_ (execute instruction_ newVm)
+                    if newVm.executionHaltedDueToError then
+                        Done newVm
 
-                        _ ->
-                            Done newVm
+                    else
+                        case instruction of
+                            Just instruction_ ->
+                                run_ (execute instruction_ newVm)
+
+                            _ ->
+                                Done newVm
 
                 Err error ->
-                    Done { vm | environment = Environment.error (Error.toString error) vm.environment }
+                    Done
+                        { vm
+                            | executionHaltedDueToError = True
+                            , environment = Environment.error (Error.toString error) vm.environment
+                        }
     in
     run_ (Ok vm)

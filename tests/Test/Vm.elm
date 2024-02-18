@@ -8,7 +8,7 @@ import Expect
 import Test exposing (..)
 import Vm.Command as C
 import Vm.Exception as Exception
-import Vm.Instruction exposing (Instruction(..))
+import Vm.Instruction exposing (Context(..), Instruction(..))
 import Vm.Introspect as I
 import Vm.Primitive as P
 import Vm.Scope as Scope
@@ -21,6 +21,7 @@ emptyVm : Vm
 emptyVm =
     { instructions = Array.empty
     , programCounter = 0
+    , executionHaltedDueToError = False
     , stack = []
     , scopes = Scope.empty
     , environment = Environment.empty
@@ -428,7 +429,7 @@ vmWithEvalOnList =
             { emptyVm
                 | instructions =
                     [ PushValue (Type.List [ Type.Word "print", Type.Word "\"word" ])
-                    , Eval
+                    , EvalInContext Statement
                     ]
                         |> Array.fromList
             }
@@ -449,7 +450,7 @@ vmWithEvalOnWord =
                     [ PushValue (Type.Int 90)
                     , Command1 { name = "forward", f = C.forward }
                     , PushValue (Type.Word "home")
-                    , Eval
+                    , EvalInContext Statement
                     , PushValue (Type.Int 90)
                     , Command1 { name = "back", f = C.back }
                     ]
