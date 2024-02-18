@@ -102,6 +102,7 @@ print foo "baz""" "foo did not output to print"
         , printsError "1 > print 3" "print did not output to >"
         , printsError "print ifelse \"true [] []" "ifelse did not output to print"
         , printsError "print ifelse \"false [] []" "ifelse did not output to print"
+        , printsError "print run [print \"a]" "print did not output to print"
         ]
 
 
@@ -136,6 +137,7 @@ foo "baz"""
         , printsError "if 1 = 1 [ minus 1 ]" "You don’t say what to do with -1"
         , printsError "ifelse \"true [ 5 ] [ 6 ]" "You don’t say what to do with 5"
         , printsError "butfirst [ 1 ]" "You don’t say what to do with []"
+        , printsError "run [\"a]" "You don’t say what to do with a"
         ]
 
 

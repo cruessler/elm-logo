@@ -285,6 +285,16 @@ compileBranch controlStructure context children =
             compileNonEmptyBranch context (Nonempty first rest)
 
 
+toInstructionContext : Context -> Instruction.Context
+toInstructionContext context =
+    case context of
+        Statement ->
+            Instruction.Statement
+
+        Expression { caller } ->
+            Instruction.Expression { caller = caller }
+
+
 {-| Compile an AST node to a list of VM instructions.
 
 This function inserts instructions that check at runtime whether or not a
@@ -788,8 +798,12 @@ compile context node =
             ]
 
         Run node_ ->
+            let
+                instructionContext =
+                    toInstructionContext context
+            in
             [ compileInContext (Expression { caller = "run" }) node_
-            , [ Eval ]
+            , [ EvalInContext instructionContext ]
             ]
                 |> List.concat
 
