@@ -124,6 +124,9 @@ encodeInstruction instruction =
                 Localmake ->
                     "Localmake"
 
+                Local ->
+                    "Local"
+
                 Thing ->
                     "Thing"
 
@@ -858,6 +861,27 @@ localmake vm =
             )
 
 
+local : Vm -> Result Error Vm
+local vm =
+    popValue1 vm
+        |> Result.andThen
+            (\( name, newVm ) ->
+                name
+                    |> Type.toWord
+                    |> Result.map
+                        (\word ->
+                            let
+                                newScopes =
+                                    vm.scopes
+                                        |> Scope.local word
+                            in
+                            { newVm | scopes = newScopes }
+                                |> incrementProgramCounter
+                        )
+                    |> Result.mapError (\_ -> WrongInput "local" (Type.toDebugString name))
+            )
+
+
 thing : Vm -> Result Error Vm
 thing vm =
     popValue1 vm
@@ -1133,6 +1157,9 @@ execute instruction vm =
 
         Localmake ->
             localmake vm
+
+        Local ->
+            local vm
 
         Thing ->
             thing vm

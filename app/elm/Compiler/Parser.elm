@@ -374,6 +374,7 @@ statement state =
             , P.lazy (\_ -> run state)
             , stop
             , localmake state
+            , local state
             , make state
             , templateVariable
             , thing state
@@ -795,6 +796,16 @@ localmake state =
             |. Helper.keyword "localmake"
             |. Helper.spaces
             |= booleanExpression state
+            |. Helper.spaces
+            |= booleanExpression state
+        )
+
+
+local : State -> Parser Ast.Node
+local state =
+    P.inContext Local <|
+        (P.succeed Ast.Local
+            |. Helper.keyword "local"
             |. Helper.spaces
             |= booleanExpression state
         )
