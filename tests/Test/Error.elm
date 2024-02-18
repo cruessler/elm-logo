@@ -71,6 +71,7 @@ functionsWithInvalidArguments =
         , printsError "print fput \"wo \"rd" "fput doesn’t like wo as input"
         , printsError "make [] 1" "make doesn’t like [] as input"
         , printsError "localmake [] 1" "localmake doesn’t like [] as input"
+        , printsError "local []" "local doesn’t like [] as input"
         ]
 
 
@@ -151,6 +152,11 @@ undefinedVariable =
     describe "prints error if undefined variable is used" <|
         [ printsError "print :variable" "variable has no value"
         , printsError ":variable" "variable has no value"
+        , printsError """to f
+local "v make "v 1 print :v
+end
+f
+print :v""" "v has no value"
         ]
 
 

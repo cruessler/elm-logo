@@ -30,6 +30,7 @@ type Instruction
     | LocalVariable String
     | Make
     | Localmake
+    | Local
     | Thing
     | Introspect0 I.Introspect0
     | Introspect1 I.Introspect1

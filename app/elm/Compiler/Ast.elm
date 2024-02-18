@@ -107,6 +107,7 @@ type Node
     | Run Node
     | Make Node Node
     | Localmake Node Node
+    | Local Node
     | Thing Node
     | Variable String
     | Value Type.Value
@@ -233,6 +234,9 @@ typeOfCallee node =
 
         Localmake _ _ ->
             Command { name = "localmake" }
+
+        Local _ ->
+            Command { name = "local" }
 
         Thing _ ->
             Primitive { name = "thing" }
@@ -878,6 +882,12 @@ compile context node =
             [ compiledValue
             , compiledName
             , [ Instruction.Localmake ]
+            ]
+                |> List.concat
+
+        Local name ->
+            [ compileInContext (Expression { caller = "local" }) name
+            , [ Instruction.Local ]
             ]
                 |> List.concat
 

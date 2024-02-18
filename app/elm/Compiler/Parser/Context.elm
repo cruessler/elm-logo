@@ -17,6 +17,7 @@ type Context
     | InParentheses
     | TemplateVariable
     | Localmake
+    | Local
     | Make
     | Thing
     | Variable

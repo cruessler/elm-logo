@@ -278,6 +278,18 @@ foo"""
         ]
 
 
+local : Test
+local =
+    describe "variable defined by local is available in called function" <|
+        [ printsLines
+            """to f :recurse
+ifelse :recurse [ local "v make "v "word f "false ] [ print :v ]
+end
+f "true"""
+            [ "word" ]
+        ]
+
+
 optionalArguments : Test
 optionalArguments =
     describe "define function with default value for optional parameter" <|
